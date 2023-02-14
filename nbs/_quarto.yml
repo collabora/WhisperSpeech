@@ -1,0 +1,36 @@
+project:
+  type: website
+  output-dir: _docs
+  preview:
+    port: 3000
+    browser: false
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+    toc-depth: 4
+
+website:
+  title: "WhisperSpeech"
+  site-url: "https://collabora.github.io/WhisperSpeech"
+  description: "An Open Source text-to-speech system built by inverting Whisper"
+  twitter-card: true
+  open-graph: true
+  repo-branch: master
+  repo-url: "https://github.com/collabora/WhisperSpeech"
+  repo-actions: [issue]
+  navbar:
+    logo: imgs/logo.svg
+    background: primary
+    search: true
+    right:
+      - icon: github
+        href: "https://github.com/collabora/WhisperSpeech"
+  sidebar:
+    style: "floating"
+
+metadata-files: 
+  - sidebar.yml
+  - custom.yml
