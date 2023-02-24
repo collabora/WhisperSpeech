@@ -8,6 +8,8 @@ We are not targeting an exact copy – to speed up training we want to use exist
 Following Google Brain we'll train on the LibreLight and LibreTTS datasets. Ultimately
 we want to target multiple languages (Whisper and EnCodec are both multilanguage).
 
+UPDATE 2023-02-24: I think I finally figured out how to train the semantic encodings bottleneck. Check the issues for more detailed progress updates.
+
 ## Whisper for modeling semantic tokens
 
 ![Using Whisper for semantic token extraction diagram](whisper-block.png)
@@ -23,6 +25,7 @@ Cons:
 
  - 2x higher "symbol rate" (50 vec/s) than w2v-BERT (25 vec/s) which means training the semantic->acoustic transformer
    may take longer
+ - it seems that we'll need 6x higher symbol rate if we want to quantize the embeddings effectively, OTOH maybe later modeling tasks will be easier?
 
 ## EnCodec for modeling acoustic tokens
 
