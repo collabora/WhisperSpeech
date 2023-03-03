@@ -1,0 +1,37 @@
+ipynb-filters: [nbdev_filter]
+
+project:
+  type: website
+  output-dir: _docs
+  preview:
+    port: 3000
+    browser: false
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+    toc-depth: 4
+
+website:
+  title: "spear-tts-pytorch"
+  site-url: "https://collabora.github.io/spear-tts-pytorch"
+  description: "An unofficial PyTorch implementation of SPEAR-TTS."
+  twitter-card: true
+  open-graph: true
+  repo-branch: master
+  repo-url: "https://github.com/collabora/spear-tts-pytorch"
+  repo-actions: [issue]
+  navbar:
+    background: primary
+    search: true
+    right:
+      - icon: github
+        href: "https://github.com/collabora/spear-tts-pytorch"
+  sidebar:
+    style: "floating"
+
+metadata-files: 
+  - sidebar.yml
+  - custom.yml
