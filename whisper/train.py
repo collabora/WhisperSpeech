@@ -185,40 +185,48 @@ if __name__=="__main__":
         default='librispeech_asr', 
         help="Name of the dataset on huggingface hub.")
 
-    parser.add_argument('--subset',
+    parser.add_argument(
+        '--subset',
         type=str, 
         default='clean', 
         help='Name of the subset of the dataset.')
 
-    parser.add_argument('--train_name',
+    parser.add_argument(
+        '--train_name',
         type=str, 
         default='train.360', 
         help='Name of the training subset of the dataset.')
     
-    parser.add_argument('--val_name',
+    parser.add_argument(
+        '--val_name',
         type=str, 
         default='validation', 
         help='Name of the validation subset of the dataset.')
 
-    parser.add_argument('--workers',
-            type=int,
-            default=2,
-            help="The workers to load data.")
+    parser.add_argument(
+        '--workers',
+        type=int,
+        default=2,
+        help="The workers to load data.")
 
-    parser.add_argument("--num_train_steps",
-              default=8000,
-              type=int,
-              help="Total number of training steps to perform.")
+    parser.add_argument(
+        "--num_train_steps",
+        default=8000,
+        type=int,
+        help="Total number of training steps to perform.")
 
-    parser.add_argument('--seed',
-              type=int,
-              default=1234,
-              help="random seed for initialization")
+    parser.add_argument(
+        '--seed',
+        type=int,
+        default=1234,
+        help="random seed for initialization")
 
-    parser.add_argument("--train_batch_size",
-              default=16,
-              type=int,
-              help="Total batch size for training.")
+    parser.add_argument(
+        "--train_batch_size",
+        default=16,
+        type=int,
+        help="Total batch size for training.")
+    
     parser.add_argument(
         '--freeze_encoder',
         action='store_true',
