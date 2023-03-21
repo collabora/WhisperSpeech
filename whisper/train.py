@@ -206,7 +206,7 @@ if __name__=="__main__":
             help="The workers to load data.")
 
     parser.add_argument("--num_train_steps",
-              default=3,
+              default=8000,
               type=int,
               help="Total number of training steps to perform.")
 
@@ -216,7 +216,7 @@ if __name__=="__main__":
               help="random seed for initialization")
 
     parser.add_argument("--train_batch_size",
-              default=32,
+              default=16,
               type=int,
               help="Total batch size for training.")
     parser.add_argument(
