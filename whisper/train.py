@@ -111,35 +111,27 @@ def train(opt):
     libri = libri.map(
         prepare_dataset,
         remove_columns=libri.column_names["train"],
-        num_proc=4)
+        num_proc=8)
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
 
     model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny.en").cuda()
 
-    # freeze encoder and overfit on decoder
-    if opt.freeze_encoder:
+    if opt.freeze_decoder:      # freeze decoder and retrain encoder from scratch
         for param in model.model.decoder.parameters():
             param.requires_grad = False
         model.model.decoder._requires_grad = False
         model.model.decoder.gradient_checkpointing = False
-
-        model.config.forced_decoder_ids = None
-        model.config.suppress_tokens = []
-
         # re-init encoder params
-        print("re-init encoder")
         model.model.encoder.init_weights()
-        
-    else:
+    elif opt.freeze_encoder:   # freeze encoder and retrain decoder from scratch
         model.freeze_encoder()
         model.model.encoder.gradient_checkpointing = False
-
-        model.config.forced_decoder_ids = None
-        model.config.suppress_tokens = []
 
         # re-init decoder params
         model.model.decoder.init_weights()
     
+    model.config.forced_decoder_ids = None
+    model.config.suppress_tokens = []
     training_args = Seq2SeqTrainingArguments(
         output_dir="./whisper-tiny-decoder-libriasr-clean-test",  # change to a repo name of your choice
         per_device_train_batch_size=32,
@@ -226,7 +218,7 @@ if __name__=="__main__":
         default=16,
         type=int,
         help="Total batch size for training.")
-    
+
     parser.add_argument(
         '--freeze_encoder',
         action='store_true',
