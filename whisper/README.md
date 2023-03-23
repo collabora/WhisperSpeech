@@ -10,4 +10,4 @@
  python train.py --freeze_encoder
 ```
 
-Results for training the whisper decoder from scratch on 360 hour ```librispeech_asr``` are [here](https://huggingface.co/makaveli10/whisper-tiny-decoder-libriasr-clean-360h/tensorboard)
+- Results for training the whisper decoder from scratch on 360 hour ```librispeech_asr``` are [here on huggingface hub](https://huggingface.co/makaveli10/whisper-tiny-decoder-libriasr-clean-360h/tensorboard)
