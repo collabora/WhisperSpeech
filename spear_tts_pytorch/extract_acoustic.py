@@ -6,6 +6,7 @@ __all__ = ['load', 'load_model', 'extract_Atoks', 'extract_acoustic']
 # %% ../nbs/1. Acoustic token extraction.ipynb 2
 import torch
 import torchaudio
+import gc
 
 from pathlib import Path
 from fastcore.script import *
@@ -49,4 +50,7 @@ def extract_acoustic(
     outdir.mkdir(exist_ok=True, parents=True)
     for name in progress_bar(list(srcdir.rglob('*.flac'))):
         outname = outdir/name.with_suffix('.encodec').name
-        torch.save(extract_Atoks(model, name), outname)
+        tokens = extract_Atoks(model, name)
+        torch.save(tokens, outname)
+        del tokens
+        gc.collect()
