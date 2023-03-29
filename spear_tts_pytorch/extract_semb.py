@@ -14,11 +14,11 @@ from fastcore.script import *
 import whisper
 from .extract_acoustic import load
 
-# %% ../nbs/2C. Whisper semantic embedding extraction.ipynb 7
+# %% ../nbs/2C. Whisper semantic embedding extraction.ipynb 6
 def load_model():
     return whisper.load_model('tiny.en')
 
-# %% ../nbs/2C. Whisper semantic embedding extraction.ipynb 26
+# %% ../nbs/2C. Whisper semantic embedding extraction.ipynb 27
 # same as above but rolled into a function
 def encode_semantic(whmodel, audio):
     """Encode the given `audio` (tensor or file name) into Whisper embeddings and lists of text tokens.
@@ -34,21 +34,33 @@ def encode_semantic(whmodel, audio):
         with torch.no_grad():
             padded = whisper.audio.pad_or_trim(sample, whisper.audio.N_FRAMES).unsqueeze(0)
             emb = whmodel.encoder(padded)
-            tokens = whmodel.decode(padded, whisper.DecodingOptions(language='en'))[0].tokens
+            tokens = whmodel.decode(emb, whisper.DecodingOptions(language='en', suppress_blank=False, suppress_tokens=False))[0].tokens
             embs.append(emb.cpu())
             toks.append(tokens)
     return torch.stack(embs, axis=0), toks
 
-# %% ../nbs/2C. Whisper semantic embedding extraction.ipynb 28
+# %% ../nbs/2C. Whisper semantic embedding extraction.ipynb 30
 @call_parse
 def extract_semantic(
         srcdir:Path,  # source dir, should contain *.flac files
         outdir:Path,  # output dir, will get the *.semb and *.ttoks files
+        layer='last', # the layer to extract the embeddings from
     ): 
     "Convert audio files to .semb files with Whisper embeddings and .ttoks with text tokens"
     model = load_model()
+    suffix = '.semb'
+    
+    if layer != 'last':
+        layer = int(layer)
+        N = len(model.encoder.blocks)
+        for i in range(N,layer,-1):
+            print("Removing layer", i)
+            del model.encoder.blocks[i-1]
+        model.encoder.ln_post = torch.nn.Identity()
+        suffix += f'-{layer}'
+    
     outdir.mkdir(exist_ok=True, parents=True)
     for name in progress_bar(list(srcdir.rglob('*.flac'))):
         embs, toks = encode_semantic(model, name)
-        torch.save(embs, outdir/name.with_suffix('.semb').name)
+        torch.save(embs, outdir/name.with_suffix(suffix).name)
         torch.save(toks, outdir/name.with_suffix('.ttoks').name)
