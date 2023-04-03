@@ -69,6 +69,8 @@ We may switch to the [OpenSource SoundStream re-implementation](https://github.c
 
 ## Appreciation
 
+[<img height=80 src="https://user-images.githubusercontent.com/107984/229537027-a6d7462b-0c9c-4fd4-b69e-58e98c3ee63f.png" alt="Collabora logo">](https://www.collabora.com)&nbsp;&nbsp;&nbsp;[<img height=80 src="https://user-images.githubusercontent.com/107984/229535036-c741d775-4a9b-4193-89a0-9ddb89ecd011.png" alt="LAION logo">](https://laion.ai)
+
 This work would not be possible without the generous sponsorships from:
 
 - [Collabora](https://www.collabora.com) – code development and model training
