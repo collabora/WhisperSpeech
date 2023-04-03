@@ -75,7 +75,7 @@ This work would not be possible without the generous sponsorships from:
 
 - [Collabora](https://www.collabora.com) – code development and model training
 - [Ontocord.ai](https://ontocord.ai) – cloud training machines
-- [LAION](https://laion.ai) – dataset creation
+- [LAION](https://laion.ai) – community building and datasets
 
 We are available to help you with both Open Source and proprietary AI projects. You can reach us via the Collabora website or on Discord ([![](https://dcbadge.vercel.app/api/shield/270267134960074762?style=flat)](https://discordapp.com/users/270267134960074762) and [![](https://dcbadge.vercel.app/api/shield/1088938086400016475?style=flat)](https://discordapp.com/users/1088938086400016475))
 
