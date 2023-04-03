@@ -5,12 +5,34 @@ An unofficial PyTorch implementation of [SPEAR-TTS](https://google-research.gith
 We are not targeting an exact copy – to speed up training we want to use existing Open Source models as bases:
 [Whisper](https://github.com/openai/whisper) encoder to generate semantic tokens and [EnCodec](https://github.com/facebookresearch/encodec) for acoustic modeling.
 
-Following Google Brain we'll train on the LibreLight and LibreTTS datasets. Ultimately
+Following Google Brain we'll train on the LibriLight and LibreTTS datasets. Ultimately
 we want to target multiple languages (Whisper and EnCodec are both multilanguage).
 
-UPDATE 2023-02-24: I think I finally figured out how to train the semantic encodings bottleneck. Check the issues for more detailed progress updates.
+## Progress updates
 
-## Whisper for modeling semantic tokens
+UPDATE 2023-04-03: We have trained a working S->A model. It does not sound amazing but that is mostly because of EnCodec quality at 1.5kbps.
+
+Validation set ground truth (don't forget to unmute):
+
+https://user-images.githubusercontent.com/107984/229439299-3aca954c-f044-4270-a4e5-4f847fd5d929.mov
+
+The generated output from the S->A model (multinomial sampling, temperature 0.8):
+
+https://user-images.githubusercontent.com/107984/229439418-92575be4-a892-40bb-97f7-5bfda5b2bf1d.mov
+
+## Roadmap
+
+- [x] [Extract acoustic tokens](https://github.com/collabora/spear-tts-pytorch/issues/2)
+- [x] [Extract Whisper embeddings and quantize them to semantic tokens](https://github.com/collabora/spear-tts-pytorch/issues/3)
+- [x] [Semantic token to acoustic token (S->A) model](https://github.com/collabora/spear-tts-pytorch/issues/4)
+- [ ] [Text token to semantic token (T->S) model](https://github.com/collabora/spear-tts-pytorch/issues/9)
+- [ ] [Improve the EnCodec speech quality](https://github.com/collabora/spear-tts-pytorch/issues/10)
+- [ ] [Gather a bigger emotive speech dataset](https://github.com/collabora/spear-tts-pytorch/issues/11)
+- [ ] [Train final high-quality models](https://github.com/collabora/spear-tts-pytorch/issues/12)
+
+## Architecture
+
+### Whisper for modeling semantic tokens
 
 ![Using Whisper for semantic token extraction diagram](whisper-block.png)
 
@@ -24,16 +46,15 @@ Pros:
 Cons:
 
  - 2x higher "symbol rate" (50 vec/s) than w2v-BERT (25 vec/s) which means training the semantic->acoustic transformer
-   may take longer
- - it seems that we'll need 6x higher symbol rate if we want to quantize the embeddings effectively, OTOH maybe later modeling tasks will be easier?
+   may take longer (this turned out not to matter in practice – there are only 1500 semantic tokens for 30 seconds of audio vs. 4500 acoustic tokens)
 
-## EnCodec for modeling acoustic tokens
+### EnCodec for modeling acoustic tokens
 
 ![EnCodec block diagram](https://github.com/facebookresearch/encodec/raw/main/architecture.png)
 
 Pros:
 
- - High-quality pretrained model
+ - High-quality pretrained model is available
 
 Cons:
 
@@ -42,6 +63,14 @@ Cons:
  - CC-BY-NC license
 
 We may switch to the [OpenSource SoundStream re-implementation](https://github.com/lucidrains/audiolm-pytorch/blob/main/audiolm_pytorch/soundstream.py) or train a new speech-only model.
+
+## Appreciation
+
+This work would not be possible without the generous sponsorships from:
+
+- [Collabora](https://www.collabora.com) – code development and model training
+- [Ontocord.ai](https://ontocord.ai) – cloud training machines
+- [LAION](https://laion.ai) – dataset creation
 
 ## Citations
 
