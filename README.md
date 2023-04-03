@@ -1,3 +1,6 @@
+[![](https://dcbadge.vercel.app/api/server/FANw4rHD5E)](https://discord.gg/FANw4rHD5E)  
+*If you have questions or you want to help you can find us in the #audio-generation channel on the LAION Discord server.*
+
 # SPEAR-TTS
 
 An unofficial PyTorch implementation of [SPEAR-TTS](https://google-research.github.io/seanet/speartts/examples/).
@@ -71,6 +74,8 @@ This work would not be possible without the generous sponsorships from:
 - [Collabora](https://www.collabora.com) – code development and model training
 - [Ontocord.ai](https://ontocord.ai) – cloud training machines
 - [LAION](https://laion.ai) – dataset creation
+
+We are available to help you with both Open Source and proprietary AI projects. You can reach us via the Collabora website or on Discord (![](https://dcbadge.vercel.app/api/shield/270267134960074762?style=flat))
 
 ## Citations
 
