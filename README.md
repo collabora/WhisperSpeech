@@ -8,7 +8,7 @@ An unofficial PyTorch implementation of [SPEAR-TTS](https://google-research.gith
 We are not targeting an exact copy – to speed up training we want to use existing Open Source models as bases:
 [Whisper](https://github.com/openai/whisper) encoder to generate semantic tokens and [EnCodec](https://github.com/facebookresearch/encodec) for acoustic modeling.
 
-Following Google Brain we'll train on the LibriLight and LibreTTS datasets. Ultimately
+Following Google Brain we'll train on the LibriLight dataset. Ultimately
 we want to target multiple languages (Whisper and EnCodec are both multilanguage).
 
 ## Progress updates
@@ -69,12 +69,11 @@ We may switch to the [OpenSource SoundStream re-implementation](https://github.c
 
 ## Appreciation
 
-[<img height=80 src="https://user-images.githubusercontent.com/107984/229537027-a6d7462b-0c9c-4fd4-b69e-58e98c3ee63f.png" alt="Collabora logo">](https://www.collabora.com)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<img height=80 src="https://user-images.githubusercontent.com/107984/229535036-c741d775-4a9b-4193-89a0-9ddb89ecd011.png" alt="LAION logo">](https://laion.ai)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<img height=80 src="https://user-images.githubusercontent.com/107984/229706063-dcf50cd9-a617-4bdd-a187-bef566d51a19.png" alt="Ontocord.ai logo">](https://www.ontocord.ai)
+[<img height=80 src="https://user-images.githubusercontent.com/107984/229537027-a6d7462b-0c9c-4fd4-b69e-58e98c3ee63f.png" alt="Collabora logo">](https://www.collabora.com)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<img height=80 src="https://user-images.githubusercontent.com/107984/229535036-c741d775-4a9b-4193-89a0-9ddb89ecd011.png" alt="LAION logo">](https://laion.ai)
 
 This work would not be possible without the generous sponsorships from:
 
 - [Collabora](https://www.collabora.com) – code development and model training
-- [Ontocord.ai](https://ontocord.ai) – cloud training machines
 - [LAION](https://laion.ai) – community building and datasets
 
 We are available to help you with both Open Source and proprietary AI projects. You can reach us via the Collabora website or on Discord ([![](https://dcbadge.vercel.app/api/shield/270267134960074762?style=flat)](https://discordapp.com/users/270267134960074762) and [![](https://dcbadge.vercel.app/api/shield/1088938086400016475?style=flat)](https://discordapp.com/users/1088938086400016475))
