@@ -19,11 +19,11 @@ End-to-end TTS model with ≈ 6% WER (both T->S and S->A sampled with simple mul
 
 (don't forget to unmute the video)
 
-https://user-images.githubusercontent.com/107984/231753132-e87bc3e2-3b22-42c0-a7fc-ef525eff4e06.mp4
+https://user-images.githubusercontent.com/107984/231755045-e7d55a7a-6d97-4a0a-a8cf-1bc7f54c9217.mp4
 
 Ground truth:
 
-https://user-images.githubusercontent.com/107984/231753161-35179c15-0d63-4149-8e0b-8d3578ad2617.mp4
+https://user-images.githubusercontent.com/107984/231755210-7150636b-18c2-4dff-a8f4-9db0b932ad5f.mp4
 
 **UPDATE 2023-04-03**: We have trained a working S->A model. It does not sound amazing but that is mostly because of EnCodec quality at 1.5kbps.
 
