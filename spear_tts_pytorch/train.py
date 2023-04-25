@@ -105,7 +105,8 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4,
                                      )
         scaler = torch.cuda.amp.GradScaler(enabled=half)
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer, max_lr=lr, pct_start=pct_start, steps_per_epoch=len(train_loader), epochs=epochs)
+            optimizer, max_lr=lr, pct_start=pct_start, steps_per_epoch=len(train_loader), epochs=epochs,
+            final_div_factor=25)
         
         it = 0
         start_t = time.time()

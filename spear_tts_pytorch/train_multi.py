@@ -71,7 +71,8 @@ class TrainingTask(pl.LightningModule):
             pct_start=self.model_hparams['pct_start'],
             max_lr=self.model_hparams['lr0'],
             steps_per_epoch=num_steps_per_epoch(),
-            epochs=self.model_hparams['epochs']
+            epochs=self.model_hparams['epochs'],
+            final_div_factor=25
         )
 
         return [optimizer], [{'scheduler': lr_scheduler, 'interval': 'step'}]
