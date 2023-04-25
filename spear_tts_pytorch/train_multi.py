@@ -188,6 +188,7 @@ trainer = pl.Trainer(max_epochs=hyp_params['epochs'],
                   accelerator="gpu",
                   profiler="simple",
                   precision='16-mixed',
+                  val_check_interval=1/10,
                   enable_checkpointing=True,
                   logger=wandb_logger,
                   callbacks=[ckpt_callback, lr_monitor_callback])
