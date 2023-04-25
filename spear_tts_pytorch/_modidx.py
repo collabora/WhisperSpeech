@@ -5,41 +5,317 @@ d = { 'settings': { 'branch': 'master',
                 'doc_host': 'https://collabora.github.io',
                 'git_url': 'https://github.com/collabora/spear-tts-pytorch',
                 'lib_path': 'spear_tts_pytorch'},
-  'syms': { 'spear_tts_pytorch.extract_acoustic': { 'spear_tts_pytorch.extract_acoustic.extract_Atoks': ( '1..html#extract_atoks',
+  'syms': { 'spear_tts_pytorch.a2a': { 'spear_tts_pytorch.a2a.AAARTransformer': ( '6. encodec quality enchancement.html#aaartransformer',
+                                                                                  'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.AAARTransformer.__init__': ( '6. encodec quality '
+                                                                                           'enchancement.html#aaartransformer.__init__',
+                                                                                           'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.AAARTransformer.forward': ( '6. encodec quality '
+                                                                                          'enchancement.html#aaartransformer.forward',
+                                                                                          'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.LayerNorm': ( '6. encodec quality enchancement.html#layernorm',
+                                                                            'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.LayerNorm.forward': ( '6. encodec quality '
+                                                                                    'enchancement.html#layernorm.forward',
+                                                                                    'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.PureEncoder': ( '6. encodec quality enchancement.html#pureencoder',
+                                                                              'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.PureEncoder.__init__': ( '6. encodec quality '
+                                                                                       'enchancement.html#pureencoder.__init__',
+                                                                                       'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.PureEncoder.forward': ( '6. encodec quality '
+                                                                                      'enchancement.html#pureencoder.forward',
+                                                                                      'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.SADataset': ( '6. encodec quality enchancement.html#sadataset',
+                                                                            'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.SADataset.A_tokens': ( '6. encodec quality '
+                                                                                     'enchancement.html#sadataset.a_tokens',
+                                                                                     'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.SADataset.__getitem__': ( '6. encodec quality '
+                                                                                        'enchancement.html#sadataset.__getitem__',
+                                                                                        'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.SADataset.__init__': ( '6. encodec quality '
+                                                                                     'enchancement.html#sadataset.__init__',
+                                                                                     'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.SADataset.__len__': ( '6. encodec quality '
+                                                                                    'enchancement.html#sadataset.__len__',
+                                                                                    'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.SADataset.__repr__': ( '6. encodec quality '
+                                                                                     'enchancement.html#sadataset.__repr__',
+                                                                                     'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.SADataset.hours': ( '6. encodec quality enchancement.html#sadataset.hours',
+                                                                                  'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.init_transformer': ( '6. encodec quality enchancement.html#init_transformer',
+                                                                                   'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.load_data': ( '6. encodec quality enchancement.html#load_data',
+                                                                            'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.load_datasets': ( '6. encodec quality enchancement.html#load_datasets',
+                                                                                'spear_tts_pytorch/a2a.py'),
+                                       'spear_tts_pytorch.a2a.make_model': ( '6. encodec quality enchancement.html#make_model',
+                                                                             'spear_tts_pytorch/a2a.py')},
+            'spear_tts_pytorch.extract_acoustic': { 'spear_tts_pytorch.extract_acoustic.extract_Atoks': ( '1. acoustic token '
+                                                                                                          'extraction.html#extract_atoks',
                                                                                                           'spear_tts_pytorch/extract_acoustic.py'),
-                                                    'spear_tts_pytorch.extract_acoustic.extract_acoustic': ( '1..html#extract_acoustic',
+                                                    'spear_tts_pytorch.extract_acoustic.extract_acoustic': ( '1. acoustic token '
+                                                                                                             'extraction.html#extract_acoustic',
                                                                                                              'spear_tts_pytorch/extract_acoustic.py'),
-                                                    'spear_tts_pytorch.extract_acoustic.load': ( '1..html#load',
+                                                    'spear_tts_pytorch.extract_acoustic.load': ( '1. acoustic token extraction.html#load',
                                                                                                  'spear_tts_pytorch/extract_acoustic.py'),
-                                                    'spear_tts_pytorch.extract_acoustic.load_model': ( '1..html#load_model',
+                                                    'spear_tts_pytorch.extract_acoustic.load_model': ( '1. acoustic token '
+                                                                                                       'extraction.html#load_model',
                                                                                                        'spear_tts_pytorch/extract_acoustic.py')},
-            'spear_tts_pytorch.extract_semb': { 'spear_tts_pytorch.extract_semb.encode_semantic': ( '2c..html#encode_semantic',
+            'spear_tts_pytorch.extract_semb': { 'spear_tts_pytorch.extract_semb.encode_semantic': ( '2c. whisper semantic embedding '
+                                                                                                    'extraction.html#encode_semantic',
                                                                                                     'spear_tts_pytorch/extract_semb.py'),
-                                                'spear_tts_pytorch.extract_semb.extract_semantic': ( '2c..html#extract_semantic',
+                                                'spear_tts_pytorch.extract_semb.extract_semantic': ( '2c. whisper semantic embedding '
+                                                                                                     'extraction.html#extract_semantic',
                                                                                                      'spear_tts_pytorch/extract_semb.py'),
-                                                'spear_tts_pytorch.extract_semb.load_model': ( '2c..html#load_model',
+                                                'spear_tts_pytorch.extract_semb.load_model': ( '2c. whisper semantic embedding '
+                                                                                               'extraction.html#load_model',
                                                                                                'spear_tts_pytorch/extract_semb.py')},
-            'spear_tts_pytorch.extract_stoks': { 'spear_tts_pytorch.extract_stoks.LayerNorm': ( '2f..html#layernorm',
+            'spear_tts_pytorch.extract_stoks': { 'spear_tts_pytorch.extract_stoks.LayerNorm': ( '2f. residual (rq) semantic token '
+                                                                                                'extraction model.html#layernorm',
                                                                                                 'spear_tts_pytorch/extract_stoks.py'),
-                                                 'spear_tts_pytorch.extract_stoks.LayerNorm.forward': ( '2f..html#forward',
+                                                 'spear_tts_pytorch.extract_stoks.LayerNorm.forward': ( '2f. residual (rq) semantic token '
+                                                                                                        'extraction '
+                                                                                                        'model.html#layernorm.forward',
                                                                                                         'spear_tts_pytorch/extract_stoks.py'),
-                                                 'spear_tts_pytorch.extract_stoks.RQBottleneckTransformer': ( '2f..html#rqbottlenecktransformer',
+                                                 'spear_tts_pytorch.extract_stoks.RQBottleneckTransformer': ( '2f. residual (rq) semantic '
+                                                                                                              'token extraction '
+                                                                                                              'model.html#rqbottlenecktransformer',
                                                                                                               'spear_tts_pytorch/extract_stoks.py'),
-                                                 'spear_tts_pytorch.extract_stoks.RQBottleneckTransformer.__init__': ( '2f..html#__init__',
+                                                 'spear_tts_pytorch.extract_stoks.RQBottleneckTransformer.__init__': ( '2f. residual (rq) '
+                                                                                                                       'semantic token '
+                                                                                                                       'extraction '
+                                                                                                                       'model.html#rqbottlenecktransformer.__init__',
                                                                                                                        'spear_tts_pytorch/extract_stoks.py'),
-                                                 'spear_tts_pytorch.extract_stoks.RQBottleneckTransformer.encode': ( '2f..html#encode',
+                                                 'spear_tts_pytorch.extract_stoks.RQBottleneckTransformer.encode': ( '2f. residual (rq) '
+                                                                                                                     'semantic token '
+                                                                                                                     'extraction '
+                                                                                                                     'model.html#rqbottlenecktransformer.encode',
                                                                                                                      'spear_tts_pytorch/extract_stoks.py'),
-                                                 'spear_tts_pytorch.extract_stoks.RQBottleneckTransformer.forward': ( '2f..html#forward',
+                                                 'spear_tts_pytorch.extract_stoks.RQBottleneckTransformer.forward': ( '2f. residual (rq) '
+                                                                                                                      'semantic token '
+                                                                                                                      'extraction '
+                                                                                                                      'model.html#rqbottlenecktransformer.forward',
                                                                                                                       'spear_tts_pytorch/extract_stoks.py'),
-                                                 'spear_tts_pytorch.extract_stoks.RQBottleneckTransformer.get_teacher_logits': ( '2f..html#get_teacher_logits',
+                                                 'spear_tts_pytorch.extract_stoks.RQBottleneckTransformer.get_teacher_logits': ( '2f. '
+                                                                                                                                 'residual '
+                                                                                                                                 '(rq) '
+                                                                                                                                 'semantic '
+                                                                                                                                 'token '
+                                                                                                                                 'extraction '
+                                                                                                                                 'model.html#rqbottlenecktransformer.get_teacher_logits',
                                                                                                                                  'spear_tts_pytorch/extract_stoks.py'),
-                                                 'spear_tts_pytorch.extract_stoks.encode_stoks': ( '2f..html#encode_stoks',
+                                                 'spear_tts_pytorch.extract_stoks.encode_stoks': ( '2f. residual (rq) semantic token '
+                                                                                                   'extraction model.html#encode_stoks',
                                                                                                    'spear_tts_pytorch/extract_stoks.py'),
-                                                 'spear_tts_pytorch.extract_stoks.extract_stoks': ( '2f..html#extract_stoks',
+                                                 'spear_tts_pytorch.extract_stoks.extract_stoks': ( '2f. residual (rq) semantic token '
+                                                                                                    'extraction model.html#extract_stoks',
                                                                                                     'spear_tts_pytorch/extract_stoks.py'),
-                                                 'spear_tts_pytorch.extract_stoks.init_transformer': ( '2f..html#init_transformer',
+                                                 'spear_tts_pytorch.extract_stoks.init_transformer': ( '2f. residual (rq) semantic token '
+                                                                                                       'extraction '
+                                                                                                       'model.html#init_transformer',
                                                                                                        'spear_tts_pytorch/extract_stoks.py'),
-                                                 'spear_tts_pytorch.extract_stoks.load_model': ( '2f..html#load_model',
+                                                 'spear_tts_pytorch.extract_stoks.load_model': ( '2f. residual (rq) semantic token '
+                                                                                                 'extraction model.html#load_model',
                                                                                                  'spear_tts_pytorch/extract_stoks.py'),
-                                                 'spear_tts_pytorch.extract_stoks.sinusoids': ( '2f..html#sinusoids',
-                                                                                                'spear_tts_pytorch/extract_stoks.py')}}}
+                                                 'spear_tts_pytorch.extract_stoks.sinusoids': ( '2f. residual (rq) semantic token '
+                                                                                                'extraction model.html#sinusoids',
+                                                                                                'spear_tts_pytorch/extract_stoks.py')},
+            'spear_tts_pytorch.extract_stoks_txts': { 'spear_tts_pytorch.extract_stoks_txts.encode_stoks_and_txt': ( '4. whisper semantic '
+                                                                                                                     'and text token '
+                                                                                                                     'extraction.html#encode_stoks_and_txt',
+                                                                                                                     'spear_tts_pytorch/extract_stoks_txts.py'),
+                                                      'spear_tts_pytorch.extract_stoks_txts.extract_stoks_and_txt': ( '4. whisper semantic '
+                                                                                                                      'and text token '
+                                                                                                                      'extraction.html#extract_stoks_and_txt',
+                                                                                                                      'spear_tts_pytorch/extract_stoks_txts.py'),
+                                                      'spear_tts_pytorch.extract_stoks_txts.load_model': ( '4. whisper semantic and text '
+                                                                                                           'token '
+                                                                                                           'extraction.html#load_model',
+                                                                                                           'spear_tts_pytorch/extract_stoks_txts.py'),
+                                                      'spear_tts_pytorch.extract_stoks_txts.transcribe': ( '4. whisper semantic and text '
+                                                                                                           'token '
+                                                                                                           'extraction.html#transcribe',
+                                                                                                           'spear_tts_pytorch/extract_stoks_txts.py')},
+            'spear_tts_pytorch.modules': { 'spear_tts_pytorch.modules.Decoder': ( 'a. neural modules.html#decoder',
+                                                                                  'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.Decoder.__init__': ( 'a. neural modules.html#decoder.__init__',
+                                                                                           'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.Decoder.forward': ( 'a. neural modules.html#decoder.forward',
+                                                                                          'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.Encoder': ( 'a. neural modules.html#encoder',
+                                                                                  'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.Encoder.__init__': ( 'a. neural modules.html#encoder.__init__',
+                                                                                           'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.Encoder.forward': ( 'a. neural modules.html#encoder.forward',
+                                                                                          'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.LayerNorm': ( 'a. neural modules.html#layernorm',
+                                                                                    'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.LayerNorm.forward': ( 'a. neural modules.html#layernorm.forward',
+                                                                                            'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.Linear': ( 'a. neural modules.html#linear',
+                                                                                 'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.Linear.forward': ( 'a. neural modules.html#linear.forward',
+                                                                                         'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.MultiHeadAttention': ( 'a. neural modules.html#multiheadattention',
+                                                                                             'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.MultiHeadAttention.__init__': ( 'a. neural '
+                                                                                                      'modules.html#multiheadattention.__init__',
+                                                                                                      'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.MultiHeadAttention.forward': ( 'a. neural '
+                                                                                                     'modules.html#multiheadattention.forward',
+                                                                                                     'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.MultiHeadAttention.qkv_attention': ( 'a. neural '
+                                                                                                           'modules.html#multiheadattention.qkv_attention',
+                                                                                                           'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.ResidualAttentionBlock': ( 'a. neural '
+                                                                                                 'modules.html#residualattentionblock',
+                                                                                                 'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.ResidualAttentionBlock.__init__': ( 'a. neural '
+                                                                                                          'modules.html#residualattentionblock.__init__',
+                                                                                                          'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.ResidualAttentionBlock.forward': ( 'a. neural '
+                                                                                                         'modules.html#residualattentionblock.forward',
+                                                                                                         'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.SumDecoder': ( 'a. neural modules.html#sumdecoder',
+                                                                                     'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.SumDecoder.__init__': ( 'a. neural modules.html#sumdecoder.__init__',
+                                                                                              'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.SumDecoder.forward': ( 'a. neural modules.html#sumdecoder.forward',
+                                                                                             'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.init_transformer': ( 'a. neural modules.html#init_transformer',
+                                                                                           'spear_tts_pytorch/modules.py'),
+                                           'spear_tts_pytorch.modules.sinusoids': ( 'a. neural modules.html#sinusoids',
+                                                                                    'spear_tts_pytorch/modules.py')},
+            'spear_tts_pytorch.s2a_encsum_3kbps': { 'spear_tts_pytorch.s2a_encsum_3kbps.SAARTransformer': ( '3b. semantic to acoustic '
+                                                                                                            'token modeling (enc-sum) '
+                                                                                                            '3kbps.html#saartransformer',
+                                                                                                            'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SAARTransformer.__init__': ( '3b. semantic to '
+                                                                                                                     'acoustic token '
+                                                                                                                     'modeling (enc-sum) '
+                                                                                                                     '3kbps.html#saartransformer.__init__',
+                                                                                                                     'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SAARTransformer.forward': ( '3b. semantic to '
+                                                                                                                    'acoustic token '
+                                                                                                                    'modeling (enc-sum) '
+                                                                                                                    '3kbps.html#saartransformer.forward',
+                                                                                                                    'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SADataset': ( '3b. semantic to acoustic token '
+                                                                                                      'modeling (enc-sum) '
+                                                                                                      '3kbps.html#sadataset',
+                                                                                                      'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SADataset.S_tokens': ( '3b. semantic to acoustic '
+                                                                                                               'token modeling (enc-sum) '
+                                                                                                               '3kbps.html#sadataset.s_tokens',
+                                                                                                               'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SADataset.__getitem__': ( '3b. semantic to '
+                                                                                                                  'acoustic token modeling '
+                                                                                                                  '(enc-sum) '
+                                                                                                                  '3kbps.html#sadataset.__getitem__',
+                                                                                                                  'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SADataset.__init__': ( '3b. semantic to acoustic '
+                                                                                                               'token modeling (enc-sum) '
+                                                                                                               '3kbps.html#sadataset.__init__',
+                                                                                                               'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SADataset.__len__': ( '3b. semantic to acoustic '
+                                                                                                              'token modeling (enc-sum) '
+                                                                                                              '3kbps.html#sadataset.__len__',
+                                                                                                              'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SADataset.__repr__': ( '3b. semantic to acoustic '
+                                                                                                               'token modeling (enc-sum) '
+                                                                                                               '3kbps.html#sadataset.__repr__',
+                                                                                                               'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SADataset.hours': ( '3b. semantic to acoustic '
+                                                                                                            'token modeling (enc-sum) '
+                                                                                                            '3kbps.html#sadataset.hours',
+                                                                                                            'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SATask': ( '3b. semantic to acoustic token '
+                                                                                                   'modeling (enc-sum) 3kbps.html#satask',
+                                                                                                   'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SATask.__init__': ( '3b. semantic to acoustic '
+                                                                                                            'token modeling (enc-sum) '
+                                                                                                            '3kbps.html#satask.__init__',
+                                                                                                            'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SATask.configure_optimizers': ( '3b. semantic to '
+                                                                                                                        'acoustic token '
+                                                                                                                        'modeling '
+                                                                                                                        '(enc-sum) '
+                                                                                                                        '3kbps.html#satask.configure_optimizers',
+                                                                                                                        'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SATask.test_step': ( '3b. semantic to acoustic '
+                                                                                                             'token modeling (enc-sum) '
+                                                                                                             '3kbps.html#satask.test_step',
+                                                                                                             'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SATask.training_step': ( '3b. semantic to acoustic '
+                                                                                                                 'token modeling (enc-sum) '
+                                                                                                                 '3kbps.html#satask.training_step',
+                                                                                                                 'spear_tts_pytorch/s2a_encsum_3kbps.py'),
+                                                    'spear_tts_pytorch.s2a_encsum_3kbps.SATask.validation_step': ( '3b. semantic to '
+                                                                                                                   'acoustic token '
+                                                                                                                   'modeling (enc-sum) '
+                                                                                                                   '3kbps.html#satask.validation_step',
+                                                                                                                   'spear_tts_pytorch/s2a_encsum_3kbps.py')},
+            'spear_tts_pytorch.t2s': { 'spear_tts_pytorch.t2s.SADataset': ( '5. text to semantic token modeling.html#sadataset',
+                                                                            'spear_tts_pytorch/t2s.py'),
+                                       'spear_tts_pytorch.t2s.SADataset.__getitem__': ( '5. text to semantic token '
+                                                                                        'modeling.html#sadataset.__getitem__',
+                                                                                        'spear_tts_pytorch/t2s.py'),
+                                       'spear_tts_pytorch.t2s.SADataset.__init__': ( '5. text to semantic token '
+                                                                                     'modeling.html#sadataset.__init__',
+                                                                                     'spear_tts_pytorch/t2s.py'),
+                                       'spear_tts_pytorch.t2s.SADataset.__len__': ( '5. text to semantic token '
+                                                                                    'modeling.html#sadataset.__len__',
+                                                                                    'spear_tts_pytorch/t2s.py'),
+                                       'spear_tts_pytorch.t2s.SADataset.__repr__': ( '5. text to semantic token '
+                                                                                     'modeling.html#sadataset.__repr__',
+                                                                                     'spear_tts_pytorch/t2s.py'),
+                                       'spear_tts_pytorch.t2s.TSARTransformer': ( '5. text to semantic token modeling.html#tsartransformer',
+                                                                                  'spear_tts_pytorch/t2s.py'),
+                                       'spear_tts_pytorch.t2s.TSARTransformer.__init__': ( '5. text to semantic token '
+                                                                                           'modeling.html#tsartransformer.__init__',
+                                                                                           'spear_tts_pytorch/t2s.py'),
+                                       'spear_tts_pytorch.t2s.TSARTransformer.forward': ( '5. text to semantic token '
+                                                                                          'modeling.html#tsartransformer.forward',
+                                                                                          'spear_tts_pytorch/t2s.py'),
+                                       'spear_tts_pytorch.t2s.load_data': ( '5. text to semantic token modeling.html#load_data',
+                                                                            'spear_tts_pytorch/t2s.py'),
+                                       'spear_tts_pytorch.t2s.load_datasets': ( '5. text to semantic token modeling.html#load_datasets',
+                                                                                'spear_tts_pytorch/t2s.py'),
+                                       'spear_tts_pytorch.t2s.make_model': ( '5. text to semantic token modeling.html#make_model',
+                                                                             'spear_tts_pytorch/t2s.py')},
+            'spear_tts_pytorch.train': { 'spear_tts_pytorch.train.SimpleVisual': ( 'b1. training.html#simplevisual',
+                                                                                   'spear_tts_pytorch/train.py'),
+                                         'spear_tts_pytorch.train.SimpleVisual.__init__': ( 'b1. training.html#simplevisual.__init__',
+                                                                                            'spear_tts_pytorch/train.py'),
+                                         'spear_tts_pytorch.train.SimpleVisual.add_data': ( 'b1. training.html#simplevisual.add_data',
+                                                                                            'spear_tts_pytorch/train.py'),
+                                         'spear_tts_pytorch.train.SimpleVisual.hide': ( 'b1. training.html#simplevisual.hide',
+                                                                                        'spear_tts_pytorch/train.py'),
+                                         'spear_tts_pytorch.train.SimpleVisual.plot': ( 'b1. training.html#simplevisual.plot',
+                                                                                        'spear_tts_pytorch/train.py'),
+                                         'spear_tts_pytorch.train.SimpleVisual.show': ( 'b1. training.html#simplevisual.show',
+                                                                                        'spear_tts_pytorch/train.py'),
+                                         'spear_tts_pytorch.train.train': ('b1. training.html#train', 'spear_tts_pytorch/train.py')},
+            'spear_tts_pytorch.train_multi': { 'spear_tts_pytorch.train_multi.TrainingTask': ( 'b2. training (lightning).html#trainingtask',
+                                                                                               'spear_tts_pytorch/train_multi.py'),
+                                               'spear_tts_pytorch.train_multi.TrainingTask.__init__': ( 'b2. training '
+                                                                                                        '(lightning).html#trainingtask.__init__',
+                                                                                                        'spear_tts_pytorch/train_multi.py'),
+                                               'spear_tts_pytorch.train_multi.TrainingTask.configure_optimizers': ( 'b2. training '
+                                                                                                                    '(lightning).html#trainingtask.configure_optimizers',
+                                                                                                                    'spear_tts_pytorch/train_multi.py'),
+                                               'spear_tts_pytorch.train_multi.TrainingTask.test_step': ( 'b2. training '
+                                                                                                         '(lightning).html#trainingtask.test_step',
+                                                                                                         'spear_tts_pytorch/train_multi.py'),
+                                               'spear_tts_pytorch.train_multi.TrainingTask.training_step': ( 'b2. training '
+                                                                                                             '(lightning).html#trainingtask.training_step',
+                                                                                                             'spear_tts_pytorch/train_multi.py'),
+                                               'spear_tts_pytorch.train_multi.TrainingTask.validation_step': ( 'b2. training '
+                                                                                                               '(lightning).html#trainingtask.validation_step',
+                                                                                                               'spear_tts_pytorch/train_multi.py'),
+                                               'spear_tts_pytorch.train_multi.parse_and_call': ( 'b2. training '
+                                                                                                 '(lightning).html#parse_and_call',
+                                                                                                 'spear_tts_pytorch/train_multi.py')}}}
