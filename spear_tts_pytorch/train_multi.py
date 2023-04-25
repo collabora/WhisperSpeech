@@ -99,6 +99,19 @@ class TrainingTask(pl.LightningModule):
         return test_loss
 
 # %% ../nbs/B2. Training (Lightning).ipynb 4
+from fastcore.script import anno_parser
+import shlex
+
+# watch out: we can only pass Python values as keyword arguments (not positional)
+# everything else has to be a string
+def parse_and_call(fun, args, kwargs={}):
+    p = anno_parser(fun)
+    args = p.parse_args(args).__dict__
+    args.update({k:v for k, v in kwargs.items()})
+    args.pop('xtra'); args.pop('pdb')
+    return fun(**args)
+
+# %% ../nbs/B2. Training (Lightning).ipynb 6
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -112,13 +125,12 @@ parser.add_argument('--epochs', type=int, default=10, help='total training epoch
 parser.add_argument('--weight-decay', type=float, default=1e-2, help='optimizer weight decay')
 parser.add_argument('--lr0', type=float, default=1e-4, help='optimizer initial learning rate')
 parser.add_argument('--pct-start', type=float, default=None, help='optimizer percentage of total number of epochs when learning rate rises during one cycle (defaults to 10k updates)')
-parser.add_argument('--model-size', type=str, default='small', help='model size')
 
 args = parser.parse_args().__dict__
 
-task_name: str = args.pop("task")
-input_dir: str = args.pop("input_dir")
-model_size: str = args.pop("model_size")
+task_args: list = shlex.split(args.pop("task"))
+task_name, task_args = task_args[0], task_args[1:]
+input_args: list = shlex.split(args.pop("input_dir"))
 checkpoint_dir: str = args.pop("checkpoint_dir")
 num_workers: int = args.pop("workers")
 batch_size: int = args.pop("batch_size")
@@ -153,7 +165,7 @@ from torch.utils.data import DataLoader
 
 task = importlib.import_module("spear_tts_pytorch."+task_name)
 
-train_ds, val_ds = task.load_datasets(input_dir)
+train_ds, val_ds = parse_and_call(task.load_datasets, input_args)
 
 val_loader = DataLoader(val_ds,
     batch_size=batch_size,
@@ -168,7 +180,7 @@ train_loader = DataLoader(train_ds,
     shuffle=True,
     pin_memory=True)
 
-model = task.make_model(model_size) 
+model = parse_and_call(task.make_model, task_args, dict(dataset=train_ds))
 
 task = TrainingTask(model, model_hparams=hyp_params)
 
