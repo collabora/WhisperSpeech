@@ -29,9 +29,11 @@ torch.set_float32_matmul_precision('medium')
 
 # %% ../nbs/B1. Training.ipynb 3
 class SimpleVisual:
-    def __init__ (self, model, total_steps):
+    def __init__ (self, model, masterbar, total_steps):
         self.model = model
+        self.masterbar = masterbar
         self.total_steps = total_steps
+        self.epochs = total_steps // len(masterbar)
         
         gs = plt.GridSpec(2, 1, height_ratios=[3,1])
         graph_fig = plt.figure(figsize=(10,6))
@@ -47,6 +49,8 @@ class SimpleVisual:
         self.lr_history = []
             
     def show(self):
+        self.start_t = time.time()
+        self.masterbar.write(["samples", "train", "val", "time"], table=True)
         self.graph_out = display(self.graph_fig, display_id=True, clear=True)
     
     def hide(self):
@@ -72,6 +76,14 @@ class SimpleVisual:
         self.lr_history.append(lr)
         self.plot()
 
+    def add_table_row(self, it, avg_train_loss, val_loss):
+        elapsed_t = time.time() - self.start_t
+        mb.write([it, f"{avg_train_loss:.5f}", f"{val_loss:.5f}", fastprogress.core.format_time(elapsed_t)], table=True)
+    
+    def on_iter(self, it, train_loss, val_los):
+        epoch = math.ceil(it / self.total_steps * self.epochs)
+        bar.comment = f"#{epoch}/{self.epochs} loss: {avg_train_loss:.3f} / {val_loss:.3f}"
+
 # %% ../nbs/B1. Training.ipynb 4
 def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4,
           weight_decay=0.1, pct_start=None, epochs=10,
@@ -84,12 +96,17 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4,
     if chkpt_every_iters is None:
         chkpt_every_iters = table_row_every_iters
     
-    visual = visual_class(model, epochs*len(train))
+    mb = master_bar(range(epochs))
+    visual = visual_class(model, mb, epochs*len(train))
+    model.visual = visual
     
     Path(checkpoint_path).mkdir(exist_ok=True)
 
     train_loader = DataLoader(train, batch_size=bs, num_workers=dl_workers, pin_memory=True, drop_last=False, shuffle=True)
     val_loader = DataLoader(val, batch_size=bs, num_workers=dl_workers, pin_memory=True, drop_last=False)
+    
+    val_loss = torch.nan
+    avg_train_loss = torch.nan
     
     try:
         scheduler = None
@@ -114,23 +131,13 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4,
             final_div_factor=25)
         
         it = 0
-        start_t = time.time()
         next_val_it = it + 50
         next_chkpt_it = chkpt_every_iters
         next_table_it = table_row_every_iters
-        
-        val_loss = torch.nan
-        avg_train_loss = torch.nan
-        
+                
         visual.show()
 
-        mb = master_bar(range(epochs))
-        mb.write(["samples", "train", "val", "time"], table=True)
         running_loss = [0]
-        
-        def add_table_row():
-            elapsed_t = time.time() - start_t
-            mb.write([it, f"{avg_train_loss:.5f}", f"{val_loss:.5f}", fastprogress.core.format_time(elapsed_t)], table=True)
         
         for epoch in mb:
             bar = progress_bar(train_loader, parent=mb)
@@ -183,16 +190,16 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4,
                         visual.add_data(it, scheduler.get_last_lr(), avg_train_loss, val_loss)
                 
                 if it >= next_table_it:
-                    add_table_row()
+                    visual.add_table_row(it, avg_train_loss, val_loss)
                     next_table_it += table_row_every_iters
 
                 it += bs
-                bar.comment = f"#{epoch+1}/{epochs} loss: {avg_train_loss:.3f} / {val_loss:.3f}"
+                visual.on_iter(bar, it, avg_train_loss, val_loss)
     except KeyboardInterrupt:
         mb.write(f"interrupted")
         mb.show()
         pass
     finally:
-        add_table_row()
+        visual.add_table_row(it, avg_train_loss, val_loss)
         mb.show()
         visual.hide()

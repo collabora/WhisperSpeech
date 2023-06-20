@@ -11,6 +11,7 @@ from pathlib import Path
 
 from fastprogress import progress_bar, master_bar
 import fastprogress
+import wandb
 
 import numpy as np
 import pylab as plt
@@ -104,11 +105,13 @@ import shlex
 
 # watch out: we can only pass Python values as keyword arguments (not positional)
 # everything else has to be a string
-def parse_and_call(fun, args, kwargs={}):
+def parse_and_call(name, fun, args, kwargs={}):
     p = anno_parser(fun)
     args = p.parse_args(args).__dict__
-    args.update({k:v for k, v in kwargs.items()})
     args.pop('xtra'); args.pop('pdb')
+    if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
+        wandb_logger.experiment.config[name] = {k:v for k,v in args.items()}
+    args.update({k:v for k, v in kwargs.items()})
     return fun(**args)
 
 # %% ../nbs/B2. Training (Lightning).ipynb 6
@@ -150,6 +153,8 @@ import importlib
 torch.set_float32_matmul_precision('medium')
 
 wandb_logger = WandbLogger(project=f"SpearTTS-{task_name}")
+if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
+    wandb_logger.experiment.config.update(hyp_params)
 
 ckpt_callback = pl.callbacks.ModelCheckpoint(
      dirpath=f'{task_name}-{epochs}e',
@@ -165,7 +170,7 @@ from torch.utils.data import DataLoader
 
 task = importlib.import_module("spear_tts_pytorch."+task_name)
 
-train_ds, val_ds = parse_and_call(task.load_datasets, input_args)
+train_ds, val_ds = parse_and_call('dataset', task.load_datasets, input_args)
 
 val_loader = DataLoader(val_ds,
     batch_size=batch_size,
@@ -180,7 +185,7 @@ train_loader = DataLoader(train_ds,
     shuffle=True,
     pin_memory=True)
 
-model = parse_and_call(task.make_model, task_args, dict(dataset=train_ds))
+model = parse_and_call('model', task.make_model, task_args, dict(dataset=train_ds))
 
 task = TrainingTask(model, model_hparams=hyp_params)
 
