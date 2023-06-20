@@ -44,7 +44,7 @@ class TrainingTask(pl.LightningModule):
                     wd_params.add(m.bias)
         no_wd_params = all_params - wd_params
 
-        optimizer = torch.optim.AdamW(lr=self.model_hparams['lr0'], betas=(0.9, 0.95), fused=True,
+        optimizer = torch.optim.AdamW(lr=self.model_hparams['lr0'], betas=(0.9, 0.95),
             params=[
                 {"params": list(wd_params), "weight_decay": self.model_hparams['weight_decay']},
                 {"params": list(no_wd_params), "weight_decay": 0.0},
@@ -125,6 +125,7 @@ parser.add_argument("--checkpoint-dir", type=str, default="./checkpoints/", help
 parser.add_argument('--epochs', type=int, default=10, help='total training epochs')
 parser.add_argument('--weight-decay', type=float, default=1e-2, help='optimizer weight decay')
 parser.add_argument('--lr0', type=float, default=1e-4, help='optimizer initial learning rate')
+parser.add_argument('--clip-gradient-norm', type=float, default=None, help='enable gradient norm clipping')
 parser.add_argument('--warmup-steps', type=int, default=10000, help='total number steps during which the learning rate rises (defaults to 10k updates)')
 
 args = parser.parse_args().__dict__
@@ -140,6 +141,7 @@ epochs: int = args.pop("epochs")
 hyp_params = {}
 hyp_params['warmup_steps'] = args['warmup_steps']
 hyp_params['weight_decay'] = args['weight_decay']
+hyp_params['clip_gradient_norm'] = args['clip_gradient_norm']
 hyp_params['lr0'] = args['lr0']
 hyp_params['epochs'] = epochs
 
@@ -191,6 +193,7 @@ trainer = pl.Trainer(max_epochs=hyp_params['epochs'],
                   accelerator="gpu",
                   profiler="simple",
                   precision='16-mixed',
+                  gradient_clip_val=hyp_params['clip_gradient_norm'],
                   val_check_interval=1/10,
                   enable_checkpointing=True,
                   logger=wandb_logger,

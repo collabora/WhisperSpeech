@@ -151,6 +151,12 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
 
                 with record_function("backward"):
                     scaler.scale(loss).backward()
+
+                    if clip_gradient_norm:
+                        scaler.unscale_(optimizer)
+                        # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
+                        torch.nn.utils.clip_grad_norm_(model.parameters(), clip_gradient_norm)
+
                     scaler.step(optimizer)
                     scaler.update()
 
