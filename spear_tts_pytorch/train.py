@@ -85,14 +85,12 @@ class SimpleVisual:
         bar.comment = f"#{epoch}/{self.epochs} loss: {avg_train_loss:.3f} / {val_loss:.3f}"
 
 # %% ../nbs/B1. Training.ipynb 4
-def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4,
-          weight_decay=0.1, pct_start=None, epochs=10,
+def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_last=False,
+          weight_decay=0.1, warmup_steps=10000, epochs=10, clip_gradient_norm=None,
           dl_workers=8, visual_class = SimpleVisual, profiler=None,
           run_valid_every_iters=8000, table_row_every_iters=80000, chkpt_every_iters=None,
           device="cuda"):
-    if pct_start is None:
-        # 10k updates by default
-        pct_start = min(0.3, 10000 / (epochs * len(train) / bs))
+    pct_start = min(0.3, warmup_steps / (epochs * len(train) / bs))
     if chkpt_every_iters is None:
         chkpt_every_iters = table_row_every_iters
     
@@ -102,8 +100,8 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4,
     
     Path(checkpoint_path).mkdir(exist_ok=True)
 
-    train_loader = DataLoader(train, batch_size=bs, num_workers=dl_workers, pin_memory=True, drop_last=False, shuffle=True)
-    val_loader = DataLoader(val, batch_size=bs, num_workers=dl_workers, pin_memory=True, drop_last=False)
+    train_loader = DataLoader(train, batch_size=bs, num_workers=dl_workers, pin_memory=True, drop_last=drop_last, shuffle=True)
+    val_loader = DataLoader(val, batch_size=bs, num_workers=dl_workers, pin_memory=True, drop_last=drop_last)
     
     val_loss = torch.nan
     avg_train_loss = torch.nan

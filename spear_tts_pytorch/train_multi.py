@@ -62,10 +62,8 @@ class TrainingTask(pl.LightningModule):
             num_steps = math.ceil(dataset_size / (self.trainer.accumulate_grad_batches * num_devices))
             return num_steps
         
-        if self.model_hparams['pct_start'] is None:
-            # 10k updates by default
-            total_steps = self.model_hparams['epochs'] * num_steps_per_epoch()
-            self.model_hparams['pct_start'] = min(0.3, 10000 / total_steps)
+        total_steps = self.model_hparams['epochs'] * num_steps_per_epoch()
+        self.model_hparams['pct_start'] = min(0.3, self.model_hparams['warmup_steps'] / total_steps)
 
         lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
@@ -127,7 +125,7 @@ parser.add_argument("--checkpoint-dir", type=str, default="./checkpoints/", help
 parser.add_argument('--epochs', type=int, default=10, help='total training epochs')
 parser.add_argument('--weight-decay', type=float, default=1e-2, help='optimizer weight decay')
 parser.add_argument('--lr0', type=float, default=1e-4, help='optimizer initial learning rate')
-parser.add_argument('--pct-start', type=float, default=None, help='optimizer percentage of total number of epochs when learning rate rises during one cycle (defaults to 10k updates)')
+parser.add_argument('--warmup-steps', type=int, default=10000, help='total number steps during which the learning rate rises (defaults to 10k updates)')
 
 args = parser.parse_args().__dict__
 
@@ -140,7 +138,7 @@ batch_size: int = args.pop("batch_size")
 epochs: int = args.pop("epochs")
 
 hyp_params = {}
-hyp_params['pct_start'] = args['pct_start']
+hyp_params['warmup_steps'] = args['warmup_steps']
 hyp_params['weight_decay'] = args['weight_decay']
 hyp_params['lr0'] = args['lr0']
 hyp_params['epochs'] = epochs
