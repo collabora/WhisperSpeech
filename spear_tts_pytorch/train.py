@@ -22,6 +22,11 @@ import torch.nn as nn
 from torch.utils.data.dataloader import DataLoader
 from torch.profiler import record_function
 
+torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.enabled = True
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.set_float32_matmul_precision('medium')
+
 # %% ../nbs/B1. Training.ipynb 3
 class SimpleVisual:
     def __init__ (self, model, total_steps):
