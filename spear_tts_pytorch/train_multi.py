@@ -77,22 +77,19 @@ class TrainingTask(pl.LightningModule):
         return [optimizer], [{'scheduler': lr_scheduler, 'interval': 'step'}]
     
     def training_step(self, train_batch, batch_idx):
-        x, y = train_batch
-        train_logits, train_loss = self.model.forward(x, y)
+        train_logits, train_loss = self.model.forward(*train_batch)
 
         self.log("train_loss", train_loss, sync_dist=True)
         return train_loss
     
     def validation_step(self, val_batch, batch_idx):
-        x, y = val_batch
-        val_logits, val_loss = self.model.forward(x, y)
+        val_logits, val_loss = self.model.forward(*val_batch)
 
         self.log("val_loss", val_loss, sync_dist=True)
         return val_loss
     
     def test_step(self, val_batch, batch_idx):
-        x, y = val_batch
-        test_logits, test_loss = self.model.forward(x, y)
+        test_logits, test_loss = self.model.forward(*val_batch)
 
         self.log("test_loss", test_loss, sync_dist=True)
         return test_loss
