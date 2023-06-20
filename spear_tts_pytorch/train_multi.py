@@ -85,7 +85,14 @@ class TrainingTask(pl.LightningModule):
     def validation_step(self, val_batch, batch_idx):
         val_logits, val_loss = self.model.forward(*val_batch)
 
-        self.log("val_loss", val_loss, sync_dist=True)
+        logs = dict(val_loss = val_loss)
+        if hasattr(self.model, 'val_true'):
+            for i,acc in enumerate((self.model.val_true / self.model.val_total).cpu().numpy()):
+                logs[f'acc/acc_{i}'] = acc
+            for i,pacc in enumerate((self.model.pval_true / self.model.pval_total).cpu().numpy()):
+                logs[f'acc/pacc_{i}'] = pacc
+        
+        self.log_dict(logs, sync_dist=True)
         return val_loss
     
     def test_step(self, val_batch, batch_idx):
