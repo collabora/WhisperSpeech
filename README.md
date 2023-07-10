@@ -54,7 +54,7 @@ https://user-images.githubusercontent.com/107984/229439418-92575be4-a892-40bb-97
 Pros:
  
  - Whisper training should be a lot better at extracting semantic information than a masked language model with
-   contrastive loss (w2v-VERT)
+   contrastive loss (w2v-BERT)
  - it's pretrained on 600k hours of multilingual speech (vs. 60k for w2v-BERT used in the paper)
  - freely available
 
