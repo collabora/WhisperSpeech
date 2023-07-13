@@ -141,6 +141,7 @@ parser.add_argument('--validations_per_epoch', type=int, default=10, help='how m
 parser.add_argument('--weight-decay', type=float, default=1e-2, help='optimizer weight decay')
 parser.add_argument('--lr0', type=float, default=1e-4, help='optimizer initial learning rate')
 parser.add_argument('--clip-gradient-norm', type=float, default=None, help='enable gradient norm clipping')
+parser.add_argument('--accumulate-grad-batches', type=int, default=1, help='perform the optimizer step only after going through several batches of samples')
 parser.add_argument('--warmup-steps', type=int, default=10000, help='total number steps during which the learning rate rises (defaults to 10k updates)')
 
 args = parser.parse_args().__dict__
@@ -158,6 +159,7 @@ hyp_params = {}
 hyp_params['warmup_steps'] = args['warmup_steps']
 hyp_params['weight_decay'] = args['weight_decay']
 hyp_params['clip_gradient_norm'] = args['clip_gradient_norm']
+hyp_params['accumulate_grad_batches'] = args['accumulate_grad_batches']
 hyp_params['lr0'] = args['lr0']
 hyp_params['epochs'] = epochs
 
@@ -208,6 +210,7 @@ trainer = pl.Trainer(max_epochs=hyp_params['epochs'],
                   profiler="simple",
                   precision='16-mixed',
                   gradient_clip_val=hyp_params['clip_gradient_norm'],
+                  accumulate_grad_batches=hyp_params['accumulate_grad_batches'],
                   val_check_interval=1/validations_per_epoch,
                   enable_checkpointing=True,
                   logger=wandb_logger,
