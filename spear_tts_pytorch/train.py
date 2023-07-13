@@ -33,7 +33,7 @@ class SimpleVisual:
         self.model = model
         self.masterbar = masterbar
         self.total_steps = total_steps
-        self.epochs = total_steps // len(masterbar)
+        self.epochs = total_steps // masterbar.main_bar.total
         
         gs = plt.GridSpec(2, 1, height_ratios=[3,1])
         graph_fig = plt.figure(figsize=(10,6))
@@ -78,9 +78,9 @@ class SimpleVisual:
 
     def add_table_row(self, it, avg_train_loss, val_loss):
         elapsed_t = time.time() - self.start_t
-        mb.write([it, f"{avg_train_loss:.5f}", f"{val_loss:.5f}", fastprogress.core.format_time(elapsed_t)], table=True)
+        self.masterbar.write([it, f"{avg_train_loss:.5f}", f"{val_loss:.5f}", fastprogress.core.format_time(elapsed_t)], table=True)
     
-    def on_iter(self, it, train_loss, val_los):
+    def on_iter(self, bar, it, avg_train_loss, val_loss):
         epoch = math.ceil(it / self.total_steps * self.epochs)
         bar.comment = f"#{epoch}/{self.epochs} loss: {avg_train_loss:.3f} / {val_loss:.3f}"
 
