@@ -137,6 +137,7 @@ parser.add_argument('--workers', type=int, default=8, help='max dataloader worke
 parser.add_argument('--input-dir', type=str, default='', help='input data path') # fixed in the model for now
 parser.add_argument("--checkpoint-dir", type=str, default="./checkpoints/", help="directory to save the checkpoints")
 parser.add_argument('--epochs', type=int, default=10, help='total training epochs')
+parser.add_argument('--validations_per_epoch', type=int, default=10, help='how many times to run validation during an epoch')
 parser.add_argument('--weight-decay', type=float, default=1e-2, help='optimizer weight decay')
 parser.add_argument('--lr0', type=float, default=1e-4, help='optimizer initial learning rate')
 parser.add_argument('--clip-gradient-norm', type=float, default=None, help='enable gradient norm clipping')
@@ -151,6 +152,7 @@ checkpoint_dir: str = args.pop("checkpoint_dir")
 num_workers: int = args.pop("workers")
 batch_size: int = args.pop("batch_size")
 epochs: int = args.pop("epochs")
+validations_per_epoch: int = args.pop("validations_per_epoch")
 
 hyp_params = {}
 hyp_params['warmup_steps'] = args['warmup_steps']
@@ -206,7 +208,7 @@ trainer = pl.Trainer(max_epochs=hyp_params['epochs'],
                   profiler="simple",
                   precision='16-mixed',
                   gradient_clip_val=hyp_params['clip_gradient_norm'],
-                  val_check_interval=1/10,
+                  val_check_interval=1/validations_per_epoch,
                   enable_checkpointing=True,
                   logger=wandb_logger,
                   callbacks=[ckpt_callback, lr_monitor_callback])
