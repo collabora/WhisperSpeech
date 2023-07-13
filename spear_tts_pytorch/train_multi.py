@@ -117,11 +117,11 @@ import shlex
 
 # watch out: we can only pass Python values as keyword arguments (not positional)
 # everything else has to be a string
-def parse_and_call(name, fun, args, kwargs={}):
+def parse_and_call(name, fun, args, kwargs={}, log_to_wandb=True):
     p = anno_parser(fun)
     args = p.parse_args(args).__dict__
     args.pop('xtra'); args.pop('pdb')
-    if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
+    if log_to_wandb and type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
         wandb_logger.experiment.config[name] = {k:v for k,v in args.items()}
     args.update({k:v for k, v in kwargs.items()})
     return fun(**args)
@@ -167,8 +167,6 @@ import importlib
 torch.set_float32_matmul_precision('medium')
 
 wandb_logger = WandbLogger(project=f"SpearTTS-{task_name}")
-if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
-    wandb_logger.experiment.config.update(hyp_params)
 
 ckpt_callback = pl.callbacks.ModelCheckpoint(
      dirpath=f'{task_name}-{epochs}e',
@@ -212,5 +210,8 @@ trainer = pl.Trainer(max_epochs=hyp_params['epochs'],
                   enable_checkpointing=True,
                   logger=wandb_logger,
                   callbacks=[ckpt_callback, lr_monitor_callback])
+
+if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
+    wandb_logger.experiment.config.update(hyp_params)
 
 trainer.fit(model=task, train_dataloaders=train_loader, val_dataloaders=val_loader)
