@@ -14,6 +14,7 @@ import fastprogress
 
 import numpy as np
 import pylab as plt
+import math
 
 import IPython
 
@@ -108,21 +109,31 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
     
     try:
         scheduler = None
-        all_params = set(model.parameters())
-        wd_params = set()
-        for m in model.modules():
-            if isinstance(m, (nn.Linear, nn.Conv1d)):
-                wd_params.add(m.weight)
-                if m.bias is not None:
-                    wd_params.add(m.bias)
-        no_wd_params = all_params - wd_params
 
-        optimizer = torch.optim.AdamW(lr=lr, betas=(0.9, 0.95), fused=True,
-            params=[
-                {"params": list(wd_params), "weight_decay": weight_decay},
-                {"params": list(no_wd_params), "weight_decay": 0.0},
-            ]
-                                     )
+        all_params = set(model.parameters())
+        customized_params = set()
+        groups = []
+        group_map = {}
+        for name,m in model.named_modules():
+            if hasattr(m, 'no_weight_decay') or hasattr(m, 'lr_scale'):
+                customized_params |= set(m.parameters())
+                m_wd = 0 if hasattr(m, 'no_weight_decay') else weight_decay
+                m_lr = lr * getattr(m, 'lr_scale', 1)
+                group = group_map.get((m_wd, m_lr), None)
+                if not group:
+                    group = {"params": [], "names": [], "weight_decay": m_wd, "lr": m_lr}
+                    groups.append(group)
+                    group_map[(m_wd, m_lr)] = group
+                group['params'] += m.parameters()
+                group['names'].append(name)
+                
+        other_params = all_params - customized_params
+        
+        param_groups = groups + [
+            {"names": ["other"], "params": list(other_params), "weight_decay": weight_decay },
+        ]
+
+        optimizer = torch.optim.AdamW(lr=lr, betas=(0.9, 0.95), fused=device!='cpu', params=param_groups)
         scaler = torch.cuda.amp.GradScaler(enabled=half)
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer, max_lr=lr, pct_start=pct_start, steps_per_epoch=len(train_loader), epochs=epochs,

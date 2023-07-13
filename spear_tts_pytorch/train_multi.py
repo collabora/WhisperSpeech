@@ -35,21 +35,31 @@ class TrainingTask(pl.LightningModule):
     
     def configure_optimizers(self):
         """ Initialize AdamW optimizer"""
-        all_params = set(self.model.parameters())
-        wd_params = set()
-        for m in self.model.modules():
-            if isinstance(m, (nn.Linear, nn.Conv1d)):
-                wd_params.add(m.weight)
-                if m.bias is not None:
-                    wd_params.add(m.bias)
-        no_wd_params = all_params - wd_params
+        all_params = set(model.parameters())
+        customized_params = set()
+        groups = []
+        group_map = {}
+        for name,m in model.named_modules():
+            if hasattr(m, 'no_weight_decay') or hasattr(m, 'lr_scale'):
+                customized_params |= set(m.parameters())
+                m_wd = 0 if hasattr(m, 'no_weight_decay') else weight_decay
+                m_lr = lr * getattr(m, 'lr_scale', 1)
+                group = group_map.get((m_wd, m_lr), None)
+                if not group:
+                    group = {"params": [], "names": [], "weight_decay": m_wd, "lr": m_lr}
+                    groups.append(group)
+                    group_map[(m_wd, m_lr)] = group
+                group['params'] += m.parameters()
+                group['names'].append(name)
+                
+        other_params = all_params - customized_params
+        
+        param_groups = groups + [
+            {"names": ["other"], "params": list(other_params), "weight_decay": weight_decay },
+        ]
 
         optimizer = torch.optim.AdamW(lr=self.model_hparams['lr0'], betas=(0.9, 0.95),
-            params=[
-                {"params": list(wd_params), "weight_decay": self.model_hparams['weight_decay']},
-                {"params": list(no_wd_params), "weight_decay": 0.0},
-            ]
-        )
+                                      fused=True, params=param_groups)
         
         # modified from https://github.com/Lightning-AI/lightning/issues/5449#issuecomment-1501597319
         def num_steps_per_epoch() -> int:
