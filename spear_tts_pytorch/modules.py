@@ -12,6 +12,8 @@ from torch import Tensor, nn
 import torch.nn.functional as F
 from typing import Dict, Iterable, Optional
 
+import xformers.ops as xops
+
 # %% ../nbs/A. Neural modules.ipynb 3
 # Code in this file is mostly borrowed from
 # https://github.com/openai/whisper/blob/main/whisper/model.py
@@ -77,11 +79,12 @@ class MultiHeadAttention(nn.Module):
             k = kv_cache[self.key]
             v = kv_cache[self.value]
 
-        wv, qk = self.qkv_attention(q, k, v, causal)
+        wv, qk = self.qkv_attention_pth20(q, k, v, causal)
+#         wv, qk = self.qkv_attention_xformers(q, k, v, causal)
         
         return self.out(wv), qk
 
-    def qkv_attention(
+    def qkv_attention_pth20(
         self, q: Tensor, k: Tensor, v: Tensor, causal = False
     ):
         n_batch, n_ctx, n_state = q.shape
@@ -95,6 +98,21 @@ class MultiHeadAttention(nn.Module):
         # previously we've returned q@k which we don't have now
         # since it's not actually used anywhere else, let's just keep two return values for compatibility
         return wv.permute(0, 2, 1, 3).flatten(start_dim=2), None
+
+    def qkv_attention_xformers(
+        self, q: Tensor, k: Tensor, v: Tensor, causal = False
+    ):
+        n_batch, n_ctx, n_state = q.shape
+        q = q.view(*q.shape[:2], self.n_head, -1)
+        k = k.view(*k.shape[:2], self.n_head, -1)
+        v = v.view(*v.shape[:2], self.n_head, -1)
+        
+        bias = xops.LowerTriangularMask() if causal else None
+        wv = xops.memory_efficient_attention(q,k,v, attn_bias=bias)
+
+        # previously we've returned q@k which we don't have now
+        # since it's not actually used anywhere else, let's just keep two return values for compatibility
+        return wv.flatten(start_dim=2), None
 
 # %% ../nbs/A. Neural modules.ipynb 6
 class ResidualAttentionBlock(nn.Module):
