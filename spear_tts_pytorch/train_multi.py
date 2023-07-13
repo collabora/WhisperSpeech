@@ -126,7 +126,7 @@ def parse_and_call(name, fun, args, kwargs={}, log_to_wandb=True):
     args.update({k:v for k, v in kwargs.items()})
     return fun(**args)
 
-# %% ../nbs/B2. Training (Lightning).ipynb 6
+# %% ../nbs/B2. Training (Lightning).ipynb 7
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -143,6 +143,7 @@ parser.add_argument('--lr0', type=float, default=1e-4, help='optimizer initial l
 parser.add_argument('--clip-gradient-norm', type=float, default=None, help='enable gradient norm clipping')
 parser.add_argument('--accumulate-grad-batches', type=int, default=1, help='perform the optimizer step only after going through several batches of samples')
 parser.add_argument('--warmup-steps', type=int, default=10000, help='total number steps during which the learning rate rises (defaults to 10k updates)')
+parser.add_argument('--tunables', type=str, default="", help='tunable hyperparameters')
 
 args = parser.parse_args().__dict__
 
@@ -154,6 +155,7 @@ num_workers: int = args.pop("workers")
 batch_size: int = args.pop("batch_size")
 epochs: int = args.pop("epochs")
 validations_per_epoch: int = args.pop("validations_per_epoch")
+tunables_args: list = shlex.split(args.pop("tunables"))
 
 hyp_params = {}
 hyp_params['warmup_steps'] = args['warmup_steps']
@@ -163,7 +165,7 @@ hyp_params['accumulate_grad_batches'] = args['accumulate_grad_batches']
 hyp_params['lr0'] = args['lr0']
 hyp_params['epochs'] = epochs
 
-# %% ../nbs/B2. Training (Lightning).ipynb 7
+# %% ../nbs/B2. Training (Lightning).ipynb 8
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import LearningRateMonitor
 import importlib
@@ -188,6 +190,18 @@ task = importlib.import_module("spear_tts_pytorch."+task_name)
 
 train_ds, val_ds = parse_and_call('dataset', task.load_datasets, input_args)
 
+tunables = None
+if hasattr(task, "Tunables"):
+    import dataclasses
+    tunables = parse_and_call('tunables', task.Tunables, tunables_args, log_to_wandb=False)
+    if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
+        wandb_logger.experiment.config['tunables'] = dataclasses.asdict(tunables)
+
+    print("Tunables:", tunables)
+    for name in ["lr0", "clip_gradient_norm", "weight_decay", "warmup_steps"]:
+        val = getattr(tunables, name, None)
+        if val is not None: hyp_params[name] = val
+
 val_loader = DataLoader(val_ds,
     batch_size=batch_size,
     num_workers=num_workers,
@@ -201,7 +215,9 @@ train_loader = DataLoader(train_ds,
     shuffle=True,
     pin_memory=True)
 
-model = parse_and_call('model', task.make_model, task_args, dict(dataset=train_ds))
+model_kwargs = dict(dataset=train_ds)
+if tunables is not None: model_kwargs['tunables'] = tunables
+model = parse_and_call('model', task.make_model, task_args, model_kwargs)
 
 task = TrainingTask(model, model_hparams=hyp_params)
 
