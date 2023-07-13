@@ -14,11 +14,11 @@ from fastcore.script import *
 import whisper
 from .extract_acoustic import load
 
-# %% ../nbs/2C. Whisper semantic embedding extraction.ipynb 6
+# %% ../nbs/2C. Whisper semantic embedding extraction.ipynb 7
 def load_model():
     return whisper.load_model('tiny.en')
 
-# %% ../nbs/2C. Whisper semantic embedding extraction.ipynb 27
+# %% ../nbs/2C. Whisper semantic embedding extraction.ipynb 28
 # same as above but rolled into a function
 def encode_semantic(whmodel, audio):
     """Encode the given `audio` (tensor or file name) into Whisper embeddings and lists of text tokens.
