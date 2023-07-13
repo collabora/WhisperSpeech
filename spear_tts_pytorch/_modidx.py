@@ -53,15 +53,6 @@ d = { 'settings': { 'branch': 'master',
                                                                                 'spear_tts_pytorch/a2a.py'),
                                        'spear_tts_pytorch.a2a.make_model': ( '6. encodec quality enchancement.html#make_model',
                                                                              'spear_tts_pytorch/a2a.py')},
-            'spear_tts_pytorch.a2wav': { 'spear_tts_pytorch.a2wav.Vocoder': ( '6. quality-boosting vocoder.html#vocoder',
-                                                                              'spear_tts_pytorch/a2wav.py'),
-                                         'spear_tts_pytorch.a2wav.Vocoder.__init__': ( '6. quality-boosting vocoder.html#vocoder.__init__',
-                                                                                       'spear_tts_pytorch/a2wav.py'),
-                                         'spear_tts_pytorch.a2wav.Vocoder.decode': ( '6. quality-boosting vocoder.html#vocoder.decode',
-                                                                                     'spear_tts_pytorch/a2wav.py'),
-                                         'spear_tts_pytorch.a2wav.Vocoder.decode_to_file': ( '6. quality-boosting '
-                                                                                             'vocoder.html#vocoder.decode_to_file',
-                                                                                             'spear_tts_pytorch/a2wav.py')},
             'spear_tts_pytorch.extract_acoustic': { 'spear_tts_pytorch.extract_acoustic.extract_Atoks': ( '1. acoustic token '
                                                                                                           'extraction.html#extract_atoks',
                                                                                                           'spear_tts_pytorch/extract_acoustic.py'),
@@ -171,22 +162,6 @@ d = { 'settings': { 'branch': 'master',
                                                  'spear_tts_pytorch.extract_stoks.sinusoids': ( '2f. residual (rq) semantic token '
                                                                                                 'extraction model.html#sinusoids',
                                                                                                 'spear_tts_pytorch/extract_stoks.py')},
-            'spear_tts_pytorch.extract_stoks_txts': { 'spear_tts_pytorch.extract_stoks_txts.encode_stoks_and_txt': ( '4. whisper semantic '
-                                                                                                                     'and text token '
-                                                                                                                     'extraction.html#encode_stoks_and_txt',
-                                                                                                                     'spear_tts_pytorch/extract_stoks_txts.py'),
-                                                      'spear_tts_pytorch.extract_stoks_txts.extract_stoks_and_txt': ( '4. whisper semantic '
-                                                                                                                      'and text token '
-                                                                                                                      'extraction.html#extract_stoks_and_txt',
-                                                                                                                      'spear_tts_pytorch/extract_stoks_txts.py'),
-                                                      'spear_tts_pytorch.extract_stoks_txts.load_model': ( '4. whisper semantic and text '
-                                                                                                           'token '
-                                                                                                           'extraction.html#load_model',
-                                                                                                           'spear_tts_pytorch/extract_stoks_txts.py'),
-                                                      'spear_tts_pytorch.extract_stoks_txts.transcribe': ( '4. whisper semantic and text '
-                                                                                                           'token '
-                                                                                                           'extraction.html#transcribe',
-                                                                                                           'spear_tts_pytorch/extract_stoks_txts.py')},
             'spear_tts_pytorch.modules': { 'spear_tts_pytorch.modules.Decoder': ( 'a. neural modules.html#decoder',
                                                                                   'spear_tts_pytorch/modules.py'),
                                            'spear_tts_pytorch.modules.Decoder.__init__': ( 'a. neural modules.html#decoder.__init__',
@@ -240,15 +215,6 @@ d = { 'settings': { 'branch': 'master',
                                                                                            'spear_tts_pytorch/modules.py'),
                                            'spear_tts_pytorch.modules.sinusoids': ( 'a. neural modules.html#sinusoids',
                                                                                     'spear_tts_pytorch/modules.py')},
-            'spear_tts_pytorch.pipeline': { 'spear_tts_pytorch.pipeline.Pipeline': ( '7. pipeline.html#pipeline',
-                                                                                     'spear_tts_pytorch/pipeline.py'),
-                                            'spear_tts_pytorch.pipeline.Pipeline.__init__': ( '7. pipeline.html#pipeline.__init__',
-                                                                                              'spear_tts_pytorch/pipeline.py'),
-                                            'spear_tts_pytorch.pipeline.Pipeline.generate': ( '7. pipeline.html#pipeline.generate',
-                                                                                              'spear_tts_pytorch/pipeline.py'),
-                                            'spear_tts_pytorch.pipeline.Pipeline.generate_to_file': ( '7. '
-                                                                                                      'pipeline.html#pipeline.generate_to_file',
-                                                                                                      'spear_tts_pytorch/pipeline.py')},
             'spear_tts_pytorch.s2a_delar_mup': { 'spear_tts_pytorch.s2a_delar_mup.CMLMVisual': ( '3c. multi-speaker semantic to acoustic '
                                                                                                  'token modeling musicgen '
                                                                                                  'μpt.html#cmlmvisual',
