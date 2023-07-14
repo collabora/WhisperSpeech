@@ -136,7 +136,8 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
         optimizer = torch.optim.AdamW(lr=lr, betas=(0.9, 0.95), fused=device!='cpu', params=param_groups)
         scaler = torch.cuda.amp.GradScaler(enabled=half)
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer, max_lr=lr, pct_start=pct_start, steps_per_epoch=len(train_loader), epochs=epochs,
+            optimizer, pct_start=pct_start, steps_per_epoch=len(train_loader), epochs=epochs,
+            max_lr=[pg.get('lr', lr) for pg in param_groups],
             final_div_factor=25)
         
         it = 0

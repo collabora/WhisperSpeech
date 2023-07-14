@@ -35,6 +35,9 @@ class TrainingTask(pl.LightningModule):
     
     def configure_optimizers(self):
         """ Initialize AdamW optimizer"""
+        lr = self.model_hparams['lr0']
+        weight_decay = self.model_hparams['weight_decay']
+        
         all_params = set(model.parameters())
         customized_params = set()
         groups = []
@@ -58,8 +61,7 @@ class TrainingTask(pl.LightningModule):
             {"names": ["other"], "params": list(other_params), "weight_decay": weight_decay },
         ]
 
-        optimizer = torch.optim.AdamW(lr=self.model_hparams['lr0'], betas=(0.9, 0.95),
-                                      fused=True, params=param_groups)
+        optimizer = torch.optim.AdamW(lr=lr, betas=(0.9, 0.95), params=param_groups)
         
         # modified from https://github.com/Lightning-AI/lightning/issues/5449#issuecomment-1501597319
         def num_steps_per_epoch() -> int:
@@ -78,7 +80,7 @@ class TrainingTask(pl.LightningModule):
         lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
             pct_start=self.model_hparams['pct_start'],
-            max_lr=self.model_hparams['lr0'],
+            max_lr=[pg.get('lr', lr) for pg in param_groups],
             steps_per_epoch=num_steps_per_epoch(),
             epochs=self.model_hparams['epochs'],
             final_div_factor=25
