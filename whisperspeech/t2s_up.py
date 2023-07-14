@@ -70,51 +70,50 @@ def load_datasets(path:Path):
 
     return SADataset(train_data, tokenizer), SADataset(val_data, tokenizer)
 
-# %% ../nbs/5. Text to semantic token modeling μP.ipynb 32
-from dataclasses import dataclass
+# %% ../nbs/5. Text to semantic token modeling μP.ipynb 33
+import dataclasses
 import random
 
 def rand(start, end):
     return random.random() * (end - start) + start
 
-@dataclass
+@dataclasses.dataclass
 class Tunables:
-    init_std :float = .8
-    embeddings_std :float = .3
-    embeddings_lr_scale: float = 1.8
-    output_mult :float = .25
-    query_mult :float = 116
+    init_std :float = 1
+    embeddings_std :float = .01
+    embeddings_lr_scale: float = 5
+    output_mult :float = .35
+    query_mult :float = 1
     encoder_depth_ratio :float = 0.25
         
-    lr0 :float = 4e-3
-    clip_gradient_norm :float = .1
+    lr0 :float = 3e-3
+    clip_gradient_norm :float = .2
     weight_decay :float = 1e-5
-    warmup_steps :float = 500
+    warmup_steps :float = 4000
 
     random :bool = False
-        
+
     def __post_init__(self):
         # randomize the hyperparams if requested
         if self.random:
-            self.init_std = 10**rand(-2,1)
-            self.embeddings_std = 10**rand(-1.4,-.5)
+#             self.init_std = 10**rand(-3,1)
+            self.init_std = 10**rand(-1,1)
+#             self.embeddings_std = 10**rand(-3,1)
+            self.embeddings_std = 10**rand(-3,-.7)
 #             self.embeddings_lr_scale = 2**rand(-3,3)
-            self.embeddings_lr_scale = self.embeddings_std * 10**rand(0,1)
-#             self.output_mult = 2**rand(-2,8)
-            self.output_mult = 2**rand(-3,1)
-            self.query_mult = 2**rand(2,8) ## FIXME: not implemented
+            self.embeddings_lr_scale = rand(2,6) #2**rand(0,3)
+#             self.output_mult = 2**rand(-2,3)
+            self.output_mult = rand(0.25,0.65)
+            self.query_mult = 2**rand(-2,3)
 #             self.encoder_depth_ratio = random.choice([0.25,0.5,0.75])
             self.encoder_depth_ratio = 0.25
             
-            self.lr0 = rand(2,8)*1e-3#10**rand(-3,-2)
-#             self.clip_gradient_norm = 10**rand(-2,1)
-#             self.weight_decay = 10**rand(-5,-1)
-#             self.warmup_steps = 100*(10**rand(0,1))
-            self.clip_gradient_norm = .1
-            self.weight_decay = 1e-5
-            self.warmup_steps = 100*10**rand(0,1)
+#             self.lr0 = 10**rand(-4,-1.5)
+            self.lr0 = rand(1,5)*1e-3
+            self.clip_gradient_norm = 10**rand(-3,0)
+            self.warmup_steps = 100*(10**rand(1,1.85))
 
-# %% ../nbs/5. Text to semantic token modeling μP.ipynb 34
+# %% ../nbs/5. Text to semantic token modeling μP.ipynb 35
 class Encoder(nn.Module):
     def __init__(self, depth=6, width=384, n_head=6, length=1500, codes=1024, ffn_mult=4, pos_embs=None, tunables=Tunables()):
         super().__init__()
@@ -139,7 +138,7 @@ class Encoder(nn.Module):
 
         return self.ln_post(self.layers(xin))
 
-# %% ../nbs/5. Text to semantic token modeling μP.ipynb 35
+# %% ../nbs/5. Text to semantic token modeling μP.ipynb 36
 class Decoder(nn.Module):
     def __init__(self, depth=6, width=384, n_head=6, length=1500, codes=1024, ffn_mult=4, pos_embs=None, tunables=Tunables()):
         super().__init__()
@@ -177,7 +176,7 @@ class Decoder(nn.Module):
         logits = (x @ self.embedding.weight.to(x.dtype).T).float()
         return logits
 
-# %% ../nbs/5. Text to semantic token modeling μP.ipynb 36
+# %% ../nbs/5. Text to semantic token modeling μP.ipynb 37
 class TSARTransformer(nn.Module):
     def __init__(self, depth=6, n_head=6, head_width=64, ffn_mult=4, language='en',
                  ttoks_len=200, stoks_len=1500, ttoks_codes=50364, stoks_codes=1024,
@@ -286,7 +285,7 @@ class TSARTransformer(nn.Module):
             if toks[0,i] == 1024: return toks[0,:i]
         return toks[0]
 
-# %% ../nbs/5. Text to semantic token modeling μP.ipynb 37
+# %% ../nbs/5. Text to semantic token modeling μP.ipynb 40
 def make_model(size:str, tunables:Tunables=Tunables(), dataset:SADataset=None):
     kwargs = dict(stoks_len = dataset.stoks_len, ttoks_len = dataset.ttoks_len, tunables=tunables)
     if size == 'micro':
