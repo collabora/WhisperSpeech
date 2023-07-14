@@ -341,7 +341,7 @@ class SADelARTransformer(nn.Module):
     # inference
     #
     @classmethod
-    def load_model(cls, repo_id="collabora/spear-tts-pytorch", filename="s2a_up.model", local_filename=None):
+    def load_model(cls, repo_id="collabora/whisperspeech", filename="s2a_up.model", local_filename=None):
         if not local_filename:
             local_filename = hf_hub_download(repo_id=repo_id, filename=filename)
         spec = torch.load(local_filename)

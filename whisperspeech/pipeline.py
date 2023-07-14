@@ -5,9 +5,9 @@ __all__ = ['Pipeline']
 
 # %% ../nbs/7. Pipeline.ipynb 1
 import torch
-from spear_tts_pytorch.t2s_up import TSARTransformer
-from spear_tts_pytorch.s2a_delar_mup import SAARTransformer
-from spear_tts_pytorch.a2wav import Vocoder
+from whisperspeech.t2s_up import TSARTransformer
+from whisperspeech.s2a_delar_mup import SAARTransformer
+from whisperspeech.a2wav import Vocoder
 
 # %% ../nbs/7. Pipeline.ipynb 2
 class Pipeline:

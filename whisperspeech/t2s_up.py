@@ -20,8 +20,8 @@ import pandas as pd
 
 # %% ../nbs/5. Text to semantic token modeling μP.ipynb 3
 import whisper
-from spear_tts_pytorch.train import *
-from spear_tts_pytorch.modules import *
+from whisperspeech.train import *
+from whisperspeech.modules import *
 
 # %% ../nbs/5. Text to semantic token modeling μP.ipynb 11
 def load_data(path:Path):
@@ -238,17 +238,27 @@ class TSARTransformer(nn.Module):
     # inference
     #
     @classmethod
-    def load_model(cls, repo_id="collabora/spear-tts-pytorch", filename="t2s.model", local_filename=None):
+    def load_model(cls, repo_id="collabora/whisperspeech", filename="t2s_up.model", local_filename=None):
         if not local_filename:
             local_filename = hf_hub_download(repo_id=repo_id, filename=filename)
         spec = torch.load(local_filename)
-        vqmodel = cls(**spec['config'])
-        vqmodel.load_state_dict(spec['state_dict'])
-        vqmodel.eval()
-        return vqmodel
+        model = cls(**spec['config'], tunables=Tunables(**spec['tunables']))
+        model.load_state_dict(spec['state_dict'])
+        model.eval()
+        return model
+
+    def load_checkpoint(self, local_filename):
+        spec = torch.load(local_filename, map_location='cpu')
+        assert 'pytorch-lightning_version' in spec, 'not a valid PyTorch Lightning checkpoint'
+        state_dict = {k.replace('model.', ''):v
+                      for k,v in spec['state_dict'].items()}
+        self.load_state_dict(state_dict)
+        return self
 
     def save_model(self, fname):
-        torch.save(dict(config = self.__stored_args__, state_dict = self.state_dict()), fname)
+        torch.save(dict(config = self.__stored_args__,
+                        tunables = dataclasses.asdict(self.tunables),
+                        state_dict = self.state_dict()), fname)
 
     def ensure_tokenizer(self):
         assert not self.training

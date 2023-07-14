@@ -174,7 +174,7 @@ import importlib
 
 torch.set_float32_matmul_precision('medium')
 
-wandb_logger = WandbLogger(project=f"SpearTTS-{task_name}")
+wandb_logger = WandbLogger(project=f"WhisperSpeech-{task_name}")
 
 ckpt_callback = pl.callbacks.ModelCheckpoint(
      dirpath=f'{task_name}-{epochs}e',
@@ -188,7 +188,7 @@ lr_monitor_callback = LearningRateMonitor(logging_interval='step')
 
 from torch.utils.data import DataLoader
 
-task = importlib.import_module("spear_tts_pytorch."+task_name)
+task = importlib.import_module("whisperspeech."+task_name)
 
 train_ds, val_ds = parse_and_call('dataset', task.load_datasets, input_args)
 
