@@ -13,7 +13,7 @@ from torch import Tensor, nn
 import torch.nn.functional as F
 from typing import Dict, Iterable, Optional
 
-import xformers.ops as xops
+# import xformers.ops as xops
 
 # %% ../nbs/A. Neural modules.ipynb 3
 # Code in this file is mostly borrowed from
