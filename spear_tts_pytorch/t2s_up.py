@@ -4,6 +4,7 @@
 __all__ = ['load_datasets', 'rand', 'Tunables', 'Encoder', 'Decoder', 'TSARTransformer', 'make_model']
 
 # %% ../nbs/5. Text to semantic token modeling μP.ipynb 1
+import math
 import torch
 import torch.nn as nn
 from torch.profiler import record_function
@@ -115,7 +116,7 @@ class Tunables:
 
 # %% ../nbs/5. Text to semantic token modeling μP.ipynb 34
 class Encoder(nn.Module):
-    def __init__(self, depth=6, width=384, n_head=6, length=1500, codes=1024, pos_embs=None, tunables=Tunables()):
+    def __init__(self, depth=6, width=384, n_head=6, length=1500, codes=1024, ffn_mult=4, pos_embs=None, tunables=Tunables()):
         super().__init__()
     
         self.embedding = nn.Embedding(codes, width)
@@ -124,7 +125,8 @@ class Encoder(nn.Module):
         self.register_buffer("positional_embedding", pos_embs)
 
         self.layers = nn.Sequential(*[
-            ResidualAttentionBlock(width, n_head, qk_scale=tunables.query_mult*8/math.sqrt(width/n_head)) for _ in range(depth)
+            ResidualAttentionBlock(width, n_head,
+                                   qk_scale=tunables.query_mult*8/math.sqrt(width/n_head), ffn_mult=ffn_mult) for _ in range(depth)
         ])
 
         self.ln_post = LayerNorm(width)
@@ -139,7 +141,7 @@ class Encoder(nn.Module):
 
 # %% ../nbs/5. Text to semantic token modeling μP.ipynb 35
 class Decoder(nn.Module):
-    def __init__(self, depth=6, width=384, n_head=6, length=1500, codes=1024, pos_embs=None, tunables=Tunables()):
+    def __init__(self, depth=6, width=384, n_head=6, length=1500, codes=1024, ffn_mult=4, pos_embs=None, tunables=Tunables()):
         super().__init__()
         self.length = length
         self.codes = codes
@@ -150,7 +152,8 @@ class Decoder(nn.Module):
         self.register_buffer("positional_embedding", pos_embs)
         
         self.layers = nn.ModuleList([
-            ResidualAttentionBlock(width, n_head, qk_scale=tunables.query_mult*8/math.sqrt(width/n_head), cross_attention=True) for _ in range(depth)
+            ResidualAttentionBlock(width, n_head, cross_attention=True,
+                                   qk_scale=tunables.query_mult*8/math.sqrt(width/n_head), ffn_mult=ffn_mult) for _ in range(depth)
         ])
         self.ln_post = LayerNorm(width)
         
@@ -176,7 +179,7 @@ class Decoder(nn.Module):
 
 # %% ../nbs/5. Text to semantic token modeling μP.ipynb 36
 class TSARTransformer(nn.Module):
-    def __init__(self, depth=6, n_head=6, head_width=64, language='en',
+    def __init__(self, depth=6, n_head=6, head_width=64, ffn_mult=4, language='en',
                  ttoks_len=200, stoks_len=1500, ttoks_codes=50364, stoks_codes=1024,
                  tunables=Tunables()):
         assert language == 'en', "only english is supported right now"
@@ -190,8 +193,9 @@ class TSARTransformer(nn.Module):
         
         encoder_depth = int(depth * 2 * tunables.encoder_depth_ratio)
         decoder_depth = depth * 2 - encoder_depth
-        self.encoder = Encoder(length=ttoks_len, codes=ttoks_codes, width=width, n_head=n_head, depth=encoder_depth, tunables=tunables)
-        self.decoder = Decoder(length=stoks_len, codes=stoks_codes, width=width, n_head=n_head, depth=decoder_depth, tunables=tunables)
+        tformer_args = dict(width=width, n_head=n_head, ffn_mult=ffn_mult, tunables=tunables)
+        self.encoder = Encoder(length=ttoks_len, codes=ttoks_codes, depth=encoder_depth, **tformer_args)
+        self.decoder = Decoder(length=stoks_len, codes=stoks_codes, depth=decoder_depth, **tformer_args)
         
         self.tokenizer = None
         
@@ -276,7 +280,7 @@ class TSARTransformer(nn.Module):
 def make_model(size:str, tunables:Tunables=Tunables(), dataset:SADataset=None):
     kwargs = dict(stoks_len = dataset.stoks_len, ttoks_len = dataset.ttoks_len, tunables=tunables)
     if size == 'micro':
-        return TSARTransformer(depth=3, **kwargs)
+        return TSARTransformer(depth=2, n_head=3, ffn_mult=1, **kwargs)
     if size == 'tiny':
         return TSARTransformer(depth=4, n_head=6, **kwargs)
     if size == 'base':
