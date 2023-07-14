@@ -53,7 +53,10 @@ d = { 'settings': { 'branch': 'master',
                                                                              'whisperspeech/a2wav.py'),
                                      'whisperspeech.a2wav.Vocoder.decode_to_file': ( '6. quality-boosting '
                                                                                      'vocoder.html#vocoder.decode_to_file',
-                                                                                     'whisperspeech/a2wav.py')},
+                                                                                     'whisperspeech/a2wav.py'),
+                                     'whisperspeech.a2wav.Vocoder.decode_to_notebook': ( '6. quality-boosting '
+                                                                                         'vocoder.html#vocoder.decode_to_notebook',
+                                                                                         'whisperspeech/a2wav.py')},
             'whisperspeech.extract_acoustic': { 'whisperspeech.extract_acoustic.extract_Atoks': ( '1. acoustic token '
                                                                                                   'extraction.html#extract_atoks',
                                                                                                   'whisperspeech/extract_acoustic.py'),
@@ -203,8 +206,13 @@ d = { 'settings': { 'branch': 'master',
                                                                                       'whisperspeech/pipeline.py'),
                                         'whisperspeech.pipeline.Pipeline.generate': ( '7. pipeline.html#pipeline.generate',
                                                                                       'whisperspeech/pipeline.py'),
+                                        'whisperspeech.pipeline.Pipeline.generate_atoks': ( '7. pipeline.html#pipeline.generate_atoks',
+                                                                                            'whisperspeech/pipeline.py'),
                                         'whisperspeech.pipeline.Pipeline.generate_to_file': ( '7. pipeline.html#pipeline.generate_to_file',
-                                                                                              'whisperspeech/pipeline.py')},
+                                                                                              'whisperspeech/pipeline.py'),
+                                        'whisperspeech.pipeline.Pipeline.generate_to_notebook': ( '7. '
+                                                                                                  'pipeline.html#pipeline.generate_to_notebook',
+                                                                                                  'whisperspeech/pipeline.py')},
             'whisperspeech.s2a_delar_mup': { 'whisperspeech.s2a_delar_mup.CMLMVisual': ( '3c. multi-speaker semantic to acoustic token '
                                                                                          'modeling musicgen μpt.html#cmlmvisual',
                                                                                          'whisperspeech/s2a_delar_mup.py'),

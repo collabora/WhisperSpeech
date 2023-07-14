@@ -8,7 +8,7 @@ from vocos import Vocos
 import torch
 import torchaudio
 
-from IPython.display import HTML
+from IPython.display import HTML, Audio
 
 # %% ../nbs/6. Quality-boosting vocoder.ipynb 2
 class Vocoder:
@@ -27,3 +27,7 @@ class Vocoder:
         audio = self.decode(atoks)
         torchaudio.save(fname, audio.cpu(), 24000)
         display(HTML(f'<a href="{fname}" target="_blank">Listen to {fname}</a>'))
+        
+    def decode_to_notebook(self, atoks):
+        audio = self.decode(atoks)
+        display(Audio(audio.cpu().numpy(), rate=24000))

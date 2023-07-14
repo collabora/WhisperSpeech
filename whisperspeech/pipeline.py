@@ -6,23 +6,27 @@ __all__ = ['Pipeline']
 # %% ../nbs/7. Pipeline.ipynb 1
 import torch
 from whisperspeech.t2s_up import TSARTransformer
-from whisperspeech.s2a_delar_mup import SAARTransformer
+from whisperspeech.s2a_delar_mup import SADelARTransformer
 from whisperspeech.a2wav import Vocoder
 
 # %% ../nbs/7. Pipeline.ipynb 2
 class Pipeline:
     def __init__(self):
-        self.t2s = TSARTransformer.load_model(local_filename='nbs/t2s_up.model').cuda()
-        self.s2a = SADelARTransformer.load_model(local_filename='nbs/s2a_up.model').cuda()
+        self.t2s = TSARTransformer.load_model().cuda()
+        self.s2a = SADelARTransformer.load_model().cuda()
         self.vocoder = Vocoder()
 
-    def generate(self, text):
-        stoks = self.t2s.generate(text, T=0.6)
-        atoks = self.s2a.generate(stoks, T=0.6)
-        audio = self.vocoder.decode(atoks)
-        return audio
+    def generate_atoks(self, text, speaker="3645"):
+        text = text.replace("\n", " ")
+        stoks = self.t2s.generate(text, T=.5, top_k=3)
+        atoks = self.s2a.generate(stoks, [speaker], T=2, top_k=8)
+        return atoks
+        
+    def generate(self, text, speaker="3645"):
+        return self.vocoder.decode(self.generate_atoks(text, speaker))
     
-    def generate_to_file(self, fname, text):
-        stoks = self.t2s.generate(text)
-        atoks = self.s2a.generate(stoks)
-        self.vocoder.decode_to_file(fname, atoks)
+    def generate_to_file(self, fname, text, speaker="3645"):
+        self.vocoder.decode_to_file(fname, self.generate_atoks(text, speaker))
+        
+    def generate_to_notebook(self, text, speaker="3645"):
+        self.vocoder.decode_to_notebook(self.generate_atoks(text, speaker))
