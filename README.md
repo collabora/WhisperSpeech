@@ -4,7 +4,7 @@
 
 [![Test it out yourself in
 Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/collabora/WhisperSpeech/blob/main/Inference%20example.ipynb)
-[![](https://dcbadge.vercel.app/api/server/FANw4rHD5E.png)](https://discord.gg/FANw4rHD5E)  
+[![](https://dcbadge.vercel.app/api/server/FANw4rHD5E)](https://discord.gg/FANw4rHD5E)  
 *If you have questions or you want to help you can find us in the
 \#audio-generation channel on the LAION Discord server.*
 
@@ -117,9 +117,9 @@ This work would not be possible without the generous sponsorships from:
 
 We are available to help you with both Open Source and proprietary AI
 projects. You can reach us via the Collabora website or on Discord
-([![](https://dcbadge.vercel.app/api/shield/270267134960074762?style=flat.png)](https://discordapp.com/users/270267134960074762)
+([![](https://dcbadge.vercel.app/api/shield/270267134960074762?style=flat)](https://discordapp.com/users/270267134960074762)
 and
-[![](https://dcbadge.vercel.app/api/shield/1088938086400016475?style=flat.png)](https://discordapp.com/users/1088938086400016475))
+[![](https://dcbadge.vercel.app/api/shield/1088938086400016475?style=flat)](https://discordapp.com/users/1088938086400016475))
 
 ## Citations
 
