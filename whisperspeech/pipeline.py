@@ -15,18 +15,43 @@ class Pipeline:
         self.t2s = TSARTransformer.load_model().cuda()
         self.s2a = SADelARTransformer.load_model().cuda()
         self.vocoder = Vocoder()
+        
+        self.t2s_kv_cache = {}
+        self.t2s_hooks = []
+        
+        self.s2a_kv_cache = {}
+        self.s2a_hooks = []
 
     def generate_atoks(self, text, speaker="3645"):
+        if not self.t2s_kv_cache:
+            self.t2s_kv_cache, self.t2s_hooks = self.t2s.install_kv_cache_hooks()
         text = text.replace("\n", " ")
-        stoks = self.t2s.generate(text, T=.5, top_k=3)
-        atoks = self.s2a.generate(stoks, [speaker], T=2, top_k=8)
+        stoks = self.t2s.generate(text, T=.5, top_k=3, kv_cache=self.t2s_kv_cache)
+
+        if not self.s2a_kv_cache:
+            self.s2a_kv_cache, self.s2a_hooks = self.s2a.install_kv_cache_hooks()
+        atoks = self.s2a.generate(stoks, [speaker], T=2, top_k=8, kv_cache=self.s2a_kv_cache)
         return atoks
         
     def generate(self, text, speaker="3645"):
         return self.vocoder.decode(self.generate_atoks(text, speaker))
-    
+
     def generate_to_file(self, fname, text, speaker="3645"):
         self.vocoder.decode_to_file(fname, self.generate_atoks(text, speaker))
-        
+
     def generate_to_notebook(self, text, speaker="3645"):
         self.vocoder.decode_to_notebook(self.generate_atoks(text, speaker))
+        self.cleanup_caching()
+
+    def cleanup_caching(self):
+        for hook in self.t2s_hooks:
+            hook.remove()
+
+        self.t2s_kv_cache = {}
+        self.t2s_hooks = []
+        
+        for hook in self.s2a_hooks:
+            hook.remove()
+
+        self.s2a_kv_cache = {}
+        self.s2a_hooks = []
