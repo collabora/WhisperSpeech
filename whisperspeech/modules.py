@@ -2,7 +2,7 @@
 
 # %% auto 0
 __all__ = ['LayerNorm', 'LinearHead', 'QueryHead', 'init_transformer', 'sinusoids', 'MultiHeadAttention',
-           'ResidualAttentionBlock', 'Encoder', 'Decoder', 'SumDecoder']
+           'ResidualAttentionBlock', 'Encoder', 'Decoder', 'SumDecoder', 'BaseDecoder']
 
 # %% ../nbs/A. Neural modules.ipynb 2
 import torch
@@ -68,6 +68,7 @@ class MultiHeadAttention(nn.Module):
         xa: Optional[Tensor] = None,
         causal = False,
         kv_cache: Optional[dict] = None,
+        mask=None
     ):
         q = self.query(x)
 
@@ -80,26 +81,26 @@ class MultiHeadAttention(nn.Module):
             # for cross-attention, calculate keys and values once and reuse in subsequent calls.
             k = kv_cache[self.key]
             v = kv_cache[self.value]
-
-        if self.sqrt_qk_scale != 1:
-            q *= self.sqrt_qk_scale
-            k *= self.sqrt_qk_scale
-
-        wv, qk = self.qkv_attention_pth20(q, k, v, causal)
-#         wv, qk = self.qkv_attention_xformers(q, k, v, causal)
+        
+        wv, qk = self.qkv_attention_pth20(q*self.sqrt_qk_scale, k*self.sqrt_qk_scale, v, causal, mask)
         
         return self.out(wv), qk
 
     def qkv_attention_pth20(
-        self, q: Tensor, k: Tensor, v: Tensor, causal = False
+        self, q: Tensor, k: Tensor, v: Tensor, causal = False, mask=None
     ):
         n_batch, n_ctx, n_state = q.shape
         q = q.view(*q.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
         k = k.view(*k.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
         v = v.view(*v.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
-
+        
+        if mask is not None:
+            causal = False
+            mask = mask[:n_ctx, :n_ctx]
+        
         # modified for better performance under PyTorch 2.0
-        wv = F.scaled_dot_product_attention(q, k, v, attn_mask=None, dropout_p=0, is_causal=causal)
+        wv = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, dropout_p=0, is_causal=causal)
+        
 
         # previously we've returned q@k which we don't have now
         # since it's not actually used anywhere else, let's just keep two return values for compatibility
@@ -146,8 +147,9 @@ class ResidualAttentionBlock(nn.Module):
         xa: Optional[Tensor] = None,
         causal = False,
         kv_cache: Optional[dict] = None,
+        mask=None
     ):
-        x = x + self.attn(self.attn_ln(x), causal=causal, kv_cache=kv_cache)[0]
+        x = x + self.attn(self.attn_ln(x), causal=causal, kv_cache=kv_cache, mask=mask)[0]
         if self.cross_attn:
             x = x + self.cross_attn(self.cross_attn_ln(x), xa, kv_cache=kv_cache)[0]
         x = x + self.mlp(self.mlp_ln(x))
@@ -268,3 +270,28 @@ class SumDecoder(nn.Module):
         
         logits = (x @ self.embedding.weight.to(x.dtype).T).float()
         return logits
+
+# %% ../nbs/A. Neural modules.ipynb 10
+class BaseDecoder(nn.Module):
+    def __init__(self, depth=6, width=384, n_head=6, qk_scale=1, ffn_mult=4, length=1500, cross_attention=False):
+        super().__init__()
+        self.width = width
+    
+        self.layers = nn.ModuleList([
+            ResidualAttentionBlock(
+                width,
+                n_head,
+                qk_scale=qk_scale,
+                ffn_mult=ffn_mult,
+                cross_attention=cross_attention) for _ in range(depth)
+        ])
+
+        self.ln_post = LayerNorm(width)
+        mask = torch.empty(length, length).fill_(-np.inf).triu_(1)
+        self.register_buffer("mask", mask, persistent=False)
+
+    def forward(self, x, xenc=None, is_causal=False, kv_cache=None):
+        for l in self.layers:
+            x = l(x, xenc, causal=is_causal, mask=self.mask, kv_cache=kv_cache)
+        x = self.ln_post(x)
+        return x
