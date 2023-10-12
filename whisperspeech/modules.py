@@ -66,7 +66,6 @@ class MultiHeadAttention(nn.Module):
         self,
         x: Tensor,
         xa: Optional[Tensor] = None,
-        causal = False,
         kv_cache: Optional[dict] = None,
         mask=None
     ):
@@ -82,12 +81,16 @@ class MultiHeadAttention(nn.Module):
             k = kv_cache[self.key]
             v = kv_cache[self.value]
         
-        wv, qk = self.qkv_attention_pth20(q*self.sqrt_qk_scale, k*self.sqrt_qk_scale, v, causal, mask)
+        if self.sqrt_qk_scale != 1:
+            q = q * self.sqrt_qk_scale
+            k = k * self.sqrt_qk_scale
+
+        wv, qk = self.qkv_attention_pth20(q, k, v, mask)
         
         return self.out(wv), qk
 
     def qkv_attention_pth20(
-        self, q: Tensor, k: Tensor, v: Tensor, causal = False, mask=None
+        self, q: Tensor, k: Tensor, v: Tensor, mask=None
     ):
         n_batch, n_ctx, n_state = q.shape
         q = q.view(*q.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
@@ -95,11 +98,10 @@ class MultiHeadAttention(nn.Module):
         v = v.view(*v.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
         
         if mask is not None:
-            causal = False
             mask = mask[:n_ctx, :n_ctx]
         
         # modified for better performance under PyTorch 2.0
-        wv = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, dropout_p=0, is_causal=causal)
+        wv = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, dropout_p=0)
         
 
         # previously we've returned q@k which we don't have now
@@ -145,11 +147,10 @@ class ResidualAttentionBlock(nn.Module):
         self,
         x: Tensor,
         xa: Optional[Tensor] = None,
-        causal = False,
         kv_cache: Optional[dict] = None,
         mask=None
     ):
-        x = x + self.attn(self.attn_ln(x), causal=causal, kv_cache=kv_cache, mask=mask)[0]
+        x = x + self.attn(self.attn_ln(x), kv_cache=kv_cache, mask=mask)[0]
         if self.cross_attn:
             x = x + self.cross_attn(self.cross_attn_ln(x), xa, kv_cache=kv_cache)[0]
         x = x + self.mlp(self.mlp_ln(x))
@@ -213,7 +214,7 @@ class Decoder(nn.Module):
         xin = (Sembs + self.positional_embedding[:Sembs.shape[1]]).to(xenc.dtype)
     
         x = xin
-        for l in self.layers: x = l(x, xenc, causal=True)
+        for l in self.layers: x = l(x, xenc)
         
         x = self.ln_post(x)
         
@@ -273,7 +274,17 @@ class SumDecoder(nn.Module):
 
 # %% ../nbs/A. Neural modules.ipynb 10
 class BaseDecoder(nn.Module):
-    def __init__(self, depth=6, width=384, n_head=6, qk_scale=1, ffn_mult=4, length=1500, cross_attention=False):
+    def __init__(
+        self,
+        depth=6,
+        width=384,
+        n_head=6,
+        qk_scale=1,
+        ffn_mult=4,
+        length=1500,
+        cross_attention=False,
+        use_kv_cache=True
+    ):
         super().__init__()
         self.width = width
     
@@ -289,9 +300,52 @@ class BaseDecoder(nn.Module):
         self.ln_post = LayerNorm(width)
         mask = torch.empty(length, length).fill_(-np.inf).triu_(1)
         self.register_buffer("mask", mask, persistent=False)
+        self.use_kv_cache = use_kv_cache
+        if self.use_kv_cache:
+            self.kv_cache = {}
+            self.hooks = []
 
-    def forward(self, x, xenc=None, is_causal=False, kv_cache=None):
+    def forward(self, x, xenc=None):
         for l in self.layers:
-            x = l(x, xenc, causal=is_causal, mask=self.mask, kv_cache=kv_cache)
+            x = l(x, xenc, mask=self.mask, kv_cache=self.kv_cache if self.use_kv_cache else None)
         x = self.ln_post(x)
         return x
+    
+    def install_kv_cache_hooks(self, cache = None):
+        """
+        The `MultiHeadAttention` module optionally accepts `kv_cache` which stores the key and value
+        tensors calculated for the previous positions. This method returns a dictionary that stores
+        all caches, and the necessary hooks for the key and value projection modules that save the
+        intermediate tensors to be reused during later calculations.
+
+        Returns
+        -------
+        cache : Dict[nn.Module, torch.Tensor]
+            A dictionary object mapping the key/value projection modules to its cache
+        hooks : List[RemovableHandle]
+            List of PyTorch RemovableHandle objects to stop the hooks to be called
+        """
+        self.kv_cache = {**cache} if cache is not None else {}
+        self.hooks = []
+
+        def save_to_cache(module, _, output):
+            if module not in self.kv_cache:
+                # save as-is, for the first token or cross attention
+                self.kv_cache[module] = output
+            else:
+                self.kv_cache[module] = torch.cat([self.kv_cache[module], output], dim=1).detach()
+            return self.kv_cache[module]
+
+        def install_hooks(layer: nn.Module):
+            if isinstance(layer, MultiHeadAttention):
+                self.hooks.append(layer.key.register_forward_hook(save_to_cache))
+                self.hooks.append(layer.value.register_forward_hook(save_to_cache))
+
+        self.apply(install_hooks)
+    
+    def cleanup_caching(self):
+        for hook in self.hooks:
+            hook.remove()
+    
+        self.kv_cache = {}
+        self.hooks = []

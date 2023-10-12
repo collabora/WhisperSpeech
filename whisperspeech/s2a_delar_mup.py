@@ -181,13 +181,12 @@ class DelSumEmbedding(nn.Module):
         self.quantizers = quantizers
         self.length = length
         self.embeddings = nn.ModuleList([nn.Embedding(codes + 1, width) for _ in range(quantizers)])
-
-    def forward(self, toks, xenc, kv_cache=None):
-        offset = next(iter(kv_cache.values())).shape[1] if kv_cache else 0
-        if kv_cache:
+    
+    def forward(self, toks, xenc, use_cache=True, offset=0):
+        if use_cache:
             embs = torch.zeros((toks.shape[0], 1, self.width), dtype=xenc.dtype, device=xenc.device)
             for i in range(self.quantizers):
-                if i >= offset:
+                if i >= offset:    # add sot only for the self.quantizer no of steps
                     embs[:, 0] += self.embeddings[i](torch.tensor([self.codes], device=xenc.device))
                 if i < offset and i < self.quantizers - 1:
                     embs[:, 0] = self.embeddings[i](toks[:, i, :])
@@ -201,7 +200,6 @@ class DelSumEmbedding(nn.Module):
                     embs[:, i + 1:] = self.embeddings[i](toks[:, i, i:])
 
         embs = embs.to(xenc.dtype) + xenc[:,offset:offset + embs.shape[1]]
-
         return embs
 
 # %% ../nbs/3C. Multi-speaker semantic to acoustic token modeling MusicGen μPT.ipynb 19
@@ -257,7 +255,7 @@ class Tunables:
 
 class SADelARTransformer(nn.Module):
     def __init__(self, depth=3, ctx_n=2250, n_head=3, head_width=64,
-                 quantizers=8, speaker_map={"1":0}, tunables=Tunables()):
+                 quantizers=8, speaker_map={"1":0}, tunables=Tunables(), use_kv_cache=True):
         super().__init__()
         self.quantizers = quantizers
         width = n_head * head_width
@@ -265,6 +263,7 @@ class SADelARTransformer(nn.Module):
         self.width = width
         self.base_width = 3 * head_width
         self.tunables = tunables
+        self.use_kv_cache = use_kv_cache
 
         self.register_buffer('positional_embeddings', sinusoids(ctx_n, width))
         
@@ -282,7 +281,7 @@ class SADelARTransformer(nn.Module):
 
         width = n_head * head_width
         self.embedding = DelSumEmbedding(width, quantizers)
-        self.decoder = BaseDecoder(decoder_depth, width, n_head, qk_scale, length=ctx_n)
+        self.decoder = BaseDecoder(decoder_depth, width, n_head, qk_scale, length=ctx_n, use_kv_cache=use_kv_cache)
         self.head_layer = DelSumHeadLayer(width, quantizers, codes=1024)
         
         self.apply(self.init_transformer)
@@ -320,13 +319,14 @@ class SADelARTransformer(nn.Module):
         x = x.reshape(b,n//2*3)
         return self.semantic_embedding(x.to(torch.long))
 
-    def forward(self, Stoks, Atoks, speakers, noloss=False, kv_cache=None):
+    def forward(self, Stoks, Atoks, speakers, noloss=False, offset=0):
         semb = self.embed_stoks(Stoks)
         with record_function("encoder"):
             xenc = self.ln_post(self.encoder(semb + self.positional_embeddings))
         with record_function("decoder"):
-            x = self.embedding(Atoks, xenc + self.speaker_embedding(speakers).unsqueeze(1), kv_cache=kv_cache)
-            x = self.decoder(x, is_causal=False, kv_cache=kv_cache)
+            x = self.embedding(
+                Atoks, xenc + self.speaker_embedding(speakers).unsqueeze(1), use_cache=self.use_kv_cache, offset=offset)
+            x = self.decoder(x)
             logits = self.head_layer(x, x.shape[1])
             logits *= self.tunables.output_mult / (self.width / self.base_width)
             
@@ -351,11 +351,17 @@ class SADelARTransformer(nn.Module):
     # inference
     #
     @classmethod
-    def load_model(cls, repo_id="collabora/whisperspeech", filename="s2a_up.model", local_filename=None):
+    def load_model(
+        cls,
+        repo_id="collabora/whisperspeech",
+        filename="s2a_up.model",
+        local_filename=None,
+        use_kv_cache=True
+    ):
         if not local_filename:
             local_filename = hf_hub_download(repo_id=repo_id, filename=filename)
         spec = torch.load(local_filename)
-        model = cls(**spec['config'], tunables=Tunables(**spec['tunables']))
+        model = cls(**spec['config'], tunables=Tunables(**spec['tunables']), use_kv_cache=use_kv_cache)
         model.load_state_dict(spec['state_dict'])
         model.eval()
         return model
@@ -378,63 +384,41 @@ class SADelARTransformer(nn.Module):
         return next(self.parameters()).device
     
     @torch.no_grad()
-    def generate(self, stoks, speakers, N=None, T=0.7, top_k=None, kv_cache=None, gt_toks=None):
+    def generate(self, stoks, speakers, N=None, T=0.7, top_k=None):
         dev = self.device
         N = N or len(stoks) * 3 // 2
         stoks = F.pad(stoks.to(dev), (0, self.ctx_n * 2 // 3 - len(stoks))).unsqueeze(0)
         speakers = torch.tensor([self.speaker_map[spk] for spk in speakers], device=dev)
         toks = torch.zeros((1,self.quantizers,N), dtype=torch.long, device=dev)
+        
+        # install decoder kv cache hooks
+        if self.use_kv_cache:
+            self.decoder.install_kv_cache_hooks()
+        
         for i in progress_bar(range(N)):
             toks_ = toks[:, :, :i]
-            if kv_cache:
+            if self.use_kv_cache:
                 toks_ = toks_[:, :, -1:]
-            p = self(stoks, toks_, speakers, noloss=True, kv_cache=kv_cache)
+            p = self(stoks, toks_, speakers, noloss=True, offset=i if self.use_kv_cache else 0)
             last_p = p[0,:,-1]
             
             if top_k:
                 last_p[last_p < torch.topk(last_p, top_k).values[:,-1,None]] = -torch.inf
+            
             for j,tok in enumerate(torch.multinomial((last_p / float(T)).softmax(-1), 1)):
                 if i-j >= 0:
                     toks[0,j,i] = tok
             
             if toks[0,0,i] == 1024:
-                for i in range(self.quantizers):
-                    toks[0, i] = torch.roll(toks[0, i], -i)
-                return toks[0, :, :i]
-        for i in range(self.quantizers):
-            toks[0, i] = torch.roll(toks[0, i], -i)
-        return toks
-    
-    def install_kv_cache_hooks(self, cache = None):
-        """
-        The `MultiHeadAttention` module optionally accepts `kv_cache` which stores the key and value
-        tensors calculated for the previous positions. This method returns a dictionary that stores
-        all caches, and the necessary hooks for the key and value projection modules that save the
-        intermediate tensors to be reused during later calculations.
+                break
 
-        Returns
-        -------
-        cache : Dict[nn.Module, torch.Tensor]
-            A dictionary object mapping the key/value projection modules to its cache
-        hooks : List[RemovableHandle]
-            List of PyTorch RemovableHandle objects to stop the hooks to be called
-        """
-        cache = {**cache} if cache is not None else {}
-        hooks = []
-        def save_to_cache(module, _, output):
-            if module not in cache:
-                cache[module] = output
-            else:
-                cache[module] = torch.cat([cache[module], output], dim=1).detach()
-            return cache[module]
-
-        def install_hooks(layer: nn.Module):
-            if isinstance(layer, MultiHeadAttention):
-                hooks.append(layer.key.register_forward_hook(save_to_cache))
-                hooks.append(layer.value.register_forward_hook(save_to_cache))
-
-        self.decoder.apply(install_hooks)
-        return cache, hooks
+        for j in range(self.quantizers):
+            toks[0, j] = torch.roll(toks[0, j], -j)
+        
+        if self.use_kv_cache:
+            self.decoder.cleanup_caching()
+        
+        return toks[:, :, :i]
         
     def reset_stats(self):
         self.register_buffer('val_true', torch.zeros(self.quantizers).cuda())
