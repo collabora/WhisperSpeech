@@ -11,9 +11,9 @@ from whisperspeech.a2wav import Vocoder
 
 # %% ../nbs/7. Pipeline.ipynb 2
 class Pipeline:
-    def __init__(self):
-        self.t2s = TSARTransformer.load_model().cuda()
-        self.s2a = SADelARTransformer.load_model().cuda()
+    def __init__(self, use_kv_cache=True):
+        self.t2s = TSARTransformer.load_model(use_kv_cache=use_kv_cache).cuda()
+        self.s2a = SADelARTransformer.load_model(use_kv_cache=use_kv_cache).cuda()
         self.vocoder = Vocoder()
 
     def generate_atoks(self, text, speaker="3645"):
@@ -24,9 +24,9 @@ class Pipeline:
         
     def generate(self, text, speaker="3645"):
         return self.vocoder.decode(self.generate_atoks(text, speaker))
-    
+
     def generate_to_file(self, fname, text, speaker="3645"):
         self.vocoder.decode_to_file(fname, self.generate_atoks(text, speaker))
-        
+
     def generate_to_notebook(self, text, speaker="3645"):
         self.vocoder.decode_to_notebook(self.generate_atoks(text, speaker))
