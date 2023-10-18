@@ -5,48 +5,7 @@ d = { 'settings': { 'branch': 'master',
                 'doc_host': 'https://collabora.github.io',
                 'git_url': 'https://github.com/collabora/WhisperSpeech',
                 'lib_path': 'whisperspeech'},
-  'syms': { 'whisperspeech.a2a': { 'whisperspeech.a2a.AAARTransformer': ( '6. encodec quality enchancement.html#aaartransformer',
-                                                                          'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.AAARTransformer.__init__': ( '6. encodec quality '
-                                                                                   'enchancement.html#aaartransformer.__init__',
-                                                                                   'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.AAARTransformer.forward': ( '6. encodec quality '
-                                                                                  'enchancement.html#aaartransformer.forward',
-                                                                                  'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.LayerNorm': ( '6. encodec quality enchancement.html#layernorm',
-                                                                    'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.LayerNorm.forward': ( '6. encodec quality enchancement.html#layernorm.forward',
-                                                                            'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.PureEncoder': ( '6. encodec quality enchancement.html#pureencoder',
-                                                                      'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.PureEncoder.__init__': ( '6. encodec quality enchancement.html#pureencoder.__init__',
-                                                                               'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.PureEncoder.forward': ( '6. encodec quality enchancement.html#pureencoder.forward',
-                                                                              'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.SADataset': ( '6. encodec quality enchancement.html#sadataset',
-                                                                    'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.SADataset.A_tokens': ( '6. encodec quality enchancement.html#sadataset.a_tokens',
-                                                                             'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.SADataset.__getitem__': ( '6. encodec quality '
-                                                                                'enchancement.html#sadataset.__getitem__',
-                                                                                'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.SADataset.__init__': ( '6. encodec quality enchancement.html#sadataset.__init__',
-                                                                             'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.SADataset.__len__': ( '6. encodec quality enchancement.html#sadataset.__len__',
-                                                                            'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.SADataset.__repr__': ( '6. encodec quality enchancement.html#sadataset.__repr__',
-                                                                             'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.SADataset.hours': ( '6. encodec quality enchancement.html#sadataset.hours',
-                                                                          'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.init_transformer': ( '6. encodec quality enchancement.html#init_transformer',
-                                                                           'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.load_data': ( '6. encodec quality enchancement.html#load_data',
-                                                                    'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.load_datasets': ( '6. encodec quality enchancement.html#load_datasets',
-                                                                        'whisperspeech/a2a.py'),
-                                   'whisperspeech.a2a.make_model': ( '6. encodec quality enchancement.html#make_model',
-                                                                     'whisperspeech/a2a.py')},
-            'whisperspeech.a2wav': { 'whisperspeech.a2wav.Vocoder': ('6. quality-boosting vocoder.html#vocoder', 'whisperspeech/a2wav.py'),
+  'syms': { 'whisperspeech.a2wav': { 'whisperspeech.a2wav.Vocoder': ('6. quality-boosting vocoder.html#vocoder', 'whisperspeech/a2wav.py'),
                                      'whisperspeech.a2wav.Vocoder.__init__': ( '6. quality-boosting vocoder.html#vocoder.__init__',
                                                                                'whisperspeech/a2wav.py'),
                                      'whisperspeech.a2wav.Vocoder.decode': ( '6. quality-boosting vocoder.html#vocoder.decode',
@@ -77,83 +36,6 @@ d = { 'settings': { 'branch': 'master',
                                             'whisperspeech.extract_semb.load_model': ( '2c. whisper semantic embedding '
                                                                                        'extraction.html#load_model',
                                                                                        'whisperspeech/extract_semb.py')},
-            'whisperspeech.extract_stoks': { 'whisperspeech.extract_stoks.LayerNorm': ( '2f. residual (rq) semantic token extraction '
-                                                                                        'model.html#layernorm',
-                                                                                        'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.LayerNorm.forward': ( '2f. residual (rq) semantic token '
-                                                                                                'extraction model.html#layernorm.forward',
-                                                                                                'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.RQBottleneckTransformer': ( '2f. residual (rq) semantic token '
-                                                                                                      'extraction '
-                                                                                                      'model.html#rqbottlenecktransformer',
-                                                                                                      'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.RQBottleneckTransformer.__init__': ( '2f. residual (rq) semantic '
-                                                                                                               'token extraction '
-                                                                                                               'model.html#rqbottlenecktransformer.__init__',
-                                                                                                               'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.RQBottleneckTransformer.decode_text': ( '2f. residual (rq) '
-                                                                                                                  'semantic token '
-                                                                                                                  'extraction '
-                                                                                                                  'model.html#rqbottlenecktransformer.decode_text',
-                                                                                                                  'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.RQBottleneckTransformer.dequantize': ( '2f. residual (rq) '
-                                                                                                                 'semantic token '
-                                                                                                                 'extraction '
-                                                                                                                 'model.html#rqbottlenecktransformer.dequantize',
-                                                                                                                 'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.RQBottleneckTransformer.encode_audio': ( '2f. residual (rq) '
-                                                                                                                   'semantic token '
-                                                                                                                   'extraction '
-                                                                                                                   'model.html#rqbottlenecktransformer.encode_audio',
-                                                                                                                   'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.RQBottleneckTransformer.encode_mel': ( '2f. residual (rq) '
-                                                                                                                 'semantic token '
-                                                                                                                 'extraction '
-                                                                                                                 'model.html#rqbottlenecktransformer.encode_mel',
-                                                                                                                 'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.RQBottleneckTransformer.ensure_whisper': ( '2f. residual (rq) '
-                                                                                                                     'semantic token '
-                                                                                                                     'extraction '
-                                                                                                                     'model.html#rqbottlenecktransformer.ensure_whisper',
-                                                                                                                     'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.RQBottleneckTransformer.forward': ( '2f. residual (rq) semantic '
-                                                                                                              'token extraction '
-                                                                                                              'model.html#rqbottlenecktransformer.forward',
-                                                                                                              'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.RQBottleneckTransformer.get_teacher_logits': ( '2f. residual '
-                                                                                                                         '(rq) semantic '
-                                                                                                                         'token extraction '
-                                                                                                                         'model.html#rqbottlenecktransformer.get_teacher_logits',
-                                                                                                                         'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.RQBottleneckTransformer.load_model': ( '2f. residual (rq) '
-                                                                                                                 'semantic token '
-                                                                                                                 'extraction '
-                                                                                                                 'model.html#rqbottlenecktransformer.load_model',
-                                                                                                                 'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.RQBottleneckTransformer.quantize': ( '2f. residual (rq) semantic '
-                                                                                                               'token extraction '
-                                                                                                               'model.html#rqbottlenecktransformer.quantize',
-                                                                                                               'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.RQBottleneckTransformer.save_model': ( '2f. residual (rq) '
-                                                                                                                 'semantic token '
-                                                                                                                 'extraction '
-                                                                                                                 'model.html#rqbottlenecktransformer.save_model',
-                                                                                                                 'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.encode_stoks': ( '2f. residual (rq) semantic token extraction '
-                                                                                           'model.html#encode_stoks',
-                                                                                           'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.extract_stoks': ( '2f. residual (rq) semantic token extraction '
-                                                                                            'model.html#extract_stoks',
-                                                                                            'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.init_transformer': ( '2f. residual (rq) semantic token '
-                                                                                               'extraction model.html#init_transformer',
-                                                                                               'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.load_model': ( '2f. residual (rq) semantic token extraction '
-                                                                                         'model.html#load_model',
-                                                                                         'whisperspeech/extract_stoks.py'),
-                                             'whisperspeech.extract_stoks.sinusoids': ( '2f. residual (rq) semantic token extraction '
-                                                                                        'model.html#sinusoids',
-                                                                                        'whisperspeech/extract_stoks.py')},
             'whisperspeech.fetch_models': { 'whisperspeech.fetch_models.main': ( '0. download models.html#main',
                                                                                  'whisperspeech/fetch_models.py')},
             'whisperspeech.modules': { 'whisperspeech.modules.Decoder': ('a. neural modules.html#decoder', 'whisperspeech/modules.py'),
@@ -182,6 +64,9 @@ d = { 'settings': { 'branch': 'master',
                                        'whisperspeech.modules.MultiHeadAttention.qkv_attention_pth20': ( 'a. neural '
                                                                                                          'modules.html#multiheadattention.qkv_attention_pth20',
                                                                                                          'whisperspeech/modules.py'),
+                                       'whisperspeech.modules.MultiHeadAttention.qkv_attention_vanilla': ( 'a. neural '
+                                                                                                           'modules.html#multiheadattention.qkv_attention_vanilla',
+                                                                                                           'whisperspeech/modules.py'),
                                        'whisperspeech.modules.MultiHeadAttention.qkv_attention_xformers': ( 'a. neural '
                                                                                                             'modules.html#multiheadattention.qkv_attention_xformers',
                                                                                                             'whisperspeech/modules.py'),
@@ -194,14 +79,23 @@ d = { 'settings': { 'branch': 'master',
                                        'whisperspeech.modules.ResidualAttentionBlock.forward': ( 'a. neural '
                                                                                                  'modules.html#residualattentionblock.forward',
                                                                                                  'whisperspeech/modules.py'),
+                                       'whisperspeech.modules.Rotary': ('a. neural modules.html#rotary', 'whisperspeech/modules.py'),
+                                       'whisperspeech.modules.Rotary.__init__': ( 'a. neural modules.html#rotary.__init__',
+                                                                                  'whisperspeech/modules.py'),
+                                       'whisperspeech.modules.Rotary.forward': ( 'a. neural modules.html#rotary.forward',
+                                                                                 'whisperspeech/modules.py'),
                                        'whisperspeech.modules.SumDecoder': ( 'a. neural modules.html#sumdecoder',
                                                                              'whisperspeech/modules.py'),
                                        'whisperspeech.modules.SumDecoder.__init__': ( 'a. neural modules.html#sumdecoder.__init__',
                                                                                       'whisperspeech/modules.py'),
                                        'whisperspeech.modules.SumDecoder.forward': ( 'a. neural modules.html#sumdecoder.forward',
                                                                                      'whisperspeech/modules.py'),
+                                       'whisperspeech.modules.apply_rotary_pos_emb': ( 'a. neural modules.html#apply_rotary_pos_emb',
+                                                                                       'whisperspeech/modules.py'),
                                        'whisperspeech.modules.init_transformer': ( 'a. neural modules.html#init_transformer',
                                                                                    'whisperspeech/modules.py'),
+                                       'whisperspeech.modules.rotate_half': ( 'a. neural modules.html#rotate_half',
+                                                                              'whisperspeech/modules.py'),
                                        'whisperspeech.modules.sinusoids': ('a. neural modules.html#sinusoids', 'whisperspeech/modules.py')},
             'whisperspeech.pipeline': { 'whisperspeech.pipeline.Pipeline': ('7. pipeline.html#pipeline', 'whisperspeech/pipeline.py'),
                                         'whisperspeech.pipeline.Pipeline.__init__': ( '7. pipeline.html#pipeline.__init__',
@@ -215,6 +109,30 @@ d = { 'settings': { 'branch': 'master',
                                         'whisperspeech.pipeline.Pipeline.generate_to_notebook': ( '7. '
                                                                                                   'pipeline.html#pipeline.generate_to_notebook',
                                                                                                   'whisperspeech/pipeline.py')},
+            'whisperspeech.prepare_s2a_dataset': { 'whisperspeech.prepare_s2a_dataset.flac_to_s2a_name': ( '4a. s2a dataset '
+                                                                                                           'preparation.html#flac_to_s2a_name',
+                                                                                                           'whisperspeech/prepare_s2a_dataset.py'),
+                                                   'whisperspeech.prepare_s2a_dataset.prepare_s2a': ( '4a. s2a dataset '
+                                                                                                      'preparation.html#prepare_s2a',
+                                                                                                      'whisperspeech/prepare_s2a_dataset.py'),
+                                                   'whisperspeech.prepare_s2a_dataset.resampler': ( '4a. s2a dataset '
+                                                                                                    'preparation.html#resampler',
+                                                                                                    'whisperspeech/prepare_s2a_dataset.py')},
+            'whisperspeech.prepare_t2s_dataset': { 'whisperspeech.prepare_t2s_dataset.Transcriber': ( '5a. t2s dataset '
+                                                                                                      'preparation.html#transcriber',
+                                                                                                      'whisperspeech/prepare_t2s_dataset.py'),
+                                                   'whisperspeech.prepare_t2s_dataset.Transcriber.__init__': ( '5a. t2s dataset '
+                                                                                                               'preparation.html#transcriber.__init__',
+                                                                                                               'whisperspeech/prepare_t2s_dataset.py'),
+                                                   'whisperspeech.prepare_t2s_dataset.Transcriber.transcribe': ( '5a. t2s dataset '
+                                                                                                                 'preparation.html#transcriber.transcribe',
+                                                                                                                 'whisperspeech/prepare_t2s_dataset.py'),
+                                                   'whisperspeech.prepare_t2s_dataset.flac_to_t2s_name': ( '5a. t2s dataset '
+                                                                                                           'preparation.html#flac_to_t2s_name',
+                                                                                                           'whisperspeech/prepare_t2s_dataset.py'),
+                                                   'whisperspeech.prepare_t2s_dataset.prepare_t2s': ( '5a. t2s dataset '
+                                                                                                      'preparation.html#prepare_t2s',
+                                                                                                      'whisperspeech/prepare_t2s_dataset.py')},
             'whisperspeech.s2a_delar_mup': { 'whisperspeech.s2a_delar_mup.CMLMVisual': ( '3c. multi-speaker semantic to acoustic token '
                                                                                          'modeling musicgen μpt.html#cmlmvisual',
                                                                                          'whisperspeech/s2a_delar_mup.py'),
@@ -472,6 +390,117 @@ d = { 'settings': { 'branch': 'master',
                                                                         'whisperspeech/vad.py'),
                                    'whisperspeech.vad.segment_audio': ( '1b. voice activity detection.html#segment_audio',
                                                                         'whisperspeech/vad.py')},
+            'whisperspeech.verify_wds': { 'whisperspeech.verify_wds.process_shard': ( '0. verify webdataset archives.html#process_shard',
+                                                                                      'whisperspeech/verify_wds.py')},
+            'whisperspeech.vq_stoks': { 'whisperspeech.vq_stoks.RQBottleneckTransformer': ( '2a. vq semantic token extraction '
+                                                                                            'model.html#rqbottlenecktransformer',
+                                                                                            'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.__init__': ( '2a. vq semantic token extraction '
+                                                                                                     'model.html#rqbottlenecktransformer.__init__',
+                                                                                                     'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.decode_text': ( '2a. vq semantic token extraction '
+                                                                                                        'model.html#rqbottlenecktransformer.decode_text',
+                                                                                                        'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.dequantize': ( '2a. vq semantic token extraction '
+                                                                                                       'model.html#rqbottlenecktransformer.dequantize',
+                                                                                                       'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.device': ( '2a. vq semantic token extraction '
+                                                                                                   'model.html#rqbottlenecktransformer.device',
+                                                                                                   'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.downsample_embeddings': ( '2a. vq semantic token '
+                                                                                                                  'extraction '
+                                                                                                                  'model.html#rqbottlenecktransformer.downsample_embeddings',
+                                                                                                                  'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.encode_audio': ( '2a. vq semantic token extraction '
+                                                                                                         'model.html#rqbottlenecktransformer.encode_audio',
+                                                                                                         'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.encode_mel': ( '2a. vq semantic token extraction '
+                                                                                                       'model.html#rqbottlenecktransformer.encode_mel',
+                                                                                                       'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.ensure_whisper': ( '2a. vq semantic token '
+                                                                                                           'extraction '
+                                                                                                           'model.html#rqbottlenecktransformer.ensure_whisper',
+                                                                                                           'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.extract_teacher': ( '2a. vq semantic token '
+                                                                                                            'extraction '
+                                                                                                            'model.html#rqbottlenecktransformer.extract_teacher',
+                                                                                                            'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.forward': ( '2a. vq semantic token extraction '
+                                                                                                    'model.html#rqbottlenecktransformer.forward',
+                                                                                                    'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.get_metrics': ( '2a. vq semantic token extraction '
+                                                                                                        'model.html#rqbottlenecktransformer.get_metrics',
+                                                                                                        'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.init_transformer': ( '2a. vq semantic token '
+                                                                                                             'extraction '
+                                                                                                             'model.html#rqbottlenecktransformer.init_transformer',
+                                                                                                             'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.load_checkpoint': ( '2a. vq semantic token '
+                                                                                                            'extraction '
+                                                                                                            'model.html#rqbottlenecktransformer.load_checkpoint',
+                                                                                                            'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.load_model': ( '2a. vq semantic token extraction '
+                                                                                                       'model.html#rqbottlenecktransformer.load_model',
+                                                                                                       'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.quantize': ( '2a. vq semantic token extraction '
+                                                                                                     'model.html#rqbottlenecktransformer.quantize',
+                                                                                                     'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.save_model': ( '2a. vq semantic token extraction '
+                                                                                                       'model.html#rqbottlenecktransformer.save_model',
+                                                                                                       'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.setup': ( '2a. vq semantic token extraction '
+                                                                                                  'model.html#rqbottlenecktransformer.setup',
+                                                                                                  'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.Tunables': ( '2a. vq semantic token extraction model.html#tunables',
+                                                                             'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.Tunables.__post_init__': ( '2a. vq semantic token extraction '
+                                                                                           'model.html#tunables.__post_init__',
+                                                                                           'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.Tunables.upgrade': ( '2a. vq semantic token extraction '
+                                                                                     'model.html#tunables.upgrade',
+                                                                                     'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.add_masks': ( '2a. vq semantic token extraction model.html#add_masks',
+                                                                              'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.derived_dataset': ( '2a. vq semantic token extraction '
+                                                                                    'model.html#derived_dataset',
+                                                                                    'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.load_datasets': ( '2a. vq semantic token extraction '
+                                                                                  'model.html#load_datasets',
+                                                                                  'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.logrand': ( '2a. vq semantic token extraction model.html#logrand',
+                                                                            'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.make_model': ( '2a. vq semantic token extraction model.html#make_model',
+                                                                               'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.merge_in': ( '2a. vq semantic token extraction model.html#merge_in',
+                                                                             'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.rand': ( '2a. vq semantic token extraction model.html#rand',
+                                                                         'whisperspeech/vq_stoks.py'),
+                                        'whisperspeech.vq_stoks.tokenize_text': ( '2a. vq semantic token extraction '
+                                                                                  'model.html#tokenize_text',
+                                                                                  'whisperspeech/vq_stoks.py')},
+            'whisperspeech.wer_metrics': { 'whisperspeech.wer_metrics.DfBuilder': ( 'c. word error rate metrics.html#dfbuilder',
+                                                                                    'whisperspeech/wer_metrics.py'),
+                                           'whisperspeech.wer_metrics.DfBuilder.__init__': ( 'c. word error rate '
+                                                                                             'metrics.html#dfbuilder.__init__',
+                                                                                             'whisperspeech/wer_metrics.py'),
+                                           'whisperspeech.wer_metrics.DfBuilder.df': ( 'c. word error rate metrics.html#dfbuilder.df',
+                                                                                       'whisperspeech/wer_metrics.py'),
+                                           'whisperspeech.wer_metrics.DfBuilder.push': ( 'c. word error rate metrics.html#dfbuilder.push',
+                                                                                         'whisperspeech/wer_metrics.py'),
+                                           'whisperspeech.wer_metrics.WERStats': ( 'c. word error rate metrics.html#werstats',
+                                                                                   'whisperspeech/wer_metrics.py'),
+                                           'whisperspeech.wer_metrics.WERStats.__init__': ( 'c. word error rate '
+                                                                                            'metrics.html#werstats.__init__',
+                                                                                            'whisperspeech/wer_metrics.py'),
+                                           'whisperspeech.wer_metrics.WERStats.push_sample': ( 'c. word error rate '
+                                                                                               'metrics.html#werstats.push_sample',
+                                                                                               'whisperspeech/wer_metrics.py'),
+                                           'whisperspeech.wer_metrics.librispeech_data': ( 'c. word error rate '
+                                                                                           'metrics.html#librispeech_data',
+                                                                                           'whisperspeech/wer_metrics.py'),
+                                           'whisperspeech.wer_metrics.whisper_normalize': ( 'c. word error rate '
+                                                                                            'metrics.html#whisper_normalize',
+                                                                                            'whisperspeech/wer_metrics.py')},
             'whisperspeech.wh_transcribe': { 'whisperspeech.wh_transcribe.chunk_merger': ( '1c. whisper transcription.html#chunk_merger',
                                                                                            'whisperspeech/wh_transcribe.py'),
                                              'whisperspeech.wh_transcribe.flac_to_txt_name': ( '1c. whisper '

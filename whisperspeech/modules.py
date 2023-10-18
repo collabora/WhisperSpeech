@@ -53,7 +53,7 @@ def sinusoids(length, channels, max_timescale=10000):
 
 # %% ../nbs/A. Neural modules.ipynb 5
 class MultiHeadAttention(nn.Module):
-    def __init__(self, n_state: int, n_head: int, qk_scale: float = 1):
+    def __init__(self, n_state: int, n_head: int, qk_scale: float = 1, rope: bool = False):
         super().__init__()
         self.n_head = n_head
         self.sqrt_qk_scale = math.sqrt(qk_scale)
@@ -61,6 +61,10 @@ class MultiHeadAttention(nn.Module):
         self.key = nn.Linear(n_state, n_state, bias=False)
         self.value = nn.Linear(n_state, n_state)
         self.out = nn.Linear(n_state, n_state)
+        
+        self.rotary = None
+        if rope:
+            self.rotary = Rotary(n_state // n_head)
 
     def forward(
         self,
@@ -85,8 +89,7 @@ class MultiHeadAttention(nn.Module):
             q *= self.sqrt_qk_scale
             k *= self.sqrt_qk_scale
 
-        wv, qk = self.qkv_attention_pth20(q, k, v, causal)
-#         wv, qk = self.qkv_attention_xformers(q, k, v, causal)
+        wv, qk = self.qkv_attention(q, k, v, causal)
         
         return self.out(wv), qk
 
@@ -94,10 +97,15 @@ class MultiHeadAttention(nn.Module):
         self, q: Tensor, k: Tensor, v: Tensor, causal = False
     ):
         n_batch, n_ctx, n_state = q.shape
-        q = q.view(*q.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
-        k = k.view(*k.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
+        q = q.view(*q.shape[:2], self.n_head, -1)
+        k = k.view(*k.shape[:2], self.n_head, -1)
         v = v.view(*v.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
+        
+        if self.rotary:
+            q, k = apply_rotary_pos_emb(q, k, *self.rotary(k))
 
+        k = k.permute(0, 2, 1, 3)
+        q = q.permute(0, 2, 1, 3)
         # modified for better performance under PyTorch 2.0
         wv = F.scaled_dot_product_attention(q, k, v, attn_mask=None, dropout_p=0, is_causal=causal)
 
@@ -112,7 +120,10 @@ class MultiHeadAttention(nn.Module):
         q = q.view(*q.shape[:2], self.n_head, -1)
         k = k.view(*k.shape[:2], self.n_head, -1)
         v = v.view(*v.shape[:2], self.n_head, -1)
-        
+
+        if self.rotary:
+            q, k = apply_rotary_pos_emb(q, k, *self.rotary(k))
+
         bias = xops.LowerTriangularMask() if causal else None
         wv = xops.memory_efficient_attention(q,k,v, attn_bias=bias)
 
@@ -120,17 +131,72 @@ class MultiHeadAttention(nn.Module):
         # since it's not actually used anywhere else, let's just keep two return values for compatibility
         return wv.flatten(start_dim=2), None
 
+    def qkv_attention_vanilla(
+        self, q: Tensor, k: Tensor, v: Tensor, causal = False
+    ):
+        n_batch, n_ctx, n_state = q.shape
+        scale = (n_state // self.n_head) ** -0.25
+        q = q.view(*q.shape[:2], self.n_head, -1).permute(0, 2, 1, 3) * scale * self.sqrt_qk_scale
+        k = k.view(*k.shape[:2], self.n_head, -1).permute(0, 2, 3, 1) * scale * self.sqrt_qk_scale
+        v = v.view(*v.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
+
+        qk = q @ k
+        if causal:
+            qk = qk + torch.empty(n_ctx, n_ctx).fill_(-np.inf).triu_(1)[:n_ctx, :n_ctx]
+        qk = qk.float()
+
+        self.last_qk = qk.detach().cpu()
+        w = F.softmax(qk, dim=-1).to(q.dtype)
+        return (w @ v).permute(0, 2, 1, 3).flatten(start_dim=2), qk.detach()
+    
+    qkv_attention = qkv_attention_pth20
+
 # %% ../nbs/A. Neural modules.ipynb 6
+# modified from https://blog.eleuther.ai/rotary-embeddings/
+
+class Rotary(torch.nn.Module):
+    def __init__(self, dim, base=10000):
+        super().__init__()
+        inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float() / dim))
+        self.register_buffer("inv_freq", inv_freq)
+        self.seq_len_cached = None
+        self.cos_cached = None
+        self.sin_cached = None
+
+    def forward(self, x, seq_dim=1):
+        seq_len = x.shape[seq_dim]
+        if seq_len != self.seq_len_cached:
+            self.seq_len_cached = seq_len
+            t = torch.arange(x.shape[seq_dim], device=x.device).type_as(self.inv_freq)
+            freqs = torch.einsum("i,j->ij", t, self.inv_freq)
+            emb = torch.cat((freqs, freqs), dim=-1).to(x.device)
+            self.cos_cached = emb.cos()[None, :, None, :]
+            self.sin_cached = emb.sin()[None, :, None, :]
+        return self.cos_cached, self.sin_cached
+
+
+# rotary pos emb helpers:
+def rotate_half(x):
+    x1, x2 = x[..., : x.shape[-1] // 2], x[..., x.shape[-1] // 2 :]
+    return torch.cat(
+        (-x2, x1), dim=x.ndim - 1
+    )
+
+@torch.jit.script
+def apply_rotary_pos_emb(q, k, cos, sin):
+    return (q * cos) + (rotate_half(q) * sin), (k * cos) + (rotate_half(k) * sin)
+
+# %% ../nbs/A. Neural modules.ipynb 7
 class ResidualAttentionBlock(nn.Module):
-    def __init__(self, n_state: int, n_head: int, cross_attention: bool = False,
+    def __init__(self, n_state: int, n_head: int, cross_attention: bool = False, rope: bool = False,
                  qk_scale: float = 1, ffn_mult: int = 4):
         super().__init__()
 
-        self.attn = MultiHeadAttention(n_state, n_head, qk_scale=qk_scale)
+        self.attn = MultiHeadAttention(n_state, n_head, qk_scale=qk_scale, rope=rope)
         self.attn_ln = LayerNorm(n_state)
 
         self.cross_attn = (
-            MultiHeadAttention(n_state, n_head, qk_scale=qk_scale) if cross_attention else None
+            MultiHeadAttention(n_state, n_head, qk_scale=qk_scale, rope=rope) if cross_attention else None
         )
         self.cross_attn_ln = LayerNorm(n_state) if cross_attention else None
 
@@ -153,7 +219,7 @@ class ResidualAttentionBlock(nn.Module):
         x = x + self.mlp(self.mlp_ln(x))
         return x
 
-# %% ../nbs/A. Neural modules.ipynb 7
+# %% ../nbs/A. Neural modules.ipynb 8
 class Encoder(nn.Module):
     def __init__(self, depth=6, width=384, n_head=6, length=1500, codes=1024, qk_scale=1, pos_embs=None):
         super().__init__()
@@ -179,7 +245,7 @@ class Encoder(nn.Module):
 
         return self.ln_post(self.layers(xin))
 
-# %% ../nbs/A. Neural modules.ipynb 8
+# %% ../nbs/A. Neural modules.ipynb 9
 class Decoder(nn.Module):
     def __init__(self, depth=6, width=384, n_head=6, length=1500, codes=1024, qk_scale=1, pos_embs=None):
         super().__init__()
@@ -218,7 +284,7 @@ class Decoder(nn.Module):
         logits = (x @ self.embedding.weight.to(x.dtype).T).float()
         return logits
 
-# %% ../nbs/A. Neural modules.ipynb 9
+# %% ../nbs/A. Neural modules.ipynb 10
 class SumDecoder(nn.Module):
     def __init__(self, depth=6, width=384, n_head=6, length=9000, codes=1024, qk_scale=1, pos_embs=None):
         super().__init__()
