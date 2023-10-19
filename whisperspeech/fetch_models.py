@@ -12,5 +12,6 @@ import whisper
 @call_parse
 def main():
     whisper.load_model('base.en')
-    whisper.load_model('large-v2')
+    whisper.load_model('small.en')
     whisperx.vad.load_vad_model('cpu')
+    whisperx.asr.load_model('medium.en', "cpu", compute_type="float16", language='en')
