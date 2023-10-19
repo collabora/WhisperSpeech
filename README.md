@@ -48,6 +48,16 @@ Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.
 [Older progress updates are archived
 here](https://github.com/collabora/WhisperSpeech/issues/23)
 
+## Downloads
+
+We encourage you to start with the Google Colab link above or run the
+provided notebook locally. If you want to download manually or train the
+models from scratch then both [the WhisperSpeech pre-trained
+models](https://huggingface.co/collabora/whisperspeech) as well as [the
+converted
+datasets](https://huggingface.co/datasets/collabora/whisperspeech) are
+available on HuggingFace.
+
 ## Roadmap
 
 - [x] [Extract acoustic

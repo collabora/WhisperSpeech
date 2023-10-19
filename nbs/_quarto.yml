@@ -15,20 +15,20 @@ format:
     toc-depth: 4
 
 website:
-  title: "spear-tts-pytorch"
-  site-url: "https://collabora.github.io/spear-tts-pytorch"
-  description: "An unofficial PyTorch implementation of SPEAR-TTS."
+  title: "WhisperSpeech"
+  site-url: "https://collabora.github.io/WhisperSpeech"
+  description: "An Open Source text-to-speech system built by inverting Whisper"
   twitter-card: true
   open-graph: true
   repo-branch: master
-  repo-url: "https://github.com/collabora/spear-tts-pytorch"
+  repo-url: "https://github.com/collabora/WhisperSpeech"
   repo-actions: [issue]
   navbar:
     background: primary
     search: true
     right:
       - icon: github
-        href: "https://github.com/collabora/spear-tts-pytorch"
+        href: "https://github.com/collabora/WhisperSpeech"
   sidebar:
     style: "floating"
 
