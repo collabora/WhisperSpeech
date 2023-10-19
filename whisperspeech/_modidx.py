@@ -425,7 +425,8 @@ d = { 'settings': { 'branch': 'master',
                                                                                 'whisperspeech/train.py'),
                                      'whisperspeech.train.SimpleVisual.show': ( 'b1. training.html#simplevisual.show',
                                                                                 'whisperspeech/train.py'),
-                                     'whisperspeech.train.train': ('b1. training.html#train', 'whisperspeech/train.py')},
+                                     'whisperspeech.train.train': ('b1. training.html#train', 'whisperspeech/train.py'),
+                                     'whisperspeech.train.validate': ('b1. training.html#validate', 'whisperspeech/train.py')},
             'whisperspeech.train_multi': { 'whisperspeech.train_multi.TrainingTask': ( 'b2. training (lightning).html#trainingtask',
                                                                                        'whisperspeech/train_multi.py'),
                                            'whisperspeech.train_multi.TrainingTask.__init__': ( 'b2. training '
@@ -434,6 +435,12 @@ d = { 'settings': { 'branch': 'master',
                                            'whisperspeech.train_multi.TrainingTask.configure_optimizers': ( 'b2. training '
                                                                                                             '(lightning).html#trainingtask.configure_optimizers',
                                                                                                             'whisperspeech/train_multi.py'),
+                                           'whisperspeech.train_multi.TrainingTask.on_fit_start': ( 'b2. training '
+                                                                                                    '(lightning).html#trainingtask.on_fit_start',
+                                                                                                    'whisperspeech/train_multi.py'),
+                                           'whisperspeech.train_multi.TrainingTask.on_validation_epoch_end': ( 'b2. training '
+                                                                                                               '(lightning).html#trainingtask.on_validation_epoch_end',
+                                                                                                               'whisperspeech/train_multi.py'),
                                            'whisperspeech.train_multi.TrainingTask.test_step': ( 'b2. training '
                                                                                                  '(lightning).html#trainingtask.test_step',
                                                                                                  'whisperspeech/train_multi.py'),
