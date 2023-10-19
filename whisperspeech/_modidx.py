@@ -270,79 +270,101 @@ d = { 'settings': { 'branch': 'master',
                                              'whisperspeech.s2a_delar_mup.rand': ( '3c. multi-speaker semantic to acoustic token modeling '
                                                                                    'musicgen μpt.html#rand',
                                                                                    'whisperspeech/s2a_delar_mup.py')},
-            'whisperspeech.t2s_up': { 'whisperspeech.t2s_up.Decoder': ( '5. text to semantic token modeling μp.html#decoder',
-                                                                        'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.Decoder.__init__': ( '5. text to semantic token modeling '
-                                                                                 'μp.html#decoder.__init__',
-                                                                                 'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.Decoder.forward': ( '5. text to semantic token modeling '
-                                                                                'μp.html#decoder.forward',
-                                                                                'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.Encoder': ( '5. text to semantic token modeling μp.html#encoder',
-                                                                        'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.Encoder.__init__': ( '5. text to semantic token modeling '
-                                                                                 'μp.html#encoder.__init__',
-                                                                                 'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.Encoder.forward': ( '5. text to semantic token modeling '
-                                                                                'μp.html#encoder.forward',
-                                                                                'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.SADataset': ( '5. text to semantic token modeling μp.html#sadataset',
-                                                                          'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.SADataset.__getitem__': ( '5. text to semantic token modeling '
-                                                                                      'μp.html#sadataset.__getitem__',
-                                                                                      'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.SADataset.__init__': ( '5. text to semantic token modeling '
-                                                                                   'μp.html#sadataset.__init__',
-                                                                                   'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.SADataset.__len__': ( '5. text to semantic token modeling '
-                                                                                  'μp.html#sadataset.__len__',
-                                                                                  'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.SADataset.__repr__': ( '5. text to semantic token modeling '
-                                                                                   'μp.html#sadataset.__repr__',
-                                                                                   'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.TSARTransformer': ( '5. text to semantic token modeling '
-                                                                                'μp.html#tsartransformer',
-                                                                                'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.TSARTransformer.__init__': ( '5. text to semantic token modeling '
-                                                                                         'μp.html#tsartransformer.__init__',
-                                                                                         'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.TSARTransformer.device': ( '5. text to semantic token modeling '
-                                                                                       'μp.html#tsartransformer.device',
-                                                                                       'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.TSARTransformer.ensure_tokenizer': ( '5. text to semantic token modeling '
-                                                                                                 'μp.html#tsartransformer.ensure_tokenizer',
-                                                                                                 'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.TSARTransformer.forward': ( '5. text to semantic token modeling '
-                                                                                        'μp.html#tsartransformer.forward',
-                                                                                        'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.TSARTransformer.generate': ( '5. text to semantic token modeling '
-                                                                                         'μp.html#tsartransformer.generate',
-                                                                                         'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.TSARTransformer.init_transformer': ( '5. text to semantic token modeling '
-                                                                                                 'μp.html#tsartransformer.init_transformer',
-                                                                                                 'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.TSARTransformer.load_checkpoint': ( '5. text to semantic token modeling '
-                                                                                                'μp.html#tsartransformer.load_checkpoint',
-                                                                                                'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.TSARTransformer.load_model': ( '5. text to semantic token modeling '
-                                                                                           'μp.html#tsartransformer.load_model',
-                                                                                           'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.TSARTransformer.save_model': ( '5. text to semantic token modeling '
-                                                                                           'μp.html#tsartransformer.save_model',
-                                                                                           'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.Tunables': ( '5. text to semantic token modeling μp.html#tunables',
-                                                                         'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.Tunables.__post_init__': ( '5. text to semantic token modeling '
-                                                                                       'μp.html#tunables.__post_init__',
-                                                                                       'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.load_data': ( '5. text to semantic token modeling μp.html#load_data',
-                                                                          'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.load_datasets': ( '5. text to semantic token modeling μp.html#load_datasets',
-                                                                              'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.make_model': ( '5. text to semantic token modeling μp.html#make_model',
-                                                                           'whisperspeech/t2s_up.py'),
-                                      'whisperspeech.t2s_up.rand': ( '5. text to semantic token modeling μp.html#rand',
-                                                                     'whisperspeech/t2s_up.py')},
+            'whisperspeech.t2s_up_wds': { 'whisperspeech.t2s_up_wds.CharTokenizer': ( '5. text to semantic token '
+                                                                                      'modeling.html#chartokenizer',
+                                                                                      'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.CharTokenizer.decode': ( '5. text to semantic token '
+                                                                                             'modeling.html#chartokenizer.decode',
+                                                                                             'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.CharTokenizer.encode': ( '5. text to semantic token '
+                                                                                             'modeling.html#chartokenizer.encode',
+                                                                                             'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.Decoder': ( '5. text to semantic token modeling.html#decoder',
+                                                                                'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.Decoder.__init__': ( '5. text to semantic token '
+                                                                                         'modeling.html#decoder.__init__',
+                                                                                         'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.Decoder.forward': ( '5. text to semantic token '
+                                                                                        'modeling.html#decoder.forward',
+                                                                                        'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.EmbeddingProjector': ( '5. text to semantic token '
+                                                                                           'modeling.html#embeddingprojector',
+                                                                                           'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.Encoder': ( '5. text to semantic token modeling.html#encoder',
+                                                                                'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.Encoder.__init__': ( '5. text to semantic token '
+                                                                                         'modeling.html#encoder.__init__',
+                                                                                         'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.Encoder.forward': ( '5. text to semantic token '
+                                                                                        'modeling.html#encoder.forward',
+                                                                                        'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.TSARTransformer': ( '5. text to semantic token '
+                                                                                        'modeling.html#tsartransformer',
+                                                                                        'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.__init__': ( '5. text to semantic token '
+                                                                                                 'modeling.html#tsartransformer.__init__',
+                                                                                                 'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.device': ( '5. text to semantic token '
+                                                                                               'modeling.html#tsartransformer.device',
+                                                                                               'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.ensure_tokenizer': ( '5. text to semantic token '
+                                                                                                         'modeling.html#tsartransformer.ensure_tokenizer',
+                                                                                                         'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.forward': ( '5. text to semantic token '
+                                                                                                'modeling.html#tsartransformer.forward',
+                                                                                                'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.generate': ( '5. text to semantic token '
+                                                                                                 'modeling.html#tsartransformer.generate',
+                                                                                                 'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.generate_batch': ( '5. text to semantic token '
+                                                                                                       'modeling.html#tsartransformer.generate_batch',
+                                                                                                       'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.init_transformer': ( '5. text to semantic token '
+                                                                                                         'modeling.html#tsartransformer.init_transformer',
+                                                                                                         'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.load_checkpoint': ( '5. text to semantic token '
+                                                                                                        'modeling.html#tsartransformer.load_checkpoint',
+                                                                                                        'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.load_frozen_semantic_embeddings': ( '5. text to '
+                                                                                                                        'semantic token '
+                                                                                                                        'modeling.html#tsartransformer.load_frozen_semantic_embeddings',
+                                                                                                                        'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.load_model': ( '5. text to semantic token '
+                                                                                                   'modeling.html#tsartransformer.load_model',
+                                                                                                   'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.save_model': ( '5. text to semantic token '
+                                                                                                   'modeling.html#tsartransformer.save_model',
+                                                                                                   'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.setup': ( '5. text to semantic token '
+                                                                                              'modeling.html#tsartransformer.setup',
+                                                                                              'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.Tunables': ( '5. text to semantic token modeling.html#tunables',
+                                                                                 'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.Tunables.__post_init__': ( '5. text to semantic token '
+                                                                                               'modeling.html#tunables.__post_init__',
+                                                                                               'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds._make_model': ( '5. text to semantic token modeling.html#_make_model',
+                                                                                    'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.ar_padder': ( '5. text to semantic token modeling.html#ar_padder',
+                                                                                  'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.build_speaker_map': ( '5. text to semantic token '
+                                                                                          'modeling.html#build_speaker_map',
+                                                                                          'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.char_per_seconder': ( '5. text to semantic token '
+                                                                                          'modeling.html#char_per_seconder',
+                                                                                          'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.load_datasets': ( '5. text to semantic token '
+                                                                                      'modeling.html#load_datasets',
+                                                                                      'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.make_model': ( '5. text to semantic token modeling.html#make_model',
+                                                                                   'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.rand': ( '5. text to semantic token modeling.html#rand',
+                                                                             'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.speaker_id_extractor': ( '5. text to semantic token '
+                                                                                             'modeling.html#speaker_id_extractor',
+                                                                                             'whisperspeech/t2s_up_wds.py'),
+                                          'whisperspeech.t2s_up_wds.tokenizer': ( '5. text to semantic token modeling.html#tokenizer',
+                                                                                  'whisperspeech/t2s_up_wds.py')},
             'whisperspeech.train': { 'whisperspeech.train.SimpleVisual': ('b1. training.html#simplevisual', 'whisperspeech/train.py'),
                                      'whisperspeech.train.SimpleVisual.__init__': ( 'b1. training.html#simplevisual.__init__',
                                                                                     'whisperspeech/train.py'),
