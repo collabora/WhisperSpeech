@@ -5,8 +5,8 @@ __all__ = ['Pipeline']
 
 # %% ../nbs/7. Pipeline.ipynb 1
 import torch
-from whisperspeech.t2s_up import TSARTransformer
-from whisperspeech.s2a_delar_mup import SADelARTransformer
+from whisperspeech.t2s_up_wds import TSARTransformer
+from whisperspeech.s2a_delar_mup_wds import SADelARTransformer
 from whisperspeech.a2wav import Vocoder
 
 # %% ../nbs/7. Pipeline.ipynb 2
@@ -16,17 +16,17 @@ class Pipeline:
         self.s2a = SADelARTransformer.load_model().cuda()
         self.vocoder = Vocoder()
 
-    def generate_atoks(self, text, speaker="3645"):
+    def generate_atoks(self, text, speaker="8699"):
         text = text.replace("\n", " ")
-        stoks = self.t2s.generate(text, T=.5, top_k=3)
-        atoks = self.s2a.generate(stoks, [speaker], T=2, top_k=8)
+        stoks = self.t2s.generate(text, cps=14)
+        atoks = self.s2a.generate(stoks, [speaker])
         return atoks
         
-    def generate(self, text, speaker="3645"):
+    def generate(self, text, speaker="8699"):
         return self.vocoder.decode(self.generate_atoks(text, speaker))
     
-    def generate_to_file(self, fname, text, speaker="3645"):
+    def generate_to_file(self, fname, text, speaker="8699"):
         self.vocoder.decode_to_file(fname, self.generate_atoks(text, speaker))
         
-    def generate_to_notebook(self, text, speaker="3645"):
+    def generate_to_notebook(self, text, speaker="8699"):
         self.vocoder.decode_to_notebook(self.generate_atoks(text, speaker))
