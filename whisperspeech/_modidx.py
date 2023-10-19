@@ -133,237 +133,282 @@ d = { 'settings': { 'branch': 'master',
                                                    'whisperspeech.prepare_t2s_dataset.prepare_t2s': ( '5a. t2s dataset '
                                                                                                       'preparation.html#prepare_t2s',
                                                                                                       'whisperspeech/prepare_t2s_dataset.py')},
-            'whisperspeech.s2a_delar_mup': { 'whisperspeech.s2a_delar_mup.CMLMVisual': ( '3c. multi-speaker semantic to acoustic token '
-                                                                                         'modeling musicgen μpt.html#cmlmvisual',
-                                                                                         'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.CMLMVisual.__init__': ( '3c. multi-speaker semantic to acoustic '
-                                                                                                  'token modeling musicgen '
-                                                                                                  'μpt.html#cmlmvisual.__init__',
-                                                                                                  'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.CMLMVisual.add_data': ( '3c. multi-speaker semantic to acoustic '
-                                                                                                  'token modeling musicgen '
-                                                                                                  'μpt.html#cmlmvisual.add_data',
-                                                                                                  'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.CMLMVisual.add_table_row': ( '3c. multi-speaker semantic to '
-                                                                                                       'acoustic token modeling musicgen '
-                                                                                                       'μpt.html#cmlmvisual.add_table_row',
-                                                                                                       'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.CMLMVisual.hide': ( '3c. multi-speaker semantic to acoustic '
-                                                                                              'token modeling musicgen '
-                                                                                              'μpt.html#cmlmvisual.hide',
-                                                                                              'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.CMLMVisual.on_iter': ( '3c. multi-speaker semantic to acoustic '
-                                                                                                 'token modeling musicgen '
-                                                                                                 'μpt.html#cmlmvisual.on_iter',
-                                                                                                 'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.CMLMVisual.plot': ( '3c. multi-speaker semantic to acoustic '
-                                                                                              'token modeling musicgen '
-                                                                                              'μpt.html#cmlmvisual.plot',
-                                                                                              'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.CMLMVisual.show': ( '3c. multi-speaker semantic to acoustic '
-                                                                                              'token modeling musicgen '
-                                                                                              'μpt.html#cmlmvisual.show',
-                                                                                              'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.DelSumDecoder': ( '3c. multi-speaker semantic to acoustic token '
-                                                                                            'modeling musicgen μpt.html#delsumdecoder',
-                                                                                            'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.DelSumDecoder.__init__': ( '3c. multi-speaker semantic to '
-                                                                                                     'acoustic token modeling musicgen '
-                                                                                                     'μpt.html#delsumdecoder.__init__',
-                                                                                                     'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.DelSumDecoder.forward': ( '3c. multi-speaker semantic to '
-                                                                                                    'acoustic token modeling musicgen '
-                                                                                                    'μpt.html#delsumdecoder.forward',
-                                                                                                    'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADataset': ( '3c. multi-speaker semantic to acoustic token '
-                                                                                        'modeling musicgen μpt.html#sadataset',
-                                                                                        'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADataset.S_tokens': ( '3c. multi-speaker semantic to acoustic '
-                                                                                                 'token modeling musicgen '
-                                                                                                 'μpt.html#sadataset.s_tokens',
-                                                                                                 'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADataset.__getitem__': ( '3c. multi-speaker semantic to '
-                                                                                                    'acoustic token modeling musicgen '
-                                                                                                    'μpt.html#sadataset.__getitem__',
-                                                                                                    'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADataset.__init__': ( '3c. multi-speaker semantic to acoustic '
-                                                                                                 'token modeling musicgen '
-                                                                                                 'μpt.html#sadataset.__init__',
-                                                                                                 'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADataset.__len__': ( '3c. multi-speaker semantic to acoustic '
-                                                                                                'token modeling musicgen '
-                                                                                                'μpt.html#sadataset.__len__',
-                                                                                                'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADataset.__repr__': ( '3c. multi-speaker semantic to acoustic '
-                                                                                                 'token modeling musicgen '
-                                                                                                 'μpt.html#sadataset.__repr__',
-                                                                                                 'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADataset.hours': ( '3c. multi-speaker semantic to acoustic '
-                                                                                              'token modeling musicgen '
-                                                                                              'μpt.html#sadataset.hours',
-                                                                                              'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADelARTransformer': ( '3c. multi-speaker semantic to acoustic '
-                                                                                                 'token modeling musicgen '
-                                                                                                 'μpt.html#sadelartransformer',
-                                                                                                 'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADelARTransformer.__init__': ( '3c. multi-speaker semantic to '
-                                                                                                          'acoustic token modeling '
-                                                                                                          'musicgen '
-                                                                                                          'μpt.html#sadelartransformer.__init__',
-                                                                                                          'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADelARTransformer.device': ( '3c. multi-speaker semantic to '
-                                                                                                        'acoustic token modeling musicgen '
-                                                                                                        'μpt.html#sadelartransformer.device',
-                                                                                                        'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADelARTransformer.embed_stoks': ( '3c. multi-speaker semantic '
-                                                                                                             'to acoustic token modeling '
-                                                                                                             'musicgen '
-                                                                                                             'μpt.html#sadelartransformer.embed_stoks',
-                                                                                                             'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADelARTransformer.forward': ( '3c. multi-speaker semantic to '
-                                                                                                         'acoustic token modeling musicgen '
-                                                                                                         'μpt.html#sadelartransformer.forward',
-                                                                                                         'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADelARTransformer.generate': ( '3c. multi-speaker semantic to '
-                                                                                                          'acoustic token modeling '
-                                                                                                          'musicgen '
-                                                                                                          'μpt.html#sadelartransformer.generate',
-                                                                                                          'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADelARTransformer.init_transformer': ( '3c. multi-speaker '
-                                                                                                                  'semantic to acoustic '
-                                                                                                                  'token modeling musicgen '
-                                                                                                                  'μpt.html#sadelartransformer.init_transformer',
-                                                                                                                  'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADelARTransformer.load_checkpoint': ( '3c. multi-speaker '
-                                                                                                                 'semantic to acoustic '
-                                                                                                                 'token modeling musicgen '
-                                                                                                                 'μpt.html#sadelartransformer.load_checkpoint',
-                                                                                                                 'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADelARTransformer.load_model': ( '3c. multi-speaker semantic to '
-                                                                                                            'acoustic token modeling '
-                                                                                                            'musicgen '
-                                                                                                            'μpt.html#sadelartransformer.load_model',
-                                                                                                            'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADelARTransformer.reset_stats': ( '3c. multi-speaker semantic '
-                                                                                                             'to acoustic token modeling '
-                                                                                                             'musicgen '
-                                                                                                             'μpt.html#sadelartransformer.reset_stats',
-                                                                                                             'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.SADelARTransformer.save_model': ( '3c. multi-speaker semantic to '
-                                                                                                            'acoustic token modeling '
-                                                                                                            'musicgen '
-                                                                                                            'μpt.html#sadelartransformer.save_model',
-                                                                                                            'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.Tunables': ( '3c. multi-speaker semantic to acoustic token '
-                                                                                       'modeling musicgen μpt.html#tunables',
-                                                                                       'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.Tunables.__post_init__': ( '3c. multi-speaker semantic to '
-                                                                                                     'acoustic token modeling musicgen '
-                                                                                                     'μpt.html#tunables.__post_init__',
-                                                                                                     'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.load_datasets': ( '3c. multi-speaker semantic to acoustic token '
-                                                                                            'modeling musicgen μpt.html#load_datasets',
-                                                                                            'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.make_model': ( '3c. multi-speaker semantic to acoustic token '
-                                                                                         'modeling musicgen μpt.html#make_model',
-                                                                                         'whisperspeech/s2a_delar_mup.py'),
-                                             'whisperspeech.s2a_delar_mup.rand': ( '3c. multi-speaker semantic to acoustic token modeling '
-                                                                                   'musicgen μpt.html#rand',
-                                                                                   'whisperspeech/s2a_delar_mup.py')},
-            'whisperspeech.t2s_up_wds': { 'whisperspeech.t2s_up_wds.CharTokenizer': ( '5. text to semantic token '
+            'whisperspeech.s2a_delar_mup_wds': { 'whisperspeech.s2a_delar_mup_wds.CMLMVisual': ( '4b. semantic to acoustic token '
+                                                                                                 'modeling.html#cmlmvisual',
+                                                                                                 'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.CMLMVisual.__init__': ( '4b. semantic to acoustic token '
+                                                                                                          'modeling.html#cmlmvisual.__init__',
+                                                                                                          'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.CMLMVisual.add_data': ( '4b. semantic to acoustic token '
+                                                                                                          'modeling.html#cmlmvisual.add_data',
+                                                                                                          'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.CMLMVisual.add_table_row': ( '4b. semantic to acoustic '
+                                                                                                               'token '
+                                                                                                               'modeling.html#cmlmvisual.add_table_row',
+                                                                                                               'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.CMLMVisual.hide': ( '4b. semantic to acoustic token '
+                                                                                                      'modeling.html#cmlmvisual.hide',
+                                                                                                      'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.CMLMVisual.on_iter': ( '4b. semantic to acoustic token '
+                                                                                                         'modeling.html#cmlmvisual.on_iter',
+                                                                                                         'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.CMLMVisual.plot': ( '4b. semantic to acoustic token '
+                                                                                                      'modeling.html#cmlmvisual.plot',
+                                                                                                      'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.CMLMVisual.show': ( '4b. semantic to acoustic token '
+                                                                                                      'modeling.html#cmlmvisual.show',
+                                                                                                      'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.DelSumDecoder': ( '4b. semantic to acoustic token '
+                                                                                                    'modeling.html#delsumdecoder',
+                                                                                                    'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.DelSumDecoder.__init__': ( '4b. semantic to acoustic '
+                                                                                                             'token '
+                                                                                                             'modeling.html#delsumdecoder.__init__',
+                                                                                                             'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.DelSumDecoder.forward': ( '4b. semantic to acoustic '
+                                                                                                            'token '
+                                                                                                            'modeling.html#delsumdecoder.forward',
+                                                                                                            'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.EmbeddingProjector': ( '4b. semantic to acoustic token '
+                                                                                                         'modeling.html#embeddingprojector',
+                                                                                                         'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.MultiHeadAttention': ( '4b. semantic to acoustic token '
+                                                                                                         'modeling.html#multiheadattention',
+                                                                                                         'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.MultiHeadAttention.__init__': ( '4b. semantic to '
+                                                                                                                  'acoustic token '
+                                                                                                                  'modeling.html#multiheadattention.__init__',
+                                                                                                                  'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.MultiHeadAttention.forward': ( '4b. semantic to acoustic '
+                                                                                                                 'token '
+                                                                                                                 'modeling.html#multiheadattention.forward',
+                                                                                                                 'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.MultiHeadAttention.qkv_attention_pth20': ( '4b. semantic '
+                                                                                                                             'to acoustic '
+                                                                                                                             'token '
+                                                                                                                             'modeling.html#multiheadattention.qkv_attention_pth20',
+                                                                                                                             'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.MultiHeadAttention.qkv_attention_xformers': ( '4b. '
+                                                                                                                                'semantic '
+                                                                                                                                'to '
+                                                                                                                                'acoustic '
+                                                                                                                                'token '
+                                                                                                                                'modeling.html#multiheadattention.qkv_attention_xformers',
+                                                                                                                                'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.ResidualAttentionBlock': ( '4b. semantic to acoustic '
+                                                                                                             'token '
+                                                                                                             'modeling.html#residualattentionblock',
+                                                                                                             'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.ResidualAttentionBlock.__init__': ( '4b. semantic to '
+                                                                                                                      'acoustic token '
+                                                                                                                      'modeling.html#residualattentionblock.__init__',
+                                                                                                                      'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.ResidualAttentionBlock.forward': ( '4b. semantic to '
+                                                                                                                     'acoustic token '
+                                                                                                                     'modeling.html#residualattentionblock.forward',
+                                                                                                                     'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.Rotary': ( '4b. semantic to acoustic token '
+                                                                                             'modeling.html#rotary',
+                                                                                             'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.Rotary.__init__': ( '4b. semantic to acoustic token '
+                                                                                                      'modeling.html#rotary.__init__',
+                                                                                                      'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.Rotary.forward': ( '4b. semantic to acoustic token '
+                                                                                                     'modeling.html#rotary.forward',
+                                                                                                     'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer': ( '4b. semantic to acoustic token '
+                                                                                                         'modeling.html#sadelartransformer',
+                                                                                                         'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.__init__': ( '4b. semantic to '
+                                                                                                                  'acoustic token '
+                                                                                                                  'modeling.html#sadelartransformer.__init__',
+                                                                                                                  'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.device': ( '4b. semantic to acoustic '
+                                                                                                                'token '
+                                                                                                                'modeling.html#sadelartransformer.device',
+                                                                                                                'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.embed_stoks': ( '4b. semantic to '
+                                                                                                                     'acoustic token '
+                                                                                                                     'modeling.html#sadelartransformer.embed_stoks',
+                                                                                                                     'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.forward': ( '4b. semantic to acoustic '
+                                                                                                                 'token '
+                                                                                                                 'modeling.html#sadelartransformer.forward',
+                                                                                                                 'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.generate': ( '4b. semantic to '
+                                                                                                                  'acoustic token '
+                                                                                                                  'modeling.html#sadelartransformer.generate',
+                                                                                                                  'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.get_extra_state': ( '4b. semantic to '
+                                                                                                                         'acoustic token '
+                                                                                                                         'modeling.html#sadelartransformer.get_extra_state',
+                                                                                                                         'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.get_metrics': ( '4b. semantic to '
+                                                                                                                     'acoustic token '
+                                                                                                                     'modeling.html#sadelartransformer.get_metrics',
+                                                                                                                     'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.init_transformer': ( '4b. semantic to '
+                                                                                                                          'acoustic token '
+                                                                                                                          'modeling.html#sadelartransformer.init_transformer',
+                                                                                                                          'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.load_checkpoint': ( '4b. semantic to '
+                                                                                                                         'acoustic token '
+                                                                                                                         'modeling.html#sadelartransformer.load_checkpoint',
+                                                                                                                         'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.load_frozen_semantic_embeddings': ( '4b. '
+                                                                                                                                         'semantic '
+                                                                                                                                         'to '
+                                                                                                                                         'acoustic '
+                                                                                                                                         'token '
+                                                                                                                                         'modeling.html#sadelartransformer.load_frozen_semantic_embeddings',
+                                                                                                                                         'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.load_model': ( '4b. semantic to '
+                                                                                                                    'acoustic token '
+                                                                                                                    'modeling.html#sadelartransformer.load_model',
+                                                                                                                    'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.save_model': ( '4b. semantic to '
+                                                                                                                    'acoustic token '
+                                                                                                                    'modeling.html#sadelartransformer.save_model',
+                                                                                                                    'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.set_extra_state': ( '4b. semantic to '
+                                                                                                                         'acoustic token '
+                                                                                                                         'modeling.html#sadelartransformer.set_extra_state',
+                                                                                                                         'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.SADelARTransformer.setup': ( '4b. semantic to acoustic '
+                                                                                                               'token '
+                                                                                                               'modeling.html#sadelartransformer.setup',
+                                                                                                               'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.Tunables': ( '4b. semantic to acoustic token '
+                                                                                               'modeling.html#tunables',
+                                                                                               'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.Tunables.__post_init__': ( '4b. semantic to acoustic '
+                                                                                                             'token '
+                                                                                                             'modeling.html#tunables.__post_init__',
+                                                                                                             'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.Tunables.upgrade': ( '4b. semantic to acoustic token '
+                                                                                                       'modeling.html#tunables.upgrade',
+                                                                                                       'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds._make_model': ( '4b. semantic to acoustic token '
+                                                                                                  'modeling.html#_make_model',
+                                                                                                  'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.apply_rotary_pos_emb': ( '4b. semantic to acoustic token '
+                                                                                                           'modeling.html#apply_rotary_pos_emb',
+                                                                                                           'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.load_datasets': ( '4b. semantic to acoustic token '
+                                                                                                    'modeling.html#load_datasets',
+                                                                                                    'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.make_model': ( '4b. semantic to acoustic token '
+                                                                                                 'modeling.html#make_model',
+                                                                                                 'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.pad_samples': ( '4b. semantic to acoustic token '
+                                                                                                  'modeling.html#pad_samples',
+                                                                                                  'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.rand': ( '4b. semantic to acoustic token '
+                                                                                           'modeling.html#rand',
+                                                                                           'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.random_trunc': ( '4b. semantic to acoustic token '
+                                                                                                   'modeling.html#random_trunc',
+                                                                                                   'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.rotate_half': ( '4b. semantic to acoustic token '
+                                                                                                  'modeling.html#rotate_half',
+                                                                                                  'whisperspeech/s2a_delar_mup_wds.py'),
+                                                 'whisperspeech.s2a_delar_mup_wds.speaker_id_extractor': ( '4b. semantic to acoustic token '
+                                                                                                           'modeling.html#speaker_id_extractor',
+                                                                                                           'whisperspeech/s2a_delar_mup_wds.py')},
+            'whisperspeech.t2s_up_wds': { 'whisperspeech.t2s_up_wds.CharTokenizer': ( '5b. text to semantic token '
                                                                                       'modeling.html#chartokenizer',
                                                                                       'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.CharTokenizer.decode': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.CharTokenizer.decode': ( '5b. text to semantic token '
                                                                                              'modeling.html#chartokenizer.decode',
                                                                                              'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.CharTokenizer.encode': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.CharTokenizer.encode': ( '5b. text to semantic token '
                                                                                              'modeling.html#chartokenizer.encode',
                                                                                              'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.Decoder': ( '5. text to semantic token modeling.html#decoder',
+                                          'whisperspeech.t2s_up_wds.Decoder': ( '5b. text to semantic token modeling.html#decoder',
                                                                                 'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.Decoder.__init__': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.Decoder.__init__': ( '5b. text to semantic token '
                                                                                          'modeling.html#decoder.__init__',
                                                                                          'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.Decoder.forward': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.Decoder.forward': ( '5b. text to semantic token '
                                                                                         'modeling.html#decoder.forward',
                                                                                         'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.EmbeddingProjector': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.EmbeddingProjector': ( '5b. text to semantic token '
                                                                                            'modeling.html#embeddingprojector',
                                                                                            'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.Encoder': ( '5. text to semantic token modeling.html#encoder',
+                                          'whisperspeech.t2s_up_wds.Encoder': ( '5b. text to semantic token modeling.html#encoder',
                                                                                 'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.Encoder.__init__': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.Encoder.__init__': ( '5b. text to semantic token '
                                                                                          'modeling.html#encoder.__init__',
                                                                                          'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.Encoder.forward': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.Encoder.forward': ( '5b. text to semantic token '
                                                                                         'modeling.html#encoder.forward',
                                                                                         'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.TSARTransformer': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.TSARTransformer': ( '5b. text to semantic token '
                                                                                         'modeling.html#tsartransformer',
                                                                                         'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.TSARTransformer.__init__': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.__init__': ( '5b. text to semantic token '
                                                                                                  'modeling.html#tsartransformer.__init__',
                                                                                                  'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.TSARTransformer.device': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.device': ( '5b. text to semantic token '
                                                                                                'modeling.html#tsartransformer.device',
                                                                                                'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.TSARTransformer.ensure_tokenizer': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.ensure_tokenizer': ( '5b. text to semantic token '
                                                                                                          'modeling.html#tsartransformer.ensure_tokenizer',
                                                                                                          'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.TSARTransformer.forward': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.forward': ( '5b. text to semantic token '
                                                                                                 'modeling.html#tsartransformer.forward',
                                                                                                 'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.TSARTransformer.generate': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.generate': ( '5b. text to semantic token '
                                                                                                  'modeling.html#tsartransformer.generate',
                                                                                                  'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.TSARTransformer.generate_batch': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.generate_batch': ( '5b. text to semantic token '
                                                                                                        'modeling.html#tsartransformer.generate_batch',
                                                                                                        'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.TSARTransformer.init_transformer': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.init_transformer': ( '5b. text to semantic token '
                                                                                                          'modeling.html#tsartransformer.init_transformer',
                                                                                                          'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.TSARTransformer.load_checkpoint': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.load_checkpoint': ( '5b. text to semantic token '
                                                                                                         'modeling.html#tsartransformer.load_checkpoint',
                                                                                                         'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.TSARTransformer.load_frozen_semantic_embeddings': ( '5. text to '
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.load_frozen_semantic_embeddings': ( '5b. text to '
                                                                                                                         'semantic token '
                                                                                                                         'modeling.html#tsartransformer.load_frozen_semantic_embeddings',
                                                                                                                         'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.TSARTransformer.load_model': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.load_model': ( '5b. text to semantic token '
                                                                                                    'modeling.html#tsartransformer.load_model',
                                                                                                    'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.TSARTransformer.save_model': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.save_model': ( '5b. text to semantic token '
                                                                                                    'modeling.html#tsartransformer.save_model',
                                                                                                    'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.TSARTransformer.setup': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.TSARTransformer.setup': ( '5b. text to semantic token '
                                                                                               'modeling.html#tsartransformer.setup',
                                                                                               'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.Tunables': ( '5. text to semantic token modeling.html#tunables',
+                                          'whisperspeech.t2s_up_wds.Tunables': ( '5b. text to semantic token modeling.html#tunables',
                                                                                  'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.Tunables.__post_init__': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.Tunables.__post_init__': ( '5b. text to semantic token '
                                                                                                'modeling.html#tunables.__post_init__',
                                                                                                'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds._make_model': ( '5. text to semantic token modeling.html#_make_model',
+                                          'whisperspeech.t2s_up_wds._make_model': ( '5b. text to semantic token modeling.html#_make_model',
                                                                                     'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.ar_padder': ( '5. text to semantic token modeling.html#ar_padder',
+                                          'whisperspeech.t2s_up_wds.ar_padder': ( '5b. text to semantic token modeling.html#ar_padder',
                                                                                   'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.build_speaker_map': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.build_speaker_map': ( '5b. text to semantic token '
                                                                                           'modeling.html#build_speaker_map',
                                                                                           'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.char_per_seconder': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.char_per_seconder': ( '5b. text to semantic token '
                                                                                           'modeling.html#char_per_seconder',
                                                                                           'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.load_datasets': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.load_datasets': ( '5b. text to semantic token '
                                                                                       'modeling.html#load_datasets',
                                                                                       'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.make_model': ( '5. text to semantic token modeling.html#make_model',
+                                          'whisperspeech.t2s_up_wds.make_model': ( '5b. text to semantic token modeling.html#make_model',
                                                                                    'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.rand': ( '5. text to semantic token modeling.html#rand',
+                                          'whisperspeech.t2s_up_wds.rand': ( '5b. text to semantic token modeling.html#rand',
                                                                              'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.speaker_id_extractor': ( '5. text to semantic token '
+                                          'whisperspeech.t2s_up_wds.speaker_id_extractor': ( '5b. text to semantic token '
                                                                                              'modeling.html#speaker_id_extractor',
                                                                                              'whisperspeech/t2s_up_wds.py'),
-                                          'whisperspeech.t2s_up_wds.tokenizer': ( '5. text to semantic token modeling.html#tokenizer',
+                                          'whisperspeech.t2s_up_wds.tokenizer': ( '5b. text to semantic token modeling.html#tokenizer',
                                                                                   'whisperspeech/t2s_up_wds.py')},
             'whisperspeech.train': { 'whisperspeech.train.SimpleVisual': ('b1. training.html#simplevisual', 'whisperspeech/train.py'),
                                      'whisperspeech.train.SimpleVisual.__init__': ( 'b1. training.html#simplevisual.__init__',
@@ -414,90 +459,107 @@ d = { 'settings': { 'branch': 'master',
                                                                         'whisperspeech/vad.py')},
             'whisperspeech.verify_wds': { 'whisperspeech.verify_wds.process_shard': ( '0. verify webdataset archives.html#process_shard',
                                                                                       'whisperspeech/verify_wds.py')},
-            'whisperspeech.vq_stoks': { 'whisperspeech.vq_stoks.RQBottleneckTransformer': ( '2a. vq semantic token extraction '
+            'whisperspeech.vq_stoks': { 'whisperspeech.vq_stoks.RQBottleneckTransformer': ( '2b. whisper quantization (semantic token) '
                                                                                             'model.html#rqbottlenecktransformer',
                                                                                             'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.__init__': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.__init__': ( '2b. whisper quantization (semantic '
+                                                                                                     'token) '
                                                                                                      'model.html#rqbottlenecktransformer.__init__',
                                                                                                      'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.decode_text': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.decode_text': ( '2b. whisper quantization '
+                                                                                                        '(semantic token) '
                                                                                                         'model.html#rqbottlenecktransformer.decode_text',
                                                                                                         'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.dequantize': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.dequantize': ( '2b. whisper quantization (semantic '
+                                                                                                       'token) '
                                                                                                        'model.html#rqbottlenecktransformer.dequantize',
                                                                                                        'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.device': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.device': ( '2b. whisper quantization (semantic '
+                                                                                                   'token) '
                                                                                                    'model.html#rqbottlenecktransformer.device',
                                                                                                    'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.downsample_embeddings': ( '2a. vq semantic token '
-                                                                                                                  'extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.downsample_embeddings': ( '2b. whisper '
+                                                                                                                  'quantization (semantic '
+                                                                                                                  'token) '
                                                                                                                   'model.html#rqbottlenecktransformer.downsample_embeddings',
                                                                                                                   'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.encode_audio': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.encode_audio': ( '2b. whisper quantization '
+                                                                                                         '(semantic token) '
                                                                                                          'model.html#rqbottlenecktransformer.encode_audio',
                                                                                                          'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.encode_mel': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.encode_mel': ( '2b. whisper quantization (semantic '
+                                                                                                       'token) '
                                                                                                        'model.html#rqbottlenecktransformer.encode_mel',
                                                                                                        'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.ensure_whisper': ( '2a. vq semantic token '
-                                                                                                           'extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.ensure_whisper': ( '2b. whisper quantization '
+                                                                                                           '(semantic token) '
                                                                                                            'model.html#rqbottlenecktransformer.ensure_whisper',
                                                                                                            'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.extract_teacher': ( '2a. vq semantic token '
-                                                                                                            'extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.extract_teacher': ( '2b. whisper quantization '
+                                                                                                            '(semantic token) '
                                                                                                             'model.html#rqbottlenecktransformer.extract_teacher',
                                                                                                             'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.forward': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.forward': ( '2b. whisper quantization (semantic '
+                                                                                                    'token) '
                                                                                                     'model.html#rqbottlenecktransformer.forward',
                                                                                                     'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.get_metrics': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.get_metrics': ( '2b. whisper quantization '
+                                                                                                        '(semantic token) '
                                                                                                         'model.html#rqbottlenecktransformer.get_metrics',
                                                                                                         'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.init_transformer': ( '2a. vq semantic token '
-                                                                                                             'extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.init_transformer': ( '2b. whisper quantization '
+                                                                                                             '(semantic token) '
                                                                                                              'model.html#rqbottlenecktransformer.init_transformer',
                                                                                                              'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.load_checkpoint': ( '2a. vq semantic token '
-                                                                                                            'extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.load_checkpoint': ( '2b. whisper quantization '
+                                                                                                            '(semantic token) '
                                                                                                             'model.html#rqbottlenecktransformer.load_checkpoint',
                                                                                                             'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.load_model': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.load_model': ( '2b. whisper quantization (semantic '
+                                                                                                       'token) '
                                                                                                        'model.html#rqbottlenecktransformer.load_model',
                                                                                                        'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.quantize': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.quantize': ( '2b. whisper quantization (semantic '
+                                                                                                     'token) '
                                                                                                      'model.html#rqbottlenecktransformer.quantize',
                                                                                                      'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.save_model': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.save_model': ( '2b. whisper quantization (semantic '
+                                                                                                       'token) '
                                                                                                        'model.html#rqbottlenecktransformer.save_model',
                                                                                                        'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.setup': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.RQBottleneckTransformer.setup': ( '2b. whisper quantization (semantic '
+                                                                                                  'token) '
                                                                                                   'model.html#rqbottlenecktransformer.setup',
                                                                                                   'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.Tunables': ( '2a. vq semantic token extraction model.html#tunables',
+                                        'whisperspeech.vq_stoks.Tunables': ( '2b. whisper quantization (semantic token) '
+                                                                             'model.html#tunables',
                                                                              'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.Tunables.__post_init__': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.Tunables.__post_init__': ( '2b. whisper quantization (semantic token) '
                                                                                            'model.html#tunables.__post_init__',
                                                                                            'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.Tunables.upgrade': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.Tunables.upgrade': ( '2b. whisper quantization (semantic token) '
                                                                                      'model.html#tunables.upgrade',
                                                                                      'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.add_masks': ( '2a. vq semantic token extraction model.html#add_masks',
+                                        'whisperspeech.vq_stoks.add_masks': ( '2b. whisper quantization (semantic token) '
+                                                                              'model.html#add_masks',
                                                                               'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.derived_dataset': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.derived_dataset': ( '2b. whisper quantization (semantic token) '
                                                                                     'model.html#derived_dataset',
                                                                                     'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.load_datasets': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.load_datasets': ( '2b. whisper quantization (semantic token) '
                                                                                   'model.html#load_datasets',
                                                                                   'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.logrand': ( '2a. vq semantic token extraction model.html#logrand',
+                                        'whisperspeech.vq_stoks.logrand': ( '2b. whisper quantization (semantic token) model.html#logrand',
                                                                             'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.make_model': ( '2a. vq semantic token extraction model.html#make_model',
+                                        'whisperspeech.vq_stoks.make_model': ( '2b. whisper quantization (semantic token) '
+                                                                               'model.html#make_model',
                                                                                'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.merge_in': ( '2a. vq semantic token extraction model.html#merge_in',
+                                        'whisperspeech.vq_stoks.merge_in': ( '2b. whisper quantization (semantic token) '
+                                                                             'model.html#merge_in',
                                                                              'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.rand': ( '2a. vq semantic token extraction model.html#rand',
+                                        'whisperspeech.vq_stoks.rand': ( '2b. whisper quantization (semantic token) model.html#rand',
                                                                          'whisperspeech/vq_stoks.py'),
-                                        'whisperspeech.vq_stoks.tokenize_text': ( '2a. vq semantic token extraction '
+                                        'whisperspeech.vq_stoks.tokenize_text': ( '2b. whisper quantization (semantic token) '
                                                                                   'model.html#tokenize_text',
                                                                                   'whisperspeech/vq_stoks.py')},
             'whisperspeech.wer_metrics': { 'whisperspeech.wer_metrics.DfBuilder': ( 'c. word error rate metrics.html#dfbuilder',
@@ -523,19 +585,24 @@ d = { 'settings': { 'branch': 'master',
                                            'whisperspeech.wer_metrics.whisper_normalize': ( 'c. word error rate '
                                                                                             'metrics.html#whisper_normalize',
                                                                                             'whisperspeech/wer_metrics.py')},
-            'whisperspeech.wh_transcribe': { 'whisperspeech.wh_transcribe.chunk_merger': ( '1c. whisper transcription.html#chunk_merger',
+            'whisperspeech.wh_transcribe': { 'whisperspeech.wh_transcribe.chunk_merger': ( '2a. whisper quantization dataset '
+                                                                                           'preparation.html#chunk_merger',
                                                                                            'whisperspeech/wh_transcribe.py'),
-                                             'whisperspeech.wh_transcribe.flac_to_txt_name': ( '1c. whisper '
-                                                                                               'transcription.html#flac_to_txt_name',
+                                             'whisperspeech.wh_transcribe.flac_to_txt_name': ( '2a. whisper quantization dataset '
+                                                                                               'preparation.html#flac_to_txt_name',
                                                                                                'whisperspeech/wh_transcribe.py'),
-                                             'whisperspeech.wh_transcribe.merge_in': ( '1c. whisper transcription.html#merge_in',
+                                             'whisperspeech.wh_transcribe.merge_in': ( '2a. whisper quantization dataset '
+                                                                                       'preparation.html#merge_in',
                                                                                        'whisperspeech/wh_transcribe.py'),
-                                             'whisperspeech.wh_transcribe.process_shard': ( '1c. whisper transcription.html#process_shard',
+                                             'whisperspeech.wh_transcribe.process_shard': ( '2a. whisper quantization dataset '
+                                                                                            'preparation.html#process_shard',
                                                                                             'whisperspeech/wh_transcribe.py'),
-                                             'whisperspeech.wh_transcribe.random_cutter': ( '1c. whisper transcription.html#random_cutter',
+                                             'whisperspeech.wh_transcribe.random_cutter': ( '2a. whisper quantization dataset '
+                                                                                            'preparation.html#random_cutter',
                                                                                             'whisperspeech/wh_transcribe.py'),
-                                             'whisperspeech.wh_transcribe.split_to_chunks': ( '1c. whisper '
-                                                                                              'transcription.html#split_to_chunks',
+                                             'whisperspeech.wh_transcribe.split_to_chunks': ( '2a. whisper quantization dataset '
+                                                                                              'preparation.html#split_to_chunks',
                                                                                               'whisperspeech/wh_transcribe.py'),
-                                             'whisperspeech.wh_transcribe.wds_compose': ( '1c. whisper transcription.html#wds_compose',
+                                             'whisperspeech.wh_transcribe.wds_compose': ( '2a. whisper quantization dataset '
+                                                                                          'preparation.html#wds_compose',
                                                                                           'whisperspeech/wh_transcribe.py')}}}

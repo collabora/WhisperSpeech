@@ -24,8 +24,8 @@ def fix_dots_in_names(name):
     name, ext = name.rsplit('.', 1)
     return ".".join((name.replace('.', '_'), ext))
 
-def load_dataset(url, decode=True):
-    ds = wds.WebDataset(url, rename_files=fix_dots_in_names)
+def load_dataset(url, decode=True, rename_files=None):
+    ds = wds.WebDataset(url, rename_files=rename_files)
     if not decode: return ds
     return ds.decode(wds.torch_audio)
 
@@ -35,31 +35,37 @@ def extract_segments(vad_result, max_duration):
     segments = binarize(vad_result)
     return [(x.start, x.end) for x in segments.get_timeline()]
 
-def segment_audio(vad_model, audio):
-    vad_result = vad_model({"waveform": audio, "sample_rate": 16000})
+def segment_audio(vad_model, audio, sr=16000):
+    vad_result = vad_model({"waveform": audio, "sample_rate": sr})
     return extract_segments(vad_result, 30)
 
-# %% ../nbs/1B. Voice activity detection.ipynb 11
+# %% ../nbs/1B. Voice activity detection.ipynb 13
 def flac_to_vad_name(input):
-    return input.rsplit("/", 1)[1].replace('flac', 'vad') + ".gz"
+    if '-flac-' in input:
+        return input.rsplit("/", 1)[1].replace('flac', 'vad') + ".gz"
+    else:
+        return input.rsplit("/", 1)[1].replace('raw', 'vad') + ".gz"
 
 @call_parse
 def process_shard(
-    input:str,       # input shard URL/path
-    output:str=None  # output shard URL/path
+    input:str,           # input shard URL/path
+    output:str=None,     # output shard URL/path
+    fix_dots:bool=False, # fix dots in LibriLight filenames
 ):
     if output is None: output = flac_to_vad_name(input)
     
-    ds = torch.utils.data.DataLoader(load_dataset(input), num_workers=2, batch_size=None)
+    ds = torch.utils.data.DataLoader(load_dataset(input, rename_files=fix_dots_in_names if fix_dots else None), num_workers=2, batch_size=None)
     vad_model = whisperx.vad.load_vad_model('cuda')
     
     tmp = output+".tmp"
     with wds.TarWriter(tmp) as sink:
         for s in progress_bar(ds, total='noinfer'):
-            audio, sr = s['flac']
-            assert(sr == 16000)
+            audio, sr = s.get('flac', s.get('wav', (None, None)))
+            if audio is None:
+                print(f"warning: '{s['__key__']}' does not contain an audio file")
+                continue
             sink.write({
                 "__key__": s['__key__'],
-                "vad.npy": np.array(segment_audio(vad_model, audio), dtype=np.float16)
+                "vad.npy": np.array(segment_audio(vad_model, audio, sr=sr), dtype=np.float16)
             })
     os.rename(tmp, output)
