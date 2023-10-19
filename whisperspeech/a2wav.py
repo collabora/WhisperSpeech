@@ -17,9 +17,13 @@ class Vocoder:
     
     @torch.no_grad()
     def decode(self, atoks):
-        b,q,t = atoks.shape
+        if len(atoks.shape) == 3:
+            b,q,t = atoks.shape
+            atoks = atoks.permute(1,0,2)
+        else:
+            q,t = atoks.shape
         
-        features = self.vocos.codes_to_features(atoks.permute(1,0,2))
+        features = self.vocos.codes_to_features(atoks)
         bandwidth_id = torch.tensor({2:0,4:1,8:2}[q]).cuda()
         return self.vocos.decode(features, bandwidth_id=bandwidth_id)
         
