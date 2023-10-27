@@ -1,0 +1,19 @@
+/*-- scss:defaults --*/
+$primary: #5c2983;
+$link-color: #40ba2f;
+
+$code-block-bg: #eff6ef;
+$code-block-border-color: #bbcdbb;
+
+.navbar-title {
+  font-weight: bold;
+  color: #e0d6e7;
+}
+
+.navbar-logo {
+  min-width: 60px;
+}
+
+a {
+  font-weight: bold;
+}

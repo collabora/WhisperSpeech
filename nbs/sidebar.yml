@@ -2,10 +2,4 @@ website:
   sidebar:
     contents:
       - index.ipynb
-      - 1. Acoustic token extraction.ipynb
-      - 2A. Semantic token extraction with k-means (failed).ipynb
-      - 2B. Synthetic semantic token extraction experiments.ipynb
-      - 2C. Whisper semantic embedding extraction.ipynb
-      - 2D. Semantic token extraction with distilled VQ models.ipynb
-      - 2E. Residual (RQ) semantic token extraction optimization.ipynb
-      - 2F. Residual (RQ) semantic token extraction model.ipynb
+      - Dataset preparation.ipynb

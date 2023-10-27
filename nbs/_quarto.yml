@@ -1,5 +1,3 @@
-ipynb-filters: [nbdev_filter]
-
 project:
   type: website
   output-dir: _docs
@@ -24,6 +22,7 @@ website:
   repo-url: "https://github.com/collabora/WhisperSpeech"
   repo-actions: [issue]
   navbar:
+    logo: imgs/logo.svg
     background: primary
     search: true
     right:
