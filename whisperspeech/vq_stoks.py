@@ -29,7 +29,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data.dataloader import DataLoader
 import webdataset as wds
-from . import vad, wh_transcribe
+from . import utils
 
 from vector_quantize_pytorch import ResidualVQ
 
@@ -61,7 +61,7 @@ def merge_in(dataset_fun):
                 # in this case restart the dataset from the beginning
                 merged_samples = iter(dataset_fun(url))
                 merge_s = next(merged_samples)
-            assert merge_s['__key__'] == s['__key__'], f"sample keys don't match: {merge_s['__key__']}, {s['__key__']}"
+            assert merge_s['__key__'] == s['__key__'], f"sample keys don't match: {merge_s['__key__']}, {s['__key__']} in file {s['__url__']}"
             news = {}
             news.update(merge_s)
             news.update(s)
@@ -69,12 +69,9 @@ def merge_in(dataset_fun):
     return merge_loop
 
 # %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 10
-def derived_dataset(path, kind):
+def derived_dataset(kind, key='audio'):
     def deriver(url):
-        if '-flac-' in str(url):
-            url = str(Path(path)/(Path(url).name.replace("flac", kind) + ".gz"))
-        else:
-            url = str(Path(path)/(Path(url).name.replace("raw", kind) + ".gz"))
+        url = str(Path(url).parent/(Path(url).name.replace(key, kind) + ".gz"))
         return wds.WebDataset(
             wds.SimpleShardList([url])
         ).decode()
@@ -92,56 +89,66 @@ def add_masks(samples):
         s['mask'] = mask
         yield s
 
-def tokenize_text(samples, ttoks_size=200):
-    tokenizer = whisper.tokenizer.get_tokenizer(False, language='en')
+def tokenize_text(samples, ttoks_size=200, model="base.en", language="en"):
+    multilingual = not model.endswith(".en")
+    tokenizer = whisper.tokenizer.get_tokenizer(multilingual, language=language, task="transcribe")
     for s in samples:
         ttoks = tokenizer.encode(s['txt'])
-        rpad = ttoks_size - len(ttoks)
-        s['in_ttoks'] = F.pad(torch.tensor(list(tokenizer.sot_sequence) + ttoks), (0, rpad), value=tokenizer.eot)
-        s['out_ttoks'] = F.pad(torch.tensor(ttoks + [tokenizer.eot]), (0, rpad), value=-100)
+        tokens = list(tokenizer.sot_sequence) + ttoks
+        rpad = ttoks_size - len(tokens)
+        s['in_ttoks'] = F.pad(torch.tensor(tokens), (0, rpad), value=tokenizer.eot)
+        s['out_ttoks'] = F.pad(torch.tensor(tokens[1:] + [tokenizer.eot]), (0, rpad), value=-100)
         yield s
 
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 20
-def load_datasets(
-        raw_dataset_path:Path,  # FLAC webdataset
+# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 22
+def load_dataset(
+        shard_spec:str,
         proc_dataset_path:Path, # processed VAD and txt files
-        samples:int=8000000,    # set the per-GPU sample count
-        txt_label:str="base.en-txt" # the label of the files containing transcriptions
+        samples:int,            # set the per-GPU sample count
+        txt_label:str="base.en-txt", # the label of the files containing transcriptions
+        model:str="base.en",
+        key:str="flac",
+        language:str=None,
+        validation:bool=False,    
     ):
-    shards = [str(x) for x in Path(raw_dataset_path).glob('*.tar')]
+    from . import wh_transcribe
+    shards = utils.shard_glob(shard_spec)
     
-    ds = wds.WebDataset(shards, resampled=True, rename_files=vad.fix_dots_in_names).compose(
+    if not language and model.endswith('en'): language = 'en'
+    assert language, "please provide the dataset language for multilang models"
+    
+    same_on_all_nodes = lambda urls: urls # will only be used for validation
+    ds = wds.WebDataset(shards, resampled=not validation, nodesplitter=same_on_all_nodes).compose(
         wds.decode(wds.torch_audio),
-        merge_in(derived_dataset(proc_dataset_path, 'vad')),
+        wds.select(lambda x: 'wav' in x or 'flac' in x or 'mp3' in x or 'ogg' in x), # skip samples without audio
+        wds.rename(audio="flac;mp3;wav;ogg"),
+        merge_in(derived_dataset(proc_dataset_path, 'vad', key=key)),
         wds.map_dict(**{"vad.npy":wh_transcribe.chunk_merger}),
         wh_transcribe.split_to_chunks,
-        merge_in(derived_dataset(proc_dataset_path, txt_label)),
-        # drop the first and last segment because they tend to be inaccurate
-        # (the transcriptions don't have the "LibriVox" headers and "end of chapter" suffixes)
-        wds.select(lambda x: x['i'] != 0 and x['i'] != x['imax']),
-        wds.shuffle(),
+        utils.resampler(16000, 'samples_16k'),
+        merge_in(derived_dataset(proc_dataset_path, txt_label, key=key)),
+    )
+    if 'librilight' in shards[0]:
+        ds = ds.compose(
+            # drop the first and last segment because they tend to be inaccurate
+            # (the transcriptions don't have the "LibriVox" headers and "end of chapter" suffixes)
+            wds.select(lambda x: x['i'] != 0 and x['i'] != x['imax']),
+        )
+    ds = ds.compose(
         add_masks,
-        tokenize_text,
-        wds.to_tuple('samples', 'mask', 'in_ttoks', 'out_ttoks'),
-        wds.batched(64),
+        lambda x: tokenize_text(x, model=model, language=language),
+        wds.to_tuple('samples_16k', 'mask', 'in_ttoks', 'out_ttoks'),
+        wds.batched(32),
     )
+    ds.total_samples = samples
     
-#     ds.total_samples = 3182 * 64
-    
-    def fix_length(ds, length):
-        ds.total_samples = length
-        return ds.compose(wds.slice(length // 64)).with_epoch(length // 64).with_length(length // 64)
-    
-    return (
-        fix_length(ds, samples),
-        fix_length(ds, 320),
-    )
+    return ds
 
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 25
+# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 28
 from whisperspeech.train import *
 from whisperspeech.modules import *
 
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 26
+# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 29
 import dataclasses
 
 def rand(start, end):
@@ -205,10 +212,10 @@ class Tunables:
         if 'vq_codes' in args: del args['vq_codes']
         return args
 
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 27
+# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 30
 import math
 
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 28
+# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 31
 class RQBottleneckTransformer(nn.Module):
     def __init__(self, vq_codes=512, q_depth=12, depth=1, n_head=2, head_width=64, ffn_mult=4,
                  codebook_dim=2, threshold_ema_dead_code=2, use_cosine_sim = False, kl_loss_mul=1,
@@ -347,7 +354,7 @@ class RQBottleneckTransformer(nn.Module):
                 
     def get_metrics(self):
         metrics = {
-            'acc': (self.val_true / self.val_total).item(),
+            'acc_0': (self.val_true / self.val_total).item(),
         }
         self.val_true[:] = 0
         self.val_total[:] = 0
@@ -357,7 +364,7 @@ class RQBottleneckTransformer(nn.Module):
     # inference
     #
     @classmethod
-    def load_model(cls, ref="collabora/spear-tts-pytorch:whisper-vq-stoks-v2.model",
+    def load_model(cls, ref="collabora/spear-tts-pytorch:whisper-vq-stoks-medium-en+pl.model",
                    repo_id=None, filename=None, local_filename=None):
         if repo_id is None and filename is None and local_filename is None:
             if ":" in ref:
@@ -388,9 +395,9 @@ class RQBottleneckTransformer(nn.Module):
     def ensure_whisper(self, device):
         # the list wrapper is a hack to make sure the whole of Whisper is not sucked into self.parameters()
         if self.whmodel is None: self.whmodel = [whisper.load_model(self.whisper_model_name, device=device)]
-        assert self.whisper_model_name.endswith('.en'), "multilingual models are not supported right now"
-        self.decoding_options = whisper.DecodingOptions(language='en')
-        self.tokenizer = whisper.tokenizer.get_tokenizer(False, language='en')
+        self.decoding_options = whisper.DecodingOptions()
+        multilingual = not self.whisper_model_name.endswith('.en')
+        self.tokenizer = whisper.tokenizer.get_tokenizer(multilingual)
     
     def quantize(self, embs):
         x = self.downsample_embeddings(embs)
@@ -421,7 +428,7 @@ class RQBottleneckTransformer(nn.Module):
             x, sr = torchaudio.load(audio)
             x = torchaudio.transforms.Resample(sr, 16000)(x)[0]
             audio = x.unsqueeze(0)
-        return self.encode_mel(whisper.log_mel_spectrogram(audio))
+        return self.encode_mel(whisper.log_mel_spectrogram(audio).to(self.device))
     
     def encode_mel(self, mel):
         assert len(mel.shape) == 3, "invalid mel spectrogram shape, expect (batch,chn,time)"
@@ -446,7 +453,7 @@ class RQBottleneckTransformer(nn.Module):
         embs = self.dequantize(stoks).to(self.whmodel[0].device)
         return self.whmodel[0].decode(embs, decoding_options)
 
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 30
+# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 33
 def make_model(size:str, tunables:Tunables=Tunables(), dataset:torch.utils.data.Dataset=None):
     if size == 'base.en-2d-4096c':
         model = RQBottleneckTransformer(codebook_dim=32, vq_codes=4096, q_depth=1, n_head=8, depth=1,
@@ -460,6 +467,26 @@ def make_model(size:str, tunables:Tunables=Tunables(), dataset:torch.utils.data.
         return model
     if size == 'base.en-2d-512c-dim64':
         model = RQBottleneckTransformer(codebook_dim=64, vq_codes=512, q_depth=1, n_head=8, depth=1,
+                                        downsample=2, threshold_ema_dead_code=0, use_cosine_sim=True,
+                                        whisper_model_name=size.split("-")[0], tunables=tunables)
+        return model
+    if size == 'base-2d-512c-dim64':
+        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=512, q_depth=1, n_head=8, depth=1,
+                                        downsample=2, threshold_ema_dead_code=0, use_cosine_sim=True,
+                                        whisper_model_name=size.split("-")[0], tunables=tunables)
+        return model
+    if size == 'base-2d-1024c-dim64':
+        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=1024, q_depth=1, n_head=8, depth=1,
+                                        downsample=2, threshold_ema_dead_code=0, use_cosine_sim=True,
+                                        whisper_model_name=size.split("-")[0], tunables=tunables)
+        return model
+    if size == 'medium-2d-512c-dim64':
+        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=512, q_depth=1, n_head=16, depth=1,
+                                        downsample=2, threshold_ema_dead_code=0, use_cosine_sim=True,
+                                        whisper_model_name=size.split("-")[0], tunables=tunables)
+        return model
+    if size == 'medium-2d-1024c-dim64':
+        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=1024, q_depth=1, n_head=16, depth=1,
                                         downsample=2, threshold_ema_dead_code=0, use_cosine_sim=True,
                                         whisper_model_name=size.split("-")[0], tunables=tunables)
         return model
