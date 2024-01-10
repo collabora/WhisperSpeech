@@ -9,6 +9,7 @@ from whisperspeech.t2s_up_wds_mlang_enclm import TSARTransformer
 from whisperspeech.s2a_delar_mup_wds_mlang import SADelARTransformer
 from whisperspeech.a2wav import Vocoder
 import traceback
+from pathlib import Path
 
 # %% ../nbs/7. Pipeline.ipynb 2
 class Pipeline:
@@ -53,9 +54,25 @@ class Pipeline:
             print("Failed to load the S2A model:")
             print(traceback.format_exc())
         self.vocoder = Vocoder()
+        self.encoder = None
 
+    def extract_spk_emb(self, fname):
+        """Extracts a speaker embedding from the first 30 seconds of the give audio file.
+        """
+        import torchaudio
+        if self.encoder is None:
+            from speechbrain.pretrained import EncoderClassifier
+            self.encoder = EncoderClassifier.from_hparams("speechbrain/spkrec-ecapa-voxceleb",
+                                                          savedir="~/.cache/speechbrain/",
+                                                          run_opts={"device": "cuda"})
+        samples, sr = torchaudio.load(fname)
+        samples = self.encoder.audio_normalizer(samples[0,:30*sr], sr)
+        spk_emb = self.encoder.encode_batch(samples)
+        return spk_emb[0,0]
+        
     def generate_atoks(self, text, speaker=None, lang='en', cps=15):
         if speaker is None: speaker = self.default_speaker
+        elif isinstance(speaker, (str, Path)): speaker = self.extract_spk_emb(speaker)
         text = text.replace("\n", " ")
         stoks = self.t2s.generate(text, cps=cps, lang=lang)
         atoks = self.s2a.generate(stoks, speaker.unsqueeze(0))
