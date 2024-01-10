@@ -39,15 +39,18 @@ class Pipeline:
          0.2702,  0.1699, -0.1443, -0.9614,  0.3261,  0.1718,  0.3545, -0.0686]
     )
     
-    def __init__(self, t2s_ref=None, s2a_ref=None):
+    def __init__(self, t2s_ref=None, s2a_ref=None, use_kv_cache=True):
+        args = dict(use_kv_cache=use_kv_cache)
         try:
-            args = dict(ref=t2s_ref) if t2s_ref else {}
+            if t2s_ref:
+                args["ref"] = t2s_ref
             self.t2s = TSARTransformer.load_model(**args).cuda()
         except:
             print("Failed to load the T2S model:")
             print(traceback.format_exc())
         try:
-            args = dict(ref=s2a_ref) if s2a_ref else {}
+            if s2a_ref:
+                args["ref"] = s2a_ref
             self.s2a = SADelARTransformer.load_model(**args).cuda()
         except:
             print("Failed to load the S2A model:")
