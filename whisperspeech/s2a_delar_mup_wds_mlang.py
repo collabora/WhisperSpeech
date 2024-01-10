@@ -776,7 +776,13 @@ class SADelARTransformer(nn.Module):
     # inference
     #
     @classmethod
-    def load_model(cls, repo_id="collabora/whisperspeech", filename="s2a-q4-small-en+pl.model", local_filename=None):
+    def load_model(cls, ref="collabora/whisperspeech:s2a-q4-small-en+pl.model",
+                   repo_id=None, filename=None, local_filename=None):
+        if repo_id is None and filename is None and local_filename is None:
+            if ":" in ref:
+                repo_id, filename = ref.split(":", 1)
+            else:
+                local_filename = ref
         if not local_filename:
             local_filename = hf_hub_download(repo_id=repo_id, filename=filename)
         spec = torch.load(local_filename)
