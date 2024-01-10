@@ -2,7 +2,8 @@
 
 # %% auto 0
 __all__ = ['LayerNorm', 'LinearHead', 'QueryHead', 'init_transformer', 'sinusoids', 'MultiHeadAttention',
-           'ResidualAttentionBlock', 'Encoder', 'Decoder', 'SumDecoder']
+           'ResidualAttentionBlock', 'Encoder', 'Decoder', 'SumDecoder', 'BaseDecoder', 'EmbeddingProjector',
+           'FlexEmbeddings']
 
 # %% ../nbs/A. Neural modules.ipynb 2
 import torch
@@ -53,7 +54,7 @@ def sinusoids(length, channels, max_timescale=10000):
 
 # %% ../nbs/A. Neural modules.ipynb 5
 class MultiHeadAttention(nn.Module):
-    def __init__(self, n_state: int, n_head: int, qk_scale: float = 1, rope: bool = False):
+    def __init__(self, n_state: int, n_head: int, qk_scale: float = 1, rope: bool = False, cross=False):
         super().__init__()
         self.n_head = n_head
         self.sqrt_qk_scale = math.sqrt(qk_scale)
@@ -61,54 +62,97 @@ class MultiHeadAttention(nn.Module):
         self.key = nn.Linear(n_state, n_state, bias=False)
         self.value = nn.Linear(n_state, n_state)
         self.out = nn.Linear(n_state, n_state)
+        self.cross = cross
+        self.query_subsampling = 1
+        self.key_subsampling = 1
         
         self.rotary = None
         if rope:
             self.rotary = Rotary(n_state // n_head)
+        self.qkv = None
+        self.kv = None
 
+    def merge_linears(self, layers, mults):
+        bias = [x.bias for x in layers if x.bias is not None][0]
+        din, dout = layers[0].weight.shape
+        new = nn.Linear(din, len(layers) * dout).to(layers[0].weight.device)
+        with torch.no_grad():
+            new.weight[:] = torch.cat([x.weight * m for x,m in zip(layers, mults)])
+            new.bias[:] = torch.cat([torch.zeros_like(bias) if x.bias is None else x.bias * m for x, m in zip(layers, mults)])
+        return new
+
+    def convert_for_eval(self):
+        if self.qkv or self.kv: raise AttributeError("already converted")
+        
+        self.odim = self.key.weight.shape[1]
+        if self.cross:
+            self.q = self.merge_linears([self.query], [self.sqrt_qk_scale])
+            self.kv = self.merge_linears([self.key, self.value],
+                                         [self.sqrt_qk_scale, 1])
+        else:
+            self.qkv = self.merge_linears([self.query, self.key, self.value],
+                                          [self.sqrt_qk_scale, self.sqrt_qk_scale, 1])
+            
     def forward(
         self,
         x: Tensor,
         xa: Optional[Tensor] = None,
         causal = False,
         kv_cache: Optional[dict] = None,
+        mask=None,
+        offset=None,
     ):
-        q = self.query(x)
-
-        if kv_cache is None or xa is None or self.key not in kv_cache:
-            # hooks, if installed (i.e. kv_cache is not None), will prepend the cached kv tensors;
-            # otherwise, perform key/value projections for self- or cross-attention as usual.
-            k = self.key(x if xa is None else xa)
-            v = self.value(x if xa is None else xa)
+        if self.qkv:
+            q,k,v = self.qkv(x).split(self.odim, dim=-1)
+        elif self.kv:
+            q = self.query(x)
+            k,v = self.kv(xa).split(self.odim, dim=-1)
         else:
-            # for cross-attention, calculate keys and values once and reuse in subsequent calls.
-            k = kv_cache[self.key]
-            v = kv_cache[self.value]
+            q = self.query(x)
 
-        if self.sqrt_qk_scale != 1:
-            q *= self.sqrt_qk_scale
-            k *= self.sqrt_qk_scale
+            if kv_cache is None or xa is None or self.key not in kv_cache:
+#                 print(kv_cache is None, xa is None, self.key not in kv_cache)
+                # hooks, if installed (i.e. kv_cache is not None), will prepend the cached kv tensors;
+                # otherwise, perform key/value projections for self- or cross-attention as usual.
+                k = self.key(x if xa is None else xa)
+                v = self.value(x if xa is None else xa)
+            else:
+                # for cross-attention, calculate keys and values once and reuse in subsequent calls.
+#                 print("cross attention")
+                k = kv_cache[self.key]
+                v = kv_cache[self.value]
 
-        wv, qk = self.qkv_attention(q, k, v, causal)
+            if self.sqrt_qk_scale != 1:
+                q = q * self.sqrt_qk_scale
+                k = k * self.sqrt_qk_scale
         
+        wv, qk = self.qkv_attention_pth20(q, k, v, causal, mask, kv_cache=kv_cache, offset=offset)
+#         wv, qk = self.qkv_attention_xformers(q, k, v, causal)
         return self.out(wv), qk
 
     def qkv_attention_pth20(
-        self, q: Tensor, k: Tensor, v: Tensor, causal = False
+        self, q: Tensor, k: Tensor, v: Tensor, causal = False, mask = None, kv_cache=None, offset=None
     ):
         n_batch, n_ctx, n_state = q.shape
         q = q.view(*q.shape[:2], self.n_head, -1)
         k = k.view(*k.shape[:2], self.n_head, -1)
         v = v.view(*v.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
-        
         if self.rotary:
-            q, k = apply_rotary_pos_emb(q, k, *self.rotary(k))
+            q, k = apply_rotary_pos_emb(
+                q, k, *self.rotary(k),
+                query_subsampling=self.query_subsampling,
+                key_subsampling=self.key_subsampling,
+                offset=offset if kv_cache else None
+            )
 
         k = k.permute(0, 2, 1, 3)
         q = q.permute(0, 2, 1, 3)
+            
+        if mask is not None:
+            mask = mask[:n_ctx, :n_ctx]
         # modified for better performance under PyTorch 2.0
-        wv = F.scaled_dot_product_attention(q, k, v, attn_mask=None, dropout_p=0, is_causal=causal)
-
+        wv = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, dropout_p=0, is_causal=causal)
+        
         # previously we've returned q@k which we don't have now
         # since it's not actually used anywhere else, let's just keep two return values for compatibility
         return wv.permute(0, 2, 1, 3).flatten(start_dim=2), None
@@ -131,28 +175,10 @@ class MultiHeadAttention(nn.Module):
         # since it's not actually used anywhere else, let's just keep two return values for compatibility
         return wv.flatten(start_dim=2), None
 
-    def qkv_attention_vanilla(
-        self, q: Tensor, k: Tensor, v: Tensor, causal = False
-    ):
-        n_batch, n_ctx, n_state = q.shape
-        scale = (n_state // self.n_head) ** -0.25
-        q = q.view(*q.shape[:2], self.n_head, -1).permute(0, 2, 1, 3) * scale * self.sqrt_qk_scale
-        k = k.view(*k.shape[:2], self.n_head, -1).permute(0, 2, 3, 1) * scale * self.sqrt_qk_scale
-        v = v.view(*v.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
-
-        qk = q @ k
-        if causal:
-            qk = qk + torch.empty(n_ctx, n_ctx).fill_(-np.inf).triu_(1)[:n_ctx, :n_ctx]
-        qk = qk.float()
-
-        self.last_qk = qk.detach().cpu()
-        w = F.softmax(qk, dim=-1).to(q.dtype)
-        return (w @ v).permute(0, 2, 1, 3).flatten(start_dim=2), qk.detach()
-    
-    qkv_attention = qkv_attention_pth20
-
 # %% ../nbs/A. Neural modules.ipynb 6
 # modified from https://blog.eleuther.ai/rotary-embeddings/
+
+import torch
 
 class Rotary(torch.nn.Module):
     def __init__(self, dim, base=10000):
@@ -165,9 +191,11 @@ class Rotary(torch.nn.Module):
 
     def forward(self, x, seq_dim=1):
         seq_len = x.shape[seq_dim]
-        if seq_len != self.seq_len_cached:
-            self.seq_len_cached = seq_len
-            t = torch.arange(x.shape[seq_dim], device=x.device).type_as(self.inv_freq)
+        if not self.seq_len_cached or seq_len > self.seq_len_cached:
+            self.seq_len_cached = 2500
+            # self.seq_len_cached = seq_len
+            
+            t = torch.arange(self.seq_len_cached, device=x.device).type_as(self.inv_freq)
             freqs = torch.einsum("i,j->ij", t, self.inv_freq)
             emb = torch.cat((freqs, freqs), dim=-1).to(x.device)
             self.cos_cached = emb.cos()[None, :, None, :]
@@ -179,24 +207,27 @@ class Rotary(torch.nn.Module):
 def rotate_half(x):
     x1, x2 = x[..., : x.shape[-1] // 2], x[..., x.shape[-1] // 2 :]
     return torch.cat(
-        (-x2, x1), dim=x.ndim - 1
+        (-x2, x1), dim=len(x.shape)-1
     )
 
-@torch.jit.script
-def apply_rotary_pos_emb(q, k, cos, sin):
-    return (q * cos) + (rotate_half(q) * sin), (k * cos) + (rotate_half(k) * sin)
+# @torch.jit.script
+def apply_rotary_pos_emb(q, k, cos, sin, query_subsampling:int=1, key_subsampling:int=1, offset=None):
+    if offset is None:
+        offset = 0
+    q_rot = q * cos[:,::query_subsampling][:,offset:offset+q.shape[1]] + rotate_half(q) * sin[:,::query_subsampling][:,offset:offset+q.shape[1]]
+    k_rot = k * cos[:,::key_subsampling][:,:k.shape[1]] + rotate_half(k) * sin[:,::key_subsampling][:,:k.shape[1]]
+    return q_rot, k_rot
 
 # %% ../nbs/A. Neural modules.ipynb 7
 class ResidualAttentionBlock(nn.Module):
     def __init__(self, n_state: int, n_head: int, cross_attention: bool = False, rope: bool = False,
                  qk_scale: float = 1, ffn_mult: int = 4):
         super().__init__()
-
         self.attn = MultiHeadAttention(n_state, n_head, qk_scale=qk_scale, rope=rope)
         self.attn_ln = LayerNorm(n_state)
 
         self.cross_attn = (
-            MultiHeadAttention(n_state, n_head, qk_scale=qk_scale, rope=rope) if cross_attention else None
+            MultiHeadAttention(n_state, n_head, qk_scale=qk_scale, rope=rope, cross=True) if cross_attention else None
         )
         self.cross_attn_ln = LayerNorm(n_state) if cross_attention else None
 
@@ -212,10 +243,12 @@ class ResidualAttentionBlock(nn.Module):
         xa: Optional[Tensor] = None,
         causal = False,
         kv_cache: Optional[dict] = None,
+        mask=None,
+        offset=None,
     ):
-        x = x + self.attn(self.attn_ln(x), causal=causal, kv_cache=kv_cache)[0]
+        x = x + self.attn(self.attn_ln(x), causal=causal, kv_cache=kv_cache, mask=mask, offset=offset)[0]
         if self.cross_attn:
-            x = x + self.cross_attn(self.cross_attn_ln(x), xa, kv_cache=kv_cache)[0]
+            x = x + self.cross_attn(self.cross_attn_ln(x), xa, kv_cache=kv_cache, offset=offset)[0]
         x = x + self.mlp(self.mlp_ln(x))
         return x
 
@@ -334,3 +367,139 @@ class SumDecoder(nn.Module):
         
         logits = (x @ self.embedding.weight.to(x.dtype).T).float()
         return logits
+
+# %% ../nbs/A. Neural modules.ipynb 11
+class BaseDecoder(nn.Module):
+    def __init__(self, depth=6, n_head=6, width=384, qk_scale=1, ffn_mult=4, length=2250, rope=False, use_kv_cache=True):
+        super().__init__()
+        self.length = length
+        self.width = width
+        self.layers = nn.ModuleList([
+            ResidualAttentionBlock(
+                self.width, n_head, qk_scale=qk_scale, ffn_mult=ffn_mult, cross_attention=True, rope=rope
+            ) for _ in range(math.floor(depth))
+        ])
+
+        self.ln_post = LayerNorm(width)
+        
+        mask = torch.empty(length, length).fill_(-np.inf).triu_(1)
+        self.register_buffer("mask", mask, persistent=False)
+
+        self.kv_cache = None
+        self.hooks = None
+
+        if use_kv_cache:
+            self.install_kv_cache_hooks()
+            
+
+    def forward(self, x, xenc, kv_cache=None, offset=None):
+        for i,l in enumerate(self.layers):
+            x = l(x, xenc, causal=False, mask=self.mask, kv_cache=self.kv_cache, offset=offset)
+
+        x = self.ln_post(x)
+
+        return x
+
+    def install_kv_cache_hooks(self, cache = None):
+        """
+        The `MultiHeadAttention` module optionally accepts `kv_cache` which stores the key and value
+        tensors calculated for the previous positions. This method returns a dictionary that stores
+        all caches, and the necessary hooks for the key and value projection modules that save the
+        intermediate tensors to be reused during later calculations.
+
+        Returns
+        -------
+        cache : Dict[nn.Module, torch.Tensor]
+            A dictionary object mapping the key/value projection modules to its cache
+        hooks : List[RemovableHandle]
+            List of PyTorch RemovableHandle objects to stop the hooks to be called
+        """
+        self.kv_cache = {**cache} if cache is not None else {}
+        self.hooks = []
+
+        def save_to_cache(module, _, output):
+            if module not in self.kv_cache:
+                # save as-is, for the first token or cross attention
+                self.kv_cache[module] = output
+            else:
+                self.kv_cache[module] = torch.cat([self.kv_cache[module], output], dim=1).detach()
+            return self.kv_cache[module]
+
+        def install_hooks(layer: nn.Module):
+            if isinstance(layer, MultiHeadAttention):
+                self.hooks.append(layer.key.register_forward_hook(save_to_cache))
+                self.hooks.append(layer.value.register_forward_hook(save_to_cache))
+        print("Installing kv cache hooks...")
+        self.apply(install_hooks)
+
+# %% ../nbs/A. Neural modules.ipynb 12
+class EmbeddingProjector(nn.Linear):
+    pass
+
+class FlexEmbeddings(nn.Module):
+    def __init__(self, codes, width, special_codes=None, frozen_width=None, special_embedding=None, unembed=True):
+        super().__init__()
+        self.codes = codes
+        self.special_codes = special_codes
+        if frozen_width is None: frozen_width = width
+        
+        self.main = nn.Embedding(codes, frozen_width or width)
+        self.emb_to_hidden = EmbeddingProjector(frozen_width, width) if frozen_width != width else None
+        self.hidden_to_emb = EmbeddingProjector(width, frozen_width) if unembed and frozen_width != width else None
+        if special_codes:
+            self.special = special_embedding or nn.Embedding(special_codes, width)
+            
+        self.merged_in = None
+        self.merged_out = None
+    
+    def set_frozen_embeddings(self, values):
+        with torch.no_grad():
+            self.main.weight[:] = values
+            self.main.lr_scale = 0
+    
+    @torch.no_grad()
+    def convert_for_eval(self):
+        if not self.special_codes: return
+        # in
+        weight = torch.cat([self.emb_to_hidden(self.main.weight), self.special.weight], dim=0)
+        self.merged_in = nn.Embedding(*weight.shape, _weight=weight)
+        
+        # out
+        weight = (self.main.weight @ self.hidden_to_emb.weight).T
+        self.merged_out = torch.cat([weight, self.special.weight.T], dim=1).T.contiguous() # T is for F.linear
+        self.bias_out = torch.cat([
+                self.hidden_to_emb.bias @ self.main.weight.T,
+                torch.zeros(self.special.weight.shape[0], device=weight.device, dtype=weight.dtype)
+            ], dim=0)
+        
+    def forward(self, toks):
+        if not self.training and self.merged_in is not None:
+            return self.merged_in(toks)
+        
+        if self.special_codes:
+            special_mask = toks >= self.codes
+            embs = self.main(torch.where(special_mask, 0, toks))
+        else:
+            embs = self.main(toks)
+        
+        if self.emb_to_hidden: embs = self.emb_to_hidden(embs)
+        
+        if self.special_codes:
+            embs[special_mask] = self.special(toks[special_mask] - self.codes).to(embs.dtype)
+        
+        return embs
+    
+    def unembed(self, embs):
+        if not self.training and self.merged_out is not None:
+            return F.linear(embs, self.merged_out, self.bias_out) # embs @ self.merged_out + self.bias_out
+
+        orig_embs = embs
+        if self.hidden_to_emb: embs = self.hidden_to_emb(embs)
+        
+        main_logits = (embs @ self.main.weight.to(embs.dtype).T).float()
+        
+        if not self.special_codes:
+            return main_logits
+        
+        special_logits = (orig_embs @ self.special.weight.to(orig_embs.dtype).T).float()
+        return torch.cat([main_logits, special_logits], dim=-1)
