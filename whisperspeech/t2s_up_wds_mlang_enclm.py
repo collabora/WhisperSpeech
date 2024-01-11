@@ -319,7 +319,7 @@ class TSARTransformer(nn.Module):
     #
     @classmethod
     def load_model(cls, ref="collabora/whisperspeech:t2s-small-en+pl.model",
-                   repo_id=None, filename=None, local_filename="./t2s-small-en+pl.model", use_kv_cache=True):
+                   repo_id=None, filename=None, local_filename=None, use_kv_cache=True):
         if repo_id is None and filename is None and local_filename is None:
             if ":" in ref:
                 repo_id, filename = ref.split(":", 1)
@@ -393,6 +393,7 @@ class TSARTransformer(nn.Module):
             langs = F.pad(langs, (1, self.ttoks_len - len(langs) - 1), value=lang_to_id(lang0)).unsqueeze(0)
         toks = torch.zeros((1,N), dtype=torch.long, device=dev)
         toks[:,0] = self.stoks_codes-1
+        if self.decoder.kv_cache is not None: self.decoder.kv_cache.clear()
         it = range(1,N)
         if show_progress_bar: it = progress_bar(it)
         for i in it:

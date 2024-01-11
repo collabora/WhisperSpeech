@@ -553,6 +553,7 @@ class SADelARTransformer(nn.Module):
         toks = torch.full((1,self.quantizers,N+1), self.codes+1, dtype=torch.long, device=dev)
         it = range(0,N)
         if show_progress_bar: it = progress_bar(it)
+        if self.decoder.kv_cache is not None: self.decoder.kv_cache.clear()
         xenc, _ = self.run_encoder(stoks, speakers)
         vN = 128
         for i in it:
