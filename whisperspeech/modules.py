@@ -461,17 +461,23 @@ class FlexEmbeddings(nn.Module):
     def convert_for_eval(self):
         if not self.special_codes: return
         # in
-        weight = torch.cat([self.emb_to_hidden(self.main.weight), self.special.weight], dim=0)
+        main_w = self.main.weight
+        if self.emb_to_hidden is not None: main_w = self.emb_to_hidden(main_w)
+        weight = torch.cat([main_w, self.special.weight], dim=0)
         self.merged_in = nn.Embedding(*weight.shape, _weight=weight)
         
         # out
-        weight = (self.main.weight @ self.hidden_to_emb.weight).T
-        self.merged_out = torch.cat([weight, self.special.weight.T], dim=1).T.contiguous() # T is for F.linear
-        self.bias_out = torch.cat([
+        weight = self.main.weight
+        if self.hidden_to_emb: weight = weight @ self.hidden_to_emb.weight
+        self.merged_out = torch.cat([weight.T, self.special.weight.T], dim=1).T.contiguous() # T is for F.linear
+        if self.hidden_to_emb:
+            self.bias_out = torch.cat([
                 self.hidden_to_emb.bias @ self.main.weight.T,
                 torch.zeros(self.special.weight.shape[0], device=weight.device, dtype=weight.dtype)
             ], dim=0)
-        
+        else:
+            self.bias_out = None
+
     def forward(self, toks):
         if not self.training and self.merged_in is not None:
             return self.merged_in(toks)
