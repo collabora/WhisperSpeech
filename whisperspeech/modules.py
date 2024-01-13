@@ -2,8 +2,7 @@
 
 # %% auto 0
 __all__ = ['LayerNorm', 'LinearHead', 'QueryHead', 'init_transformer', 'sinusoids', 'MultiHeadAttention',
-           'ResidualAttentionBlock', 'Encoder', 'Decoder', 'SumDecoder', 'BaseDecoder', 'EmbeddingProjector',
-           'FlexEmbeddings']
+           'ResidualAttentionBlock', 'BaseDecoder', 'EmbeddingProjector', 'FlexEmbeddings']
 
 # %% ../nbs/A. Neural modules.ipynb 2
 import torch
@@ -253,122 +252,6 @@ class ResidualAttentionBlock(nn.Module):
         return x
 
 # %% ../nbs/A. Neural modules.ipynb 8
-class Encoder(nn.Module):
-    def __init__(self, depth=6, width=384, n_head=6, length=1500, codes=1024, qk_scale=1, pos_embs=None):
-        super().__init__()
-    
-        self.embedding = nn.Embedding(codes, width)
-
-        if pos_embs is None: pos_embs = sinusoids(length, width)
-        self.register_buffer("positional_embedding", pos_embs)
-
-        self.layers = nn.Sequential(*[
-            ResidualAttentionBlock(width, n_head, qk_scale=qk_scale) for _ in range(depth)
-        ])
-
-        self.ln_post = LayerNorm(width)
-        
-        self.apply(init_transformer)
-        
-    def forward(self, Stoks):
-        xin = self.embedding(Stoks)
-        
-        assert xin.shape[1:] == self.positional_embedding.shape, "incorrect semantic token shape"
-        xin = (xin + self.positional_embedding).to(xin.dtype)
-
-        return self.ln_post(self.layers(xin))
-
-# %% ../nbs/A. Neural modules.ipynb 9
-class Decoder(nn.Module):
-    def __init__(self, depth=6, width=384, n_head=6, length=1500, codes=1024, qk_scale=1, pos_embs=None):
-        super().__init__()
-        self.length = length
-        self.codes = codes
-    
-        # embed semantic tokens
-        self.embedding = nn.Embedding(codes+1, width)
-        if pos_embs is None: pos_embs = sinusoids(length, width)
-        self.register_buffer("positional_embedding", pos_embs)
-        
-        self.layers = nn.ModuleList([
-            ResidualAttentionBlock(width, n_head, qk_scale=qk_scale, cross_attention=True) for _ in range(depth)
-        ])
-        self.ln_post = LayerNorm(width)
-        
-        self.apply(init_transformer)
-        
-    def forward(self, Stoks, xenc):
-        sot = self.embedding(torch.tensor([self.codes]).cuda()).repeat(Stoks.shape[0],1,1)
-        if Stoks.shape[-1] > 0:
-            if Stoks.shape[-1] >= self.length:
-                Stoks = Stoks[:,:-1]
-            Sembs = self.embedding(Stoks)
-            Sembs = torch.cat([sot, Sembs], dim=-2)
-        else:
-            Sembs = sot
-
-        xin = (Sembs + self.positional_embedding[:Sembs.shape[1]]).to(xenc.dtype)
-    
-        x = xin
-        for l in self.layers: x = l(x, xenc, causal=True)
-        
-        x = self.ln_post(x)
-        
-        logits = (x @ self.embedding.weight.to(x.dtype).T).float()
-        return logits
-
-# %% ../nbs/A. Neural modules.ipynb 10
-class SumDecoder(nn.Module):
-    def __init__(self, depth=6, width=384, n_head=6, length=9000, codes=1024, qk_scale=1, pos_embs=None):
-        super().__init__()
-        self.length = length
-        self.codes = codes
-    
-        # embed semantic tokens
-        self.embedding = nn.Embedding(codes+1, width)
-        if pos_embs is None: pos_embs = sinusoids(length, width)
-        self.register_buffer("positional_embedding", pos_embs)
-        
-        # before adding the encoder features
-        self.layers = nn.ModuleList([
-            ResidualAttentionBlock(width, n_head, qk_scale=qk_scale) for _ in range(math.floor(depth/2))
-        ])
-
-        # after adding the encoder features
-        self.layers2 = nn.ModuleList([
-            ResidualAttentionBlock(width, n_head, qk_scale=qk_scale) for _ in range(math.ceil(depth/2))
-        ])
-
-        self.ln_post = LayerNorm(width)
-        
-        self.apply(init_transformer)
-        
-    def forward(self, toks, xenc):
-        sot = self.embedding(torch.tensor([self.codes]).cuda()).repeat(toks.shape[0],1,1)
-        if toks.shape[-1] > 0:
-            if toks.shape[-1] >= self.length:
-                toks = toks[:,:-1]
-            embs = self.embedding(toks)
-            embs = torch.cat([sot, embs], dim=-2)
-        else:
-            embs = sot
-
-        xin = (embs + self.positional_embedding[:embs.shape[1]]).to(xenc.dtype)
-    
-        x = xin
-
-        for l in self.layers: x = l(x, causal=True)
-        
-        x += xenc.repeat_interleave(self.length // xenc.shape[-2], dim=-2)[:,:embs.shape[1]]
-
-        for l in self.layers2: x = l(x, causal=True)
-        
-        x = self.ln_post(x)
-        
-        logits = (x @ self.embedding.weight.to(x.dtype).T).float()
-        return logits
-
-# %% ../nbs/A. Neural modules.ipynb 11
 class BaseDecoder(nn.Module):
     def __init__(self, depth=6, n_head=6, width=384, qk_scale=1, ffn_mult=4, length=2250, rope=False, use_kv_cache=True):
         super().__init__()
@@ -432,7 +315,7 @@ class BaseDecoder(nn.Module):
         print("Installing kv cache hooks...")
         self.apply(install_hooks)
 
-# %% ../nbs/A. Neural modules.ipynb 12
+# %% ../nbs/A. Neural modules.ipynb 9
 class EmbeddingProjector(nn.Linear):
     pass
 
