@@ -198,15 +198,19 @@ class Encoder(nn.Module):
 
         self.ln_post = LayerNorm(width)
         
-    def forward(self, Stoks, lang_emb=None):
+        mask = torch.empty(length, length).fill_(-np.inf).triu_(1)
+        self.register_buffer("mask", mask, persistent=False)
+        
+    def forward(self, Stoks, positions, lang_emb=None):
         xin = self.embedding(Stoks)
-            
+
         if lang_emb is not None: xin += lang_emb
         
-        assert xin.shape[1:] == self.positional_embedding.shape, "incorrect semantic token shape"
-        x = (xin + self.positional_embedding).to(xin.dtype)
+#         assert xin.shape[1:] == self.positional_embedding.shape, "incorrect semantic token shape"
+        x = (xin +
+             self.positional_embedding[positions]).to(xin.dtype)
 
-        for l in self.layers: x = l(x, causal=True)
+        for l in self.layers: x = l(x, positions, causal=False, mask=self.mask)
         
         return self.ln_post(x)
 
@@ -215,7 +219,7 @@ class TSARTransformer(nn.Module):
     def __init__(self, depth=6, n_head=6, head_width=64, ffn_mult=4,
                  ttoks_len=200, ttoks_codes=256, ttoks_width=None,
                  stoks_len=1500, stoks_codes=1024, stoks_width=None,
-                 tunables=Tunables(), use_kv_cache=True):
+                 tunables=Tunables()):
         super().__init__()
         store_attr("depth,n_head,head_width,ffn_mult,stoks_width,ttoks_width,ttoks_len,stoks_len,ttoks_codes,stoks_codes")
 
@@ -237,13 +241,12 @@ class TSARTransformer(nn.Module):
         tformer_args = dict(width=width, n_head=n_head, ffn_mult=ffn_mult, tunables=tunables)
         self.encoder = Encoder(length=ttoks_len, codes=ttoks_codes, emb_width=self.ttoks_width, depth=encoder_depth, **tformer_args)
         self.embeddings = T2SEmbedding(length=stoks_len, codes=stoks_codes, width=width, stoks_width=self.stoks_width)
-        self.use_kv_cache = use_kv_cache
+
         self.decoder = BaseDecoder(
             length=stoks_len, 
             depth=decoder_depth,
             qk_scale=tunables.query_mult*8/math.sqrt(width/n_head),
             width=width, n_head=n_head, ffn_mult=ffn_mult,
-            use_kv_cache=use_kv_cache
         )
         self.tokenizer = None
         
@@ -288,25 +291,35 @@ class TSARTransformer(nn.Module):
         cps_bin = (cpss / 20 * self.tunables.cps_bins).to(torch.long)
         cps_bin[cps_bin >= self.tunables.cps_bins] = self.tunables.cps_bins-1
         return self.cps_embeddings(cps_bin).unsqueeze(1)
-    
-    def forward(self, in_ttoks, out_ttoks, languages, cpss, in_stoks, out_stoks=None, loss=True, offset=None):
+
+    def run_encoder(self, in_ttoks, languages, cpss):
         if len(languages.shape) != 3: lang_embs = self.lang_embeddings(languages)
         else: lang_embs = languages
         if len(lang_embs.shape) == 2: lang_embs = lang_embs.unsqueeze(1)
-        with record_function("encoder"):
-            xenc = self.encoder(in_ttoks.to(torch.long), lang_emb=lang_embs)
-            enc_logits = self.encoder.embedding.unembed(xenc)
-            enc_logits = enc_logits * self.tunables.output_mult / (self.width / self.base_width)
         
         cps_emb = self._embed_cps(cpss)
-        
+
+        with record_function("encoder"):
+            positions = torch.arange(0, in_ttoks.shape[1], device=in_ttoks.device)
+            xenc = self.encoder(in_ttoks.to(torch.long), positions, lang_emb=lang_embs)
+
+        return xenc, positions, cps_emb
+    
+    def forward(self, in_ttoks, out_ttoks, languages, cpss, in_stoks, in_stoks_positions, out_stoks=None, loss=True, offset=None, xenc=None, xenc_positions=None, cps_emb=None):
+        if xenc is None:
+            xenc, cps_emb = self.run_encoder(in_ttoks, languages, cpss)
+
         with record_function("decoder"):
-            embs, offset = self.embeddings(in_stoks, xenc, cps=cps_emb, offset=offset)
-            x = self.decoder(embs, xenc)
+            x = (self.embeddings.embedding(in_stoks) + 
+                 self.embeddings.positional_embedding[in_stoks_positions] +
+                 cps_emb).to(xenc[0].dtype)
+            x = self.decoder(x, in_stoks_positions, xenc, xenc_positions)
             logits = self.embeddings.embedding.unembed(x)
             logits = logits * self.tunables.output_mult / (self.width / self.base_width)
 
         if loss is not None:
+            enc_logits = self.encoder.embedding.unembed(xenc[0])
+            enc_logits = enc_logits * self.tunables.output_mult / (self.width / self.base_width)
             with record_function("loss"):
                 loss = F.cross_entropy(logits.transpose(-1,-2), out_stoks)
                 if self.training:
@@ -319,7 +332,7 @@ class TSARTransformer(nn.Module):
     #
     @classmethod
     def load_model(cls, ref="collabora/whisperspeech:t2s-small-en+pl.model",
-                   repo_id=None, filename=None, local_filename=None, use_kv_cache=True):
+                   repo_id=None, filename=None, local_filename=None):
         if repo_id is None and filename is None and local_filename is None:
             if ":" in ref:
                 repo_id, filename = ref.split(":", 1)
@@ -328,7 +341,7 @@ class TSARTransformer(nn.Module):
         if not local_filename:
             local_filename = hf_hub_download(repo_id=repo_id, filename=filename)
         spec = torch.load(local_filename)
-        model = cls(**spec['config'], tunables=Tunables(**spec['tunables']), use_kv_cache=use_kv_cache)
+        model = cls(**spec['config'], tunables=Tunables(**spec['tunables']))
         model.load_state_dict(spec['state_dict'])
         model.eval()
         return model
@@ -351,10 +364,51 @@ class TSARTransformer(nn.Module):
         if self.tokenizer is None: self.tokenizer = CharTokenizer()
         #whisper.tokenizer.get_tokenizer(multilingual=True)  
 
+    def optimize(self, max_batch_size=1, torch_compile=True):
+        for emb in [self.embeddings.embedding, self.embeddings.embedding]:
+            emb.convert_for_eval()
+        for l in self.encoder.layers:
+            l.attn.convert_for_eval()
+        for l in self.decoder.layers:
+            l.attn.convert_for_eval()
+            l.cross_attn.convert_for_eval()
+            l.setup_kv_cache(max_batch_size, self.stoks_len, self.ttoks_len)
+        if torch_compile:
+            self.generate_next = torch.compile(self.generate_next, mode="reduce-overhead", fullgraph=True)
+
     @property
     def device(self):
         return next(self.parameters()).device
         
+    # from https://github.com/pytorch-labs/gpt-fast/blob/main/generate.py
+    def multinomial_sample_one_no_sync(self, probs_sort): # Does multinomial sampling without a cuda synchronization
+        q = torch.empty_like(probs_sort).exponential_(1)
+        return torch.argmax(probs_sort / q, dim=-1, keepdim=True).to(dtype=torch.int)
+
+    def logits_to_probs(self, logits, T=1.0, top_k=None):
+        logits = logits / max(T, 1e-5)
+
+        logits[self.embeddings.embedding.codes:] = -torch.inf
+        if top_k is not None:
+            v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+            pivot = v.select(-1, -1).unsqueeze(-1)
+            logits = torch.where(logits < pivot, -float("Inf"), logits)
+
+        probs = torch.nn.functional.softmax(logits, dim=-1)
+        return probs
+
+    def sample(self, logits, T=1.0, top_k=None):
+        probs = self.logits_to_probs(logits[0,-1], T, top_k)
+        idx_next = self.multinomial_sample_one_no_sync(probs)
+        return idx_next
+
+    def generate_one(self, toks, toks_positions, cps_emb, xenc, xenc_positions, T, top_k):
+        probs, _ = self(None, None, None, None, toks, toks_positions, loss=None, xenc=xenc, xenc_positions=xenc_positions, cps_emb=cps_emb)
+        return self.sample(probs, T, top_k)
+
+    def generate_next(self, *args, **kwargs):
+        return self.generate_one(*args, **kwargs)
+
     @torch.no_grad()
     def prep(self, txt, cps=15, lang="en"):
         dev = self.device
@@ -391,24 +445,22 @@ class TSARTransformer(nn.Module):
         if not isinstance(langs, torch.Tensor):
             langs = torch.tensor(langs, device=dev)
             langs = F.pad(langs, (1, self.ttoks_len - len(langs) - 1), value=lang_to_id(lang0)).unsqueeze(0)
+        it = range(0,N-1)
+        if show_progress_bar: it = progress_bar(it)
+
         toks = torch.zeros((1,N), dtype=torch.long, device=dev)
         toks[:,0] = self.stoks_codes-1
-        if self.decoder.kv_cache is not None: self.decoder.kv_cache.clear()
-        it = range(1,N)
-        if show_progress_bar: it = progress_bar(it)
-        for i in it:
-            toks_ = toks[:,:i]
-            if self.use_kv_cache:
-                toks_ = toks_[:, -1:]
-            
-            p, _ = self(ttoks, None, langs, cpss, toks_, loss=None, offset=i-1 if self.use_kv_cache else 0)
-            last_p = p[0,-1]
-            if top_k:
-                last_p[last_p < torch.topk(last_p, top_k).values[-1,None]] = -torch.inf
-            last_p[self.embeddings.embedding.codes:] = -torch.inf
-            tok = torch.multinomial((last_p / float(T)).softmax(-1), 1)
-            toks[0,i] = tok
-            if toks[0,i] == self.stoks_codes-1: return toks[0,:i]
+        toks_positions = torch.arange(N, device=dev)
+        with record_function("encode"):
+            xenc, xenc_positions, cps_emb = self.run_encoder(ttoks, langs, cpss)
+            toks_positions = torch.arange(N+1, device=dev)
+        # contrary to S2A this model works without prefill and is actually a tiny bit faster
+        # with record_function("prefill"):
+        #     toks[0,1] = self.generate_one(toks[:,:1], toks_positions[:1], cps_emb, xenc, xenc_positions, T, top_k)
+        with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True):
+            for i in it:
+                toks[0,i+1] = self.generate_next(toks[:,i:i+1], toks_positions[i:i+1], cps_emb, xenc, xenc_positions, T, top_k)
+                if i % 25 == 0 and toks[0,i+1] == self.stoks_codes-1: return toks[0,:i+1]
         return toks[0,:]
     
     @torch.no_grad()

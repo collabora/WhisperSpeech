@@ -316,8 +316,7 @@ class SADelARTransformer(nn.Module):
                  spk_width=None,
                  atoks_width=None,
                  n_head=3, head_width=64, ffn_mult=4,
-                 quantizers=8, speaker_map={"1":0}, tunables=Tunables(),
-                 use_kv_cache=True):
+                 quantizers=8, speaker_map={"1":0}, tunables=Tunables()):
         super().__init__()
         self.quantizers = quantizers
         self.codes = 1024
@@ -360,11 +359,10 @@ class SADelARTransformer(nn.Module):
             n_head=n_head, head_width=head_width, atoks_width=atoks_width,
             quantizers=quantizers,
         )
-        self.use_kv_cache = use_kv_cache
         self.decoder = BaseDecoder(qk_scale=qk_scale, length=ctx_n,
                                      n_head=n_head, width=n_head * head_width, 
                                      ffn_mult=ffn_mult, depth=decoder_depth,
-                                     rope=tunables.rope,use_kv_cache=use_kv_cache)
+                                     rope=tunables.rope)
         self.head = DelSumHead(n_head=n_head, head_width=head_width, quantizers=quantizers)
         for l in self.decoder.layers:
             l.cross_attn.key_subsampling = 3
@@ -434,11 +432,17 @@ class SADelARTransformer(nn.Module):
             Sembs = self.emb_to_hidden(Sembs)
         return Sembs
 
+    def _encoder(self, semb, positions):
+        x = semb
+        for l in self.encoder: x = l(x, positions)
+        return self.ln_post(x)
+    
     def run_encoder(self, Stoks, speakers):
         semb = self.embed_stoks(Stoks)
         with record_function("encoder"):
             if self.positional_embeddings is not None: semb = semb + self.positional_embeddings
-            xenc = self.ln_post(self.encoder(semb))
+            positions = torch.arange(0, semb.shape[1], device=semb.device)
+            xenc = self._encoder(semb, positions)
         if self.training:
             enc_logits = (self.hidden_to_emb(xenc) @ self.semantic_embedding.weight.to(xenc.dtype).T).float()
             enc_logits = enc_logits * self.tunables.output_mult / (self.width / self.base_width)
@@ -447,9 +451,9 @@ class SADelARTransformer(nn.Module):
 #         print(xenc.shape, speakers.shape)
         spk_embs = F.normalize(speakers, dim=-1) # use extracted embeddings
         if self.spk_factor: spk_embs = self.spk_to_hidden(spk_embs)
-        return xenc + spk_embs.unsqueeze(1), enc_logits
+        return xenc + spk_embs.unsqueeze(1), positions, enc_logits
 
-    def forward(self, Stoks, Atoks, speakers, langs=None, out_stoks=None, noloss=False, xenc=None, offset=0):
+    def forward(self, Stoks, Atoks, speakers, langs=None, out_stoks=None, noloss=False, xenc=None, xenc_positions=None, atoks_positions=None):
         if xenc is None:
             Atoks = Atoks.to(torch.long)
             out_stoks = out_stoks.to(torch.long)
@@ -460,7 +464,8 @@ class SADelARTransformer(nn.Module):
             Atoks_gt = Atoks
         with record_function("decoder"):
             embs = self.embds(Atoks, xenc)
-            x = self.decoder(embs, xenc, offset=offset)
+            if atoks_positions is None: atoks_positions = torch.arange(0, embs.shape[1], device=embs.device)
+            x = self.decoder(embs, atoks_positions, xenc, xenc_positions)
             logits = self.head(x, embeddings=self.embds.embeddings)
             logits *= self.tunables.output_mult / (self.width / self.base_width)
             
@@ -500,7 +505,7 @@ class SADelARTransformer(nn.Module):
     #
     @classmethod
     def load_model(cls, ref="collabora/whisperspeech:s2a-q4-small-en+pl.model",
-                   repo_id=None, filename=None, local_filename=None, use_kv_cache=True):
+                   repo_id=None, filename=None, local_filename=None):
         if repo_id is None and filename is None and local_filename is None:
             if ":" in ref:
                 repo_id, filename = ref.split(":", 1)
@@ -510,7 +515,7 @@ class SADelARTransformer(nn.Module):
             local_filename = hf_hub_download(repo_id=repo_id, filename=filename)
         spec = torch.load(local_filename)
         if '_extra_state' not in spec['state_dict']: spec['state_dict']['_extra_state'] = { 'speaker_map': spec['config']['speaker_map'] }
-        model = cls(**spec['config'], tunables=Tunables(**Tunables.upgrade(spec['tunables'])), use_kv_cache=use_kv_cache)
+        model = cls(**spec['config'], tunables=Tunables(**Tunables.upgrade(spec['tunables'])))
         model.load_state_dict(spec['state_dict'])
         model.eval()
         return model
@@ -534,53 +539,72 @@ class SADelARTransformer(nn.Module):
                         tunables = dataclasses.asdict(self.tunables),
                         state_dict = self.state_dict()), fname)
 
+    def optimize(self, max_batch_size=1, torch_compile=True):
+        for emb in self.embds.embeddings:
+            emb.convert_for_eval()
+        for l in self.encoder:
+            l.attn.convert_for_eval()
+        for l in self.decoder.layers:
+            l.attn.convert_for_eval()
+            l.cross_attn.convert_for_eval()
+            l.setup_kv_cache(max_batch_size, self.ctx_n, self.stoks_len)
+        if torch_compile:
+            self.generate_next = torch.compile(self.generate_next, mode="reduce-overhead", fullgraph=True)
+
     @property
     def device(self):
         return next(self.parameters()).device
+
+    # from https://github.com/pytorch-labs/gpt-fast/blob/main/generate.py
+    def multinomial_sample_one_no_sync(self, probs_sort): # Does multinomial sampling without a cuda synchronization
+        q = torch.empty_like(probs_sort).exponential_(1)
+        return torch.argmax(probs_sort / q, dim=-1, keepdim=True).to(dtype=torch.int)
+
+    def logits_to_probs(self, logits, T=1.0, top_k=None):
+        logits = logits / max(T, 1e-5)
+
+        if top_k is not None:
+            v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+            pivot = v.select(-1, -1).unsqueeze(-1)
+            logits = torch.where(logits < pivot, -float("Inf"), logits)
+        probs = torch.nn.functional.softmax(logits, dim=-1)
+        return probs
+
+    def sample(self, logits, T=1.0, top_k=None):
+        probs = self.logits_to_probs(logits[0,:,-1], T, top_k)
+        idx_next = self.multinomial_sample_one_no_sync(probs)
+        return idx_next
+
+    def generate_one(self, toks, positions, langs, xenc, xenc_positions, T, top_k):
+        probs = self(None, toks, None, langs, noloss=True, xenc=xenc, xenc_positions=xenc_positions, atoks_positions=positions)
+        return self.sample(probs, T, top_k)
+
+    def generate_next(self, *args, **kwargs):
+        return self.generate_one(*args, **kwargs)
     
     @torch.no_grad()
     def generate(self, stoks, speakers, langs=None, N=None, T=0.7, top_k=None, show_progress_bar=True, step=None, subsample_enc=False):
         dev = self.device
-        if self.stoks_len == 1500:
-            N = N or len(stoks) * 3 // 2
-        else:
-            N = N or len(stoks) * 3
+        N = N or len(stoks) * 3
         stoks = F.pad(stoks.to(dev), (1, self.stoks_len - len(stoks)-1), value=self.stoks_codes-1).unsqueeze(0)
-#         speakers = torch.tensor([self.speaker_map[spk] for spk in speakers], device=dev)
         speakers = speakers.to(device=dev)
-        # if self.decoder.lang_embeddings:
-        #     langs = torch.tensor([lang_to_id(lang) for lang in langs], device=dev)
-        toks = torch.full((1,self.quantizers,N+1), self.codes+1, dtype=torch.long, device=dev)
-        it = range(0,N)
+        toks = torch.full((1,self.quantizers,2250), self.codes+1, dtype=torch.long, device=dev)
+        it = range(1,min(N,2250-1))
         if show_progress_bar: it = progress_bar(it)
-        if self.decoder.kv_cache is not None: self.decoder.kv_cache.clear()
-        xenc, _ = self.run_encoder(stoks, speakers)
-        vN = 128
-        for i in it:
-            if i >= vN: vN *= 2
-            toks_ = toks[:,:,:vN+1]
-            if self.use_kv_cache:
-                toks_ = toks_[:,:,i:i+1]
-            p = self(None, toks_, None, langs, noloss=True, xenc=xenc, offset=i)
-            if not self.use_kv_cache:
-                last_p = p[0, :, i]
-            else:
-                last_p = p[0, :, -1]
-            if top_k:
-                last_p[last_p < torch.topk(last_p, top_k).values[:,-1,None]] = -torch.inf
-            
-            for j,tok in enumerate(torch.multinomial((last_p / float(T)).softmax(-1), 1)):
-                if i-j>=0:
-                    toks[0,j,i+1] = tok
-            
-            if toks[0,0,i+1] == 1024:
-                toks = toks[:,:,:i+1]
-                break
+        with record_function("encode"):
+            xenc, xenc_positions, _ = self.run_encoder(stoks, speakers)
+            toks_positions = torch.arange(N, device=dev)
+        with record_function("prefill"):
+            toks[0,0,1] = self.generate_one(toks[:,:,:1], toks_positions[:1], langs, xenc, xenc_positions, T, top_k)[0,0]
+        with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True):
+            for i in it:
+                with record_function("generate_one"):
+                    toks[0,:i+1,i+1] = self.generate_next(toks[:,:,i:i+1], toks_positions[i:i+1], langs, xenc, xenc_positions, T, top_k)[:i+1,0]
 
-            if step is not None: step()
-
+                # for profiling and debugging
+                if step is not None: step()
         # shift tokens
-        toks = toks[:,:,1:]
+        toks = toks[:,:,1:N]
         for j in range(self.quantizers):
             toks[0, j] = torch.roll(toks[0, j], -j)
         return toks[0]
