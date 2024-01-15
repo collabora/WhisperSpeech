@@ -55,6 +55,7 @@ def sinusoids(length, channels, max_timescale=10000):
 class MultiHeadAttention(nn.Module):
     def __init__(self, n_state: int, n_head: int, qk_scale: float = 1, rope: bool = False, cross=False):
         super().__init__()
+        self.n_state = n_state
         self.n_head = n_head
         self.sqrt_qk_scale = math.sqrt(qk_scale)
         self.query = QueryHead(n_state, n_state)
@@ -64,12 +65,21 @@ class MultiHeadAttention(nn.Module):
         self.cross = cross
         self.query_subsampling = 1
         self.key_subsampling = 1
+
+        self.cached_kvx = None
+        self.register_buffer('k_cache', None)
+        self.register_buffer('v_cache', None)
         
         self.rotary = None
         if rope:
             self.rotary = Rotary(n_state // n_head)
         self.qkv = None
         self.kv = None
+
+    def setup_kv_cache(self, max_batch_size, max_seq_len, dtype=torch.float32):
+        cache_shape = (max_batch_size, self.n_head, max_seq_len, self.n_state//self.n_head)
+        self.k_cache = torch.zeros(cache_shape, dtype=dtype, device=self.key.weight.device)
+        self.v_cache = torch.zeros(cache_shape, dtype=dtype, device=self.value.weight.device)
 
     def merge_linears(self, layers, mults):
         bias = [x.bias for x in layers if x.bias is not None][0]
@@ -91,88 +101,51 @@ class MultiHeadAttention(nn.Module):
         else:
             self.qkv = self.merge_linears([self.query, self.key, self.value],
                                           [self.sqrt_qk_scale, self.sqrt_qk_scale, 1])
-            
+        
+    def split_heads(self, x, x_positions, rope=False, subsampling=1):
+        x = x.view(*x.shape[:2], self.n_head, -1)
+        if rope:
+            x = rope_rotate(x, x_positions * subsampling, *self.rotary(x))
+        return x.permute(0, 2, 1, 3)
+
     def forward(
         self,
-        x: Tensor,
-        xa: Optional[Tensor] = None,
+        qx,
+        q_positions,
+        kvx,
+        kv_positions,
         causal = False,
-        kv_cache: Optional[dict] = None,
         mask=None,
-        offset=None,
     ):
         if self.qkv:
-            q,k,v = self.qkv(x).split(self.odim, dim=-1)
+            q,k,v = self.qkv(qx).split(self.odim, dim=-1)
         elif self.kv:
-            q = self.query(x)
-            k,v = self.kv(xa).split(self.odim, dim=-1)
+            q = self.q(qx)
+            k,v = self.kv(kvx).split(self.odim, dim=-1)
         else:
-            q = self.query(x)
-
-            if kv_cache is None or xa is None or self.key not in kv_cache:
-#                 print(kv_cache is None, xa is None, self.key not in kv_cache)
-                # hooks, if installed (i.e. kv_cache is not None), will prepend the cached kv tensors;
-                # otherwise, perform key/value projections for self- or cross-attention as usual.
-                k = self.key(x if xa is None else xa)
-                v = self.value(x if xa is None else xa)
-            else:
-                # for cross-attention, calculate keys and values once and reuse in subsequent calls.
-#                 print("cross attention")
-                k = kv_cache[self.key]
-                v = kv_cache[self.value]
-
-            if self.sqrt_qk_scale != 1:
-                q = q * self.sqrt_qk_scale
-                k = k * self.sqrt_qk_scale
+            q,k,v = None,None,None
         
-        wv, qk = self.qkv_attention_pth20(q, k, v, causal, mask, kv_cache=kv_cache, offset=offset)
-#         wv, qk = self.qkv_attention_xformers(q, k, v, causal)
-        return self.out(wv), qk
+        if q is None: q = self.query(qx) * self.sqrt_qk_scale
+        q = self.split_heads(q, q_positions, rope = self.rotary, subsampling = self.query_subsampling)
 
-    def qkv_attention_pth20(
-        self, q: Tensor, k: Tensor, v: Tensor, causal = False, mask = None, kv_cache=None, offset=None
-    ):
-        n_batch, n_ctx, n_state = q.shape
-        q = q.view(*q.shape[:2], self.n_head, -1)
-        k = k.view(*k.shape[:2], self.n_head, -1)
-        v = v.view(*v.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
-        if self.rotary:
-            q, k = apply_rotary_pos_emb(
-                q, k, *self.rotary(k),
-                query_subsampling=self.query_subsampling,
-                key_subsampling=self.key_subsampling,
-                offset=offset if kv_cache else None
-            )
+        if kvx is not self.cached_kvx:
+            if k is None: k = self.key(kvx) * self.sqrt_qk_scale
+            k = self.split_heads(k, kv_positions, rope = self.rotary, subsampling = self.key_subsampling)
+            if v is None: v = self.value(kvx)
+            v = self.split_heads(v, kv_positions)
+            if self.k_cache is not None:
+                self.k_cache[:,:,kv_positions] = k
+                self.v_cache[:,:,kv_positions] = v
 
-        k = k.permute(0, 2, 1, 3)
-        q = q.permute(0, 2, 1, 3)
-            
+        if self.k_cache is not None:
+            k, v = self.k_cache, self.v_cache
+
         if mask is not None:
-            mask = mask[:n_ctx, :n_ctx]
-        # modified for better performance under PyTorch 2.0
+            mask = mask[q_positions]
+            
         wv = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, dropout_p=0, is_causal=causal)
         
-        # previously we've returned q@k which we don't have now
-        # since it's not actually used anywhere else, let's just keep two return values for compatibility
-        return wv.permute(0, 2, 1, 3).flatten(start_dim=2), None
-
-    def qkv_attention_xformers(
-        self, q: Tensor, k: Tensor, v: Tensor, causal = False
-    ):
-        n_batch, n_ctx, n_state = q.shape
-        q = q.view(*q.shape[:2], self.n_head, -1)
-        k = k.view(*k.shape[:2], self.n_head, -1)
-        v = v.view(*v.shape[:2], self.n_head, -1)
-
-        if self.rotary:
-            q, k = apply_rotary_pos_emb(q, k, *self.rotary(k))
-
-        bias = xops.LowerTriangularMask() if causal else None
-        wv = xops.memory_efficient_attention(q,k,v, attn_bias=bias)
-
-        # previously we've returned q@k which we don't have now
-        # since it's not actually used anywhere else, let's just keep two return values for compatibility
-        return wv.flatten(start_dim=2), None
+        return self.out(wv.permute(0, 2, 1, 3).flatten(start_dim=2))
 
 # %% ../nbs/A. Neural modules.ipynb 6
 # modified from https://blog.eleuther.ai/rotary-embeddings/
@@ -209,13 +182,8 @@ def rotate_half(x):
         (-x2, x1), dim=len(x.shape)-1
     )
 
-# @torch.jit.script
-def apply_rotary_pos_emb(q, k, cos, sin, query_subsampling:int=1, key_subsampling:int=1, offset=None):
-    if offset is None:
-        offset = 0
-    q_rot = q * cos[:,::query_subsampling][:,offset:offset+q.shape[1]] + rotate_half(q) * sin[:,::query_subsampling][:,offset:offset+q.shape[1]]
-    k_rot = k * cos[:,::key_subsampling][:,:k.shape[1]] + rotate_half(k) * sin[:,::key_subsampling][:,:k.shape[1]]
-    return q_rot, k_rot
+def rope_rotate(x, positions, cos, sin):
+    return x * cos[:,positions] + rotate_half(x) * sin[:,positions]
 
 # %% ../nbs/A. Neural modules.ipynb 7
 class ResidualAttentionBlock(nn.Module):
@@ -235,25 +203,32 @@ class ResidualAttentionBlock(nn.Module):
             nn.Linear(n_state, n_mlp), nn.GELU(), nn.Linear(n_mlp, n_state)
         )
         self.mlp_ln = LayerNorm(n_state)
-        
+    
+    def setup_kv_cache(self, max_batch_size, max_seq_len, max_cross_seq_len=None):
+        self.attn.setup_kv_cache(max_batch_size, max_seq_len)
+        if self.cross_attn:
+            self.cross_attn.setup_kv_cache(max_batch_size, max_cross_seq_len)
+    
     def forward(
         self,
         x: Tensor,
+        x_positions: Tensor = None,
         xa: Optional[Tensor] = None,
+        xa_positions: Optional[Tensor] = None,
         causal = False,
-        kv_cache: Optional[dict] = None,
         mask=None,
-        offset=None,
     ):
-        x = x + self.attn(self.attn_ln(x), causal=causal, kv_cache=kv_cache, mask=mask, offset=offset)[0]
+        lnx = self.attn_ln(x)
+        x = x + self.attn(lnx, x_positions, lnx, x_positions, causal=causal, mask=mask)
         if self.cross_attn:
-            x = x + self.cross_attn(self.cross_attn_ln(x), xa, kv_cache=kv_cache, offset=offset)[0]
+            lnx = self.cross_attn_ln(x)
+            x = x + self.cross_attn(lnx, x_positions, xa, xa_positions)
         x = x + self.mlp(self.mlp_ln(x))
         return x
 
 # %% ../nbs/A. Neural modules.ipynb 8
 class BaseDecoder(nn.Module):
-    def __init__(self, depth=6, n_head=6, width=384, qk_scale=1, ffn_mult=4, length=2250, rope=False, use_kv_cache=True):
+    def __init__(self, depth=6, n_head=6, width=384, qk_scale=1, ffn_mult=4, length=2250, rope=False):
         super().__init__()
         self.length = length
         self.width = width
@@ -268,52 +243,13 @@ class BaseDecoder(nn.Module):
         mask = torch.empty(length, length).fill_(-np.inf).triu_(1)
         self.register_buffer("mask", mask, persistent=False)
 
-        self.kv_cache = None
-        self.hooks = None
-
-        if use_kv_cache:
-            self.install_kv_cache_hooks()
-            
-
-    def forward(self, x, xenc, kv_cache=None, offset=None):
+    def forward(self, x, x_positions, xenc, xenc_positions):
         for i,l in enumerate(self.layers):
-            x = l(x, xenc, causal=False, mask=self.mask, kv_cache=self.kv_cache, offset=offset)
+            x = l(x, x_positions, xenc, xenc_positions, causal=False, mask=self.mask)
 
         x = self.ln_post(x)
 
         return x
-
-    def install_kv_cache_hooks(self, cache = None):
-        """
-        The `MultiHeadAttention` module optionally accepts `kv_cache` which stores the key and value
-        tensors calculated for the previous positions. This method returns a dictionary that stores
-        all caches, and the necessary hooks for the key and value projection modules that save the
-        intermediate tensors to be reused during later calculations.
-
-        Returns
-        -------
-        cache : Dict[nn.Module, torch.Tensor]
-            A dictionary object mapping the key/value projection modules to its cache
-        hooks : List[RemovableHandle]
-            List of PyTorch RemovableHandle objects to stop the hooks to be called
-        """
-        self.kv_cache = {**cache} if cache is not None else {}
-        self.hooks = []
-
-        def save_to_cache(module, _, output):
-            if module not in self.kv_cache:
-                # save as-is, for the first token or cross attention
-                self.kv_cache[module] = output
-            else:
-                self.kv_cache[module] = torch.cat([self.kv_cache[module], output], dim=1).detach()
-            return self.kv_cache[module]
-
-        def install_hooks(layer: nn.Module):
-            if isinstance(layer, MultiHeadAttention):
-                self.hooks.append(layer.key.register_forward_hook(save_to_cache))
-                self.hooks.append(layer.value.register_forward_hook(save_to_cache))
-        print("Installing kv cache hooks...")
-        self.apply(install_hooks)
 
 # %% ../nbs/A. Neural modules.ipynb 9
 class EmbeddingProjector(nn.Linear):
