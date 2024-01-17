@@ -353,7 +353,17 @@ class TSARTransformer(nn.Module):
         assert not self.training
         if self.tokenizer is None: self.tokenizer = CharTokenizer()
 
-    def optimize(self, max_batch_size=1, torch_compile=True):
+    def switch_dtypes(self, dtype=torch.float16):
+        self.dtype = dtype
+        for n,m in self.named_modules():
+            # convert every leaf layer apart from the LayerNorms
+            if isinstance(m, (nn.Linear, nn.Embedding)):
+                m.to(dtype)
+            # take care of buffers ([kv]_cache, masks) that are not in the leaf layers
+            for bn,b in m.named_buffers(recurse=False):
+                setattr(m,bn,b.to(dtype))
+
+    def optimize(self, max_batch_size=1, dtype=torch.float16, torch_compile=True):
         for emb in [self.embeddings.embedding, self.embeddings.embedding]:
             emb.convert_for_eval()
         for l in self.encoder.layers:
@@ -362,6 +372,7 @@ class TSARTransformer(nn.Module):
             l.attn.convert_for_eval()
             l.cross_attn.convert_for_eval()
             l.setup_kv_cache(max_batch_size, self.stoks_len, self.ttoks_len)
+        self.switch_dtypes(dtype)
         if torch_compile:
             self.generate_next = torch.compile(self.generate_next, mode="reduce-overhead", fullgraph=True)
 

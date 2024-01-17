@@ -446,7 +446,17 @@ class SADelARTransformer(nn.Module):
                         tunables = dataclasses.asdict(self.tunables),
                         state_dict = self.state_dict()), fname)
 
-    def optimize(self, max_batch_size=1, torch_compile=True):
+    def switch_dtypes(self, dtype=torch.float16):
+        self.dtype = dtype
+        for n,m in self.named_modules():
+            # convert every leaf layer apart from the LayerNorms
+            if isinstance(m, (nn.Linear, nn.Embedding)):
+                m.to(dtype)
+            # take care of buffers ([kv]_cache, masks) that are not in the leaf layers
+            for bn,b in m.named_buffers(recurse=False):
+                setattr(m,bn,b.to(dtype))
+
+    def optimize(self, max_batch_size=1, dtype=torch.float16, torch_compile=True):
         for emb in self.embds.embeddings:
             emb.convert_for_eval()
         for l in self.encoder:
@@ -455,6 +465,7 @@ class SADelARTransformer(nn.Module):
             l.attn.convert_for_eval()
             l.cross_attn.convert_for_eval()
             l.setup_kv_cache(max_batch_size, self.ctx_n, self.stoks_len)
+        self.switch_dtypes(dtype)
         if torch_compile:
             self.generate_next = torch.compile(self.generate_next, mode="reduce-overhead", fullgraph=True)
 
@@ -494,7 +505,7 @@ class SADelARTransformer(nn.Module):
         dev = self.device
         N = N or len(stoks) * 3
         stoks = F.pad(stoks.to(dev), (1, self.stoks_len - len(stoks)-1), value=self.stoks_codes-1).unsqueeze(0)
-        speakers = speakers.to(device=dev)
+        speakers = speakers.to(device=dev, dtype=self.dtype)
         toks = torch.full((1,self.quantizers,2250), self.codes+1, dtype=torch.long, device=dev)
         it = range(1,min(N,2250-1))
         if show_progress_bar: it = progress_bar(it)

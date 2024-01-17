@@ -268,8 +268,8 @@ class FlexEmbeddings(nn.Module):
         if special_codes:
             self.special = special_embedding or nn.Embedding(special_codes, width)
             
-        self.merged_in = None
-        self.merged_out = None
+        self.register_buffer('merged_in', None)
+        self.register_buffer('merged_out', None)
     
     def set_frozen_embeddings(self, values):
         with torch.no_grad():
