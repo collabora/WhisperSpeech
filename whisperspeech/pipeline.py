@@ -75,19 +75,19 @@ class Pipeline:
         spk_emb = self.encoder.encode_batch(samples)
         return spk_emb[0,0]
         
-    def generate_atoks(self, text, speaker=None, lang='en', cps=15):
+    def generate_atoks(self, text, speaker=None, lang='en', cps=15, step_callback=None):
         if speaker is None: speaker = self.default_speaker
         elif isinstance(speaker, (str, Path)): speaker = self.extract_spk_emb(speaker)
         text = text.replace("\n", " ")
-        stoks = self.t2s.generate(text, cps=cps, lang=lang)
-        atoks = self.s2a.generate(stoks, speaker.unsqueeze(0))
+        stoks = self.t2s.generate(text, cps=cps, lang=lang, step=step_callback)
+        atoks = self.s2a.generate(stoks, speaker.unsqueeze(0), step=step_callback)
         return atoks
         
-    def generate(self, text, speaker=None):
-        return self.vocoder.decode(self.generate_atoks(text, speaker))
+    def generate(self, text, speaker=None, lang='en', cps=15, step_callback=None):
+        return self.vocoder.decode(self.generate_atoks(text, speaker, lang=lang, cps=cps, step_callback=step_callback))
     
-    def generate_to_file(self, fname, text, speaker=None, lang='en', cps=15):
-        self.vocoder.decode_to_file(fname, self.generate_atoks(text, speaker, lang=lang, cps=cps))
+    def generate_to_file(self, fname, text, speaker=None, lang='en', cps=15, step_callback=None):
+        self.vocoder.decode_to_file(fname, self.generate_atoks(text, speaker, lang=lang, cps=cps, step_callback=None))
         
-    def generate_to_notebook(self, text, speaker=None, lang='en', cps=15):
-        self.vocoder.decode_to_notebook(self.generate_atoks(text, speaker, lang=lang, cps=cps))
+    def generate_to_notebook(self, text, speaker=None, lang='en', cps=15, step_callback=None):
+        self.vocoder.decode_to_notebook(self.generate_atoks(text, speaker, lang=lang, cps=cps, step_callback=None))
