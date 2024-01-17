@@ -519,7 +519,7 @@ class SADelARTransformer(nn.Module):
                 with record_function("generate_one"):
                     toks[0,:i+1,i+1] = self.generate_next(toks[:,:,i:i+1], toks_positions[i:i+1], langs, xenc, xenc_positions, T, top_k)[:i+1,0]
 
-                # for profiling and debugging
+                # for profiling, debugging or early exit
                 if step is not None: step()
         # shift tokens
         toks = toks[:,:,1:N]

@@ -419,7 +419,7 @@ class TSARTransformer(nn.Module):
         return ttoks, cpss, langs
     
     @torch.no_grad()
-    def generate(self, txt, cps=15, lang="en", N=None, T=0.7, top_k=None, show_progress_bar=True):
+    def generate(self, txt, cps=15, lang="en", N=None, T=0.7, top_k=None, step=None, show_progress_bar=True):
         self.ensure_tokenizer()
         N = N or self.stoks_len
         dev = self.device
@@ -461,6 +461,9 @@ class TSARTransformer(nn.Module):
             for i in it:
                 toks[0,i+1] = self.generate_next(toks[:,i:i+1], toks_positions[i:i+1], cps_emb, xenc, xenc_positions, T, top_k)
                 if i % 25 == 0 and toks[0,i+1] == self.stoks_codes-1: return toks[0,:i+1]
+
+                # for profiling, debugging or early exit
+                if step is not None: step()
         return toks[0,:]
     
     @torch.no_grad()
