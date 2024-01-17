@@ -240,7 +240,7 @@ class BaseDecoder(nn.Module):
 
         self.ln_post = LayerNorm(width)
         
-        mask = torch.empty(length, length).fill_(-np.inf).triu_(1)
+        mask = torch.empty(length, length).fill_(-torch.inf).triu_(1)
         self.register_buffer("mask", mask, persistent=False)
 
     def forward(self, x, x_positions, xenc, xenc_positions):

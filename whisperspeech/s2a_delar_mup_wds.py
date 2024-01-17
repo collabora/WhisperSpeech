@@ -109,7 +109,7 @@ def load_datasets(
         ds(shards[:1], val_samples),
     )
 
-# %% ../nbs/4B. Semantic to acoustic token modeling.ipynb 32
+# %% ../nbs/4B. Semantic to acoustic token modeling.ipynb 33
 import pylab as plt
 import fastprogress
 import IPython
@@ -192,7 +192,7 @@ class CMLMVisual:
         epoch = math.ceil(it / self.total_steps * self.epochs)
         bar.comment = f"#{epoch}/{self.epochs} loss: {avg_train_loss:.3f} / {val_loss:.3f}"
 
-# %% ../nbs/4B. Semantic to acoustic token modeling.ipynb 33
+# %% ../nbs/4B. Semantic to acoustic token modeling.ipynb 34
 # modified from https://blog.eleuther.ai/rotary-embeddings/
 import torch
 
@@ -228,7 +228,7 @@ def rotate_half(x):
 def apply_rotary_pos_emb(q, k, cos, sin):
     return (q * cos[:,:q.shape[1]]) + (rotate_half(q) * sin[:,:q.shape[1]]), (k * cos) + (rotate_half(k) * sin)
 
-# %% ../nbs/4B. Semantic to acoustic token modeling.ipynb 34
+# %% ../nbs/4B. Semantic to acoustic token modeling.ipynb 35
 from torch import Tensor, nn
 import torch.nn.functional as F
 from typing import Dict, Iterable, Optional
@@ -347,7 +347,7 @@ class MultiHeadAttention(nn.Module):
         # since it's not actually used anywhere else, let's just keep two return values for compatibility
         return wv.flatten(start_dim=2), None
 
-# %% ../nbs/4B. Semantic to acoustic token modeling.ipynb 35
+# %% ../nbs/4B. Semantic to acoustic token modeling.ipynb 36
 class DelSumDecoder(nn.Module):
     def __init__(self, depth=6, n_head=6, head_width=64, qk_scale=1, ffn_mult=4, length=2250, codes=1024, quantizers=8, linear_heads=True, rope=False, pos_embs=None):
         super().__init__()
@@ -655,7 +655,7 @@ class SADelARTransformer(nn.Module):
             if toks[0,0,i] == 1024: return toks[0,:,:i]
         return toks[0]
 
-# %% ../nbs/4B. Semantic to acoustic token modeling.ipynb 36
+# %% ../nbs/4B. Semantic to acoustic token modeling.ipynb 37
 def _make_model(size:str, quantizers:int=4, tunables:Tunables=Tunables(), dataset:torch.utils.data.Dataset=None, **kwargs):
     assert(dataset is not None)
     kwargs = dict(speaker_map=dataset.speakers, quantizers=quantizers, tunables=tunables, **kwargs)
