@@ -270,6 +270,7 @@ class FlexEmbeddings(nn.Module):
             
         self.register_buffer('merged_in', None)
         self.register_buffer('merged_out', None)
+        self.register_buffer('bias_out', None)
     
     def set_frozen_embeddings(self, values):
         with torch.no_grad():
