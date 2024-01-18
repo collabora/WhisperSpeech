@@ -44,8 +44,9 @@ English project names are seamlessly mixed into Polish speech):
 https://github.com/collabora/WhisperSpeech/assets/107984/d7092ef1-9df7-40e3-a07e-fdc7a090ae9e
 
 You can [test all of these on
-Collab](https://colab.research.google.com/github/collabora/WhisperSpeech/blob/8168a30f26627fcd15076d10c85d9e33c52204cf/Inference%20example.ipynb).
-A Huggingface Space is coming soon.
+Collab](https://colab.research.google.com/github/collabora/WhisperSpeech/blob/8168a30f26627fcd15076d10c85d9e33c52204cf/Inference%20example.ipynb)
+(we optimized the dependencies so now it takes less than 30 seconds to
+install). A Huggingface Space is coming soon.
 
 ## Progress update \[2024-01-10\]
 
@@ -111,6 +112,28 @@ to generate semantic tokens and perform transcription,
 acoustic modeling and
 [Vocos](https://github.com/charactr-platform/vocos) from Charactr Inc as
 the high-quality vocoder.
+
+We gave two presentation diving deeper into WhisperSpeech. The first one
+talks about the challenges of large scale training:
+
+<div>
+
+[![](https://img.youtube.com/vi/6Fr-rq-yjXo/0.jpg)](https://www.youtube.com/watch?v=6Fr-rq-yjXo)
+
+Tricks Learned from Scaling WhisperSpeech Models to 80k+ Hours of
+Speech - video recording by Jakub Cłapa, Collabora
+
+</div>
+
+The other one goes a bit more into the architectural choices we made:
+
+<div>
+
+[![](https://img.youtube.com/vi/1OBvf33S77Y/0.jpg)](https://www.youtube.com/watch?v=1OBvf33S77Y)
+
+Open Source Text-To-Speech Projects: WhisperSpeech - In Depth Discussion
+
+</div>
 
 ### Whisper for modeling semantic tokens
 
