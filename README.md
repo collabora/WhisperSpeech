@@ -22,26 +22,32 @@ Currently the models are trained on the English LibreLight dataset. In
 the next release we want to target multiple languages (Whisper and
 EnCodec are both multilanguage).
 
+Sample of the synthesized voice:
+
+https://github.com/collabora/WhisperSpeech/assets/107984/aa5a1e7e-dc94-481f-8863-b022c7fd7434
+
 ## Progress update \[2024-01-18\]
 
 We spend the last week optimizing inference performance. We integrated
 `torch.compile`, added kv-caching and tuned some of the layers – we are
 now working over 12x faster than real-time on a consumer 4090!
 
-We also added an easy way to test voice-cloning. Here is a sample voice
-cloned from [a famous speech by Winston
-Churchill](https://en.wikipedia.org/wiki/File:Winston_Churchill_-_Be_Ye_Men_of_Valour.ogg):
-
-https://github.com/collabora/WhisperSpeech/assets/107984/bd28110b-31fb-4d61-83f6-c997f560bc26
-
-We can also mix languages in a single sentence (here the highlighted
-English project names are seamlessly mixed into Polish speech):
+We can mix languages in a single sentence (here the highlighted English
+project names are seamlessly mixed into Polish speech):
 
 > To jest pierwszy test wielojęzycznego `Whisper Speech` modelu
 > zamieniającego tekst na mowę, który `Collabora` i `Laion` nauczyli na
 > superkomputerze `Jewels`.
 
 https://github.com/collabora/WhisperSpeech/assets/107984/d7092ef1-9df7-40e3-a07e-fdc7a090ae9e
+
+We also added an easy way to test voice-cloning. Here is a sample voice
+cloned from [a famous speech by Winston
+Churchill](https://en.wikipedia.org/wiki/File:Winston_Churchill_-_Be_Ye_Men_of_Valour.ogg)
+(the radio static is a feature, not a bug ;) – it is part of the
+reference recording):
+
+https://github.com/collabora/WhisperSpeech/assets/107984/bd28110b-31fb-4d61-83f6-c997f560bc26
 
 You can [test all of these on
 Collab](https://colab.research.google.com/github/collabora/WhisperSpeech/blob/8168a30f26627fcd15076d10c85d9e33c52204cf/Inference%20example.ipynb)
