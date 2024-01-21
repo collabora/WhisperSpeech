@@ -50,7 +50,7 @@ reference recording):
 https://github.com/collabora/WhisperSpeech/assets/107984/bd28110b-31fb-4d61-83f6-c997f560bc26
 
 You can [test all of these on
-Collab](https://colab.research.google.com/drive/1xxGlTbwBmaY6GKA24strRixTXGBOlyiw)
+Colab](https://colab.research.google.com/drive/1xxGlTbwBmaY6GKA24strRixTXGBOlyiw)
 (we optimized the dependencies so now it takes less than 30 seconds to
 install). A Huggingface Space is coming soon.
 
