@@ -421,7 +421,7 @@ class SADelARTransformer(nn.Module):
         if not local_filename:
             local_filename = hf_hub_download(repo_id=repo_id, filename=filename)
         spec = torch.load(local_filename)
-        if '_extra_state' not in spec['state_dict']: spec['state_dict']['_extra_state'] = { 'speaker_map': spec['config']['speaker_map'] }
+        if '_extra_state' not in spec['state_dict'] and 'speaker_map' in spec['config']: spec['state_dict']['_extra_state'] = { 'speaker_map': spec['config']['speaker_map'] }
         model = cls(**spec['config'], tunables=Tunables(**Tunables.upgrade(spec['tunables'])))
         model.load_state_dict(spec['state_dict'])
         model.eval()
