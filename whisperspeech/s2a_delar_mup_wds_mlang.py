@@ -433,8 +433,11 @@ class SADelARTransformer(nn.Module):
     def set_extra_state(self, st):
         self.speaker_map = st['speaker_map']
 
-    def load_checkpoint(self, local_filename):
-        spec = torch.load(local_filename, map_location='cpu')
+    def load_checkpoint(self, local_filename_or_obj):
+        if isinstance(local_filename_or_obj, (str, Path)):
+            spec = torch.load(local_filename, map_location='cpu')
+        else:
+            spec = local_filename_or_obj
         assert 'pytorch-lightning_version' in spec, 'not a valid PyTorch Lightning checkpoint'
         state_dict = {k.replace('model.', ''):v
                       for k,v in spec['state_dict'].items()}
