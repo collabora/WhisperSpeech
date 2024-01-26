@@ -391,7 +391,9 @@ class RQBottleneckTransformer(nn.Module):
                         tunables = dataclasses.asdict(self.tunables),
                         state_dict = self.state_dict() if store_parameters else None), fname)
         
-    def ensure_whisper(self, device):
+    def ensure_whisper(self, device=None):
+        if self.whmodel is not None: return
+        device = device or self.device
         # the list wrapper is a hack to make sure the whole of Whisper is not sucked into self.parameters()
         if self.whmodel is None: self.whmodel = [whisper.load_model(self.whisper_model_name, device=device)]
         self.decoding_options = whisper.DecodingOptions()
@@ -431,7 +433,7 @@ class RQBottleneckTransformer(nn.Module):
     
     def encode_mel(self, mel):
         assert len(mel.shape) == 3, "invalid mel spectrogram shape, expect (batch,chn,time)"
-        self.ensure_whisper(self.device)
+        self.ensure_whisper()
         n = mel.shape[-1]
         if n > whisper.audio.N_FRAMES:
             padding = 0
