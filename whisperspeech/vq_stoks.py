@@ -120,8 +120,7 @@ def load_dataset(
     same_on_all_nodes = lambda urls: urls # will only be used for validation
     ds = wds.WebDataset(shards, resampled=not validation, nodesplitter=same_on_all_nodes).compose(
         wds.decode(wds.torch_audio),
-        wds.select(lambda x: 'wav' in x or 'flac' in x or 'mp3' in x or 'ogg' in x), # skip samples without audio
-        wds.rename(audio="flac;mp3;wav;ogg"),
+        utils.find_audio,
         merge_in(derived_dataset(proc_dataset_path, 'vad', key=key)),
         wds.map_dict(**{"vad.npy":wh_transcribe.chunk_merger}),
         wh_transcribe.split_to_chunks,
