@@ -68,6 +68,6 @@ def process_shard(
             audio, sr = s['audio']
             sink.write({
                 "__key__": s['__key__'],
-                "vad.npy": np.array(segment_audio(vad_model, audio, sr=sr), dtype=np.float16)
+                "vad.npy": np.array(segment_audio(vad_model, audio, sr=sr), dtype=np.float32),
             })
     os.rename(tmp, output)
