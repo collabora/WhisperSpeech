@@ -25,10 +25,10 @@ from torch.utils.data.dataloader import DataLoader
 
 from fastcore.script import *
 
-from . import vad
+from . import vad, utils
 import webdataset as wds
 
-# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 9
+# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 10
 # let's make it a bit more conservative
 # with full 30 second chunks it sometimes misses a small part of the transcript
 def random_cutter(dur):
@@ -51,7 +51,7 @@ def chunk_merger(segments, should_cut=lambda x: x > 28):
     merged.append((curr_start, curr_end))
     return merged
 
-# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 18
+# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 21
 def merge_in(*datasets):
     """Merge multiple datasets into the current one returning samples with the union of keys.
     
@@ -68,10 +68,10 @@ def merge_in(*datasets):
             yield news
     return merge_loop
 
-# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 19
+# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 22
 import copy
 
-# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 20
+# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 23
 # a workaround for https://github.com/webdataset/webdataset/issues/297
 # should be possible to use ds.compose here
 def wds_compose(ds, *args):
@@ -81,15 +81,12 @@ def wds_compose(ds, *args):
         ds.append(f)
     return ds
 
-# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 24
-def split_to_chunks(stream, pad_to_seconds=30, random_shift=False):
+# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 28
+def split_to_chunks(stream, ikey='vad.npy', pad_to_seconds=30, random_shift=False):
     for s in stream:
-        audio, sr = s.get('flac', s.get('wav', (None, None)))
-        if audio is None:
-            print(f"warning: '{s['__key__']}' does not contain an audio file")
-            continue
-        imax = len(s['vad.npy']) - 1
-        for i,(ts,te) in enumerate(s['vad.npy']):
+        audio, sr = s['audio']
+        imax = len(s[ikey]) - 1
+        for i,(ts,te) in enumerate(s[ikey]):
             samples = audio[0,int(ts*sr):int(te*sr)]
             if pad_to_seconds is not None:
                 padding = pad_to_seconds*sr-samples.shape[-1]
@@ -103,7 +100,7 @@ def split_to_chunks(stream, pad_to_seconds=30, random_shift=False):
                    "lpad_s": lpad/sr, "rpad_s": (padding-lpad)/sr,
                    "samples": samples, "sample_rate": sr}
 
-# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 38
+# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 43
 def flac_to_txt_name(input, model_size):
     return input.rsplit("/", 1)[1].replace('flac', f'{model_size}-txt') + ".gz"
 
@@ -113,7 +110,8 @@ def process_shard(
     output:str=None,    # output shard URL/path
     bs:int=None,        # batch size (16 uses around 11GB of VRAM)
     n_samples:int=None, # limit the number of samples (useful for quick benchmarking)
-    whisper_model:str="base.en" # Whisper model size
+    whisper_model:str="base.en", # Whisper model size
+    language:str="en",  # transcription language
 ):
     if output is None: output = flac_to_txt_name(input, whisper_model)
     if bs is None: bs = 16
@@ -124,13 +122,14 @@ def process_shard(
         merge_in(wds.WebDataset(vad.flac_to_vad_name(input)).decode()),
         wds.map_dict(**{"vad.npy":chunk_merger}),
         split_to_chunks,
-        wds.to_tuple('__key__', 'samples'),
+        utils.resampler(16000, 'samples_16k'),
+        wds.to_tuple('__key__', 'samples_16k'),
         wds.batched(bs),
     )
     dl = DataLoader(ds, num_workers=2, batch_size=None)
     
     whmodel = whisper.load_model(whisper_model)
-    decoding_options = whisper.DecodingOptions(language='en')
+    decoding_options = whisper.DecodingOptions(language=language)
     
     tmp = output+".tmp"
     with wds.TarWriter(tmp) as sink:

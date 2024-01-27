@@ -7,11 +7,22 @@ __all__ = []
 from fastcore.script import call_parse
 import whisperx
 import whisper
+from speechbrain.pretrained import EncoderClassifier
 
 # %% ../nbs/0. Download models.ipynb 3
+def load_whisperx(model, lang):
+    try:
+        whisperx.asr.load_model(model, "cpu", compute_type="float16", language=lang)
+    except ValueError as exc:
+        print(exc.args[0])
+        if exc.args[0] != "Requested float16 compute type, but the target device or backend do not support efficient float16 computation.":
+            raise
+
 @call_parse
 def main():
     whisper.load_model('base.en')
     whisper.load_model('small.en')
     whisperx.vad.load_vad_model('cpu')
-    whisperx.asr.load_model('medium.en', "cpu", compute_type="float16", language='en')
+    load_whisperx('medium.en', 'en')
+    load_whisperx('medium', 'en')
+    EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", savedir="~/.cache/speechbrain/")

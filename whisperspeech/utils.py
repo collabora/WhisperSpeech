@@ -135,16 +135,49 @@ def split_to_chunks(stream, ikey='vad.npy', metakeys=[], pad_to_seconds=30, rand
             yield subs
 
 # %% ../nbs/D. Common dataset utilities.ipynb 10
+import re
+import tempfile
+
+# %% ../nbs/D. Common dataset utilities.ipynb 11
+def torch_audio_opus(key, data):
+    """Decode audio using the torchaudio library.
+
+    :param key: file name extension
+    :param data: data to be decoded
+    """
+    extension = re.sub(r".*[.]", "", key)
+    if extension not in ["flac", "mp3", "sox", "wav", "m4a", "ogg", "wma", "opus"]:
+        return None
+
+    import torchaudio
+
+    with tempfile.TemporaryDirectory() as dirname:
+        fname = os.path.join(dirname, f"file.{extension}")
+        with open(fname, "wb") as stream:
+            stream.write(data)
+        return torchaudio.load(fname)
+
+# %% ../nbs/D. Common dataset utilities.ipynb 12
+def find_audio(stream, okey='audio', ikeys='flac;mp3;wav;ogg;opus'):
+    ikeys = ikeys.split(';')
+    for s in stream:
+        for ikey in ikeys:
+            if ikey in s:
+                s[okey] = s[ikey]
+                yield s
+                break
+            # implicitly skips elements without any audio
+
+# %% ../nbs/D. Common dataset utilities.ipynb 13
 def vad_dataset(shards, ikey='vad.npy', kind='vad'):
     return wds.WebDataset(shards).compose(
-        wds.decode(wds.torch_audio),
+        wds.decode(torch_audio_opus),
         merge_in(derived_dataset(kind)),
-        wds.select(lambda x: 'wav' in x or 'flac' in x or 'mp3' in x or 'ogg' in x), # skip samples without audio
-        wds.rename(audio="flac;mp3;wav;ogg"),
+        find_audio,
         lambda x: split_to_chunks(x, ikey=ikey),
     )
 
-# %% ../nbs/D. Common dataset utilities.ipynb 11
+# %% ../nbs/D. Common dataset utilities.ipynb 14
 @contextmanager
 def AtomicTarWriter(name, throwaway=False):
     tmp = name+".tmp"
@@ -153,7 +186,7 @@ def AtomicTarWriter(name, throwaway=False):
     if not throwaway:
         os.rename(tmp, name)
 
-# %% ../nbs/D. Common dataset utilities.ipynb 12
+# %% ../nbs/D. Common dataset utilities.ipynb 15
 def readlines(fname):
     with open(fname) as file:
         return [line.rstrip() for line in file]
