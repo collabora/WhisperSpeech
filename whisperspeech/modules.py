@@ -134,11 +134,11 @@ class MultiHeadAttention(nn.Module):
             if v is None: v = self.value(kvx)
             v = self.split_heads(v, kv_positions)
             if self.k_cache is not None:
-                self.k_cache[:,:,kv_positions] = k
-                self.v_cache[:,:,kv_positions] = v
+                self.k_cache[:k.shape[0],:,kv_positions] = k
+                self.v_cache[:v.shape[0],:,kv_positions] = v
 
         if self.k_cache is not None:
-            k, v = self.k_cache, self.v_cache
+            k, v = self.k_cache[:k.shape[0]], self.v_cache[:v.shape[0]]
 
         if mask is not None:
             mask = mask[q_positions]
@@ -245,7 +245,7 @@ class BaseDecoder(nn.Module):
 
     def forward(self, x, x_positions, xenc, xenc_positions):
         for i,l in enumerate(self.layers):
-            x = l(x, x_positions, xenc, xenc_positions, causal=False, mask=self.mask)
+            x = l(x, x_positions, xenc, xenc_positions, causal=self.training, mask=self.mask if not self.training else None)
 
         x = self.ln_post(x)
 
