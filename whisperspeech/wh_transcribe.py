@@ -28,7 +28,7 @@ from fastcore.script import *
 from . import vad, utils
 import webdataset as wds
 
-# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 10
+# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 9
 # let's make it a bit more conservative
 # with full 30 second chunks it sometimes misses a small part of the transcript
 def random_cutter(dur):
@@ -51,7 +51,7 @@ def chunk_merger(segments, should_cut=lambda x: x > 28):
     merged.append((curr_start, curr_end))
     return merged
 
-# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 21
+# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 18
 def merge_in(*datasets):
     """Merge multiple datasets into the current one returning samples with the union of keys.
     
@@ -68,10 +68,10 @@ def merge_in(*datasets):
             yield news
     return merge_loop
 
-# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 22
+# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 19
 import copy
 
-# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 23
+# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 20
 # a workaround for https://github.com/webdataset/webdataset/issues/297
 # should be possible to use ds.compose here
 def wds_compose(ds, *args):
@@ -81,7 +81,7 @@ def wds_compose(ds, *args):
         ds.append(f)
     return ds
 
-# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 28
+# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 24
 def split_to_chunks(stream, ikey='vad.npy', pad_to_seconds=30, random_shift=False):
     for s in stream:
         audio, sr = s['audio']
@@ -100,7 +100,7 @@ def split_to_chunks(stream, ikey='vad.npy', pad_to_seconds=30, random_shift=Fals
                    "lpad_s": lpad/sr, "rpad_s": (padding-lpad)/sr,
                    "samples": samples, "sample_rate": sr}
 
-# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 43
+# %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 39
 def flac_to_txt_name(input, model_size):
     return input.rsplit("/", 1)[1].replace('flac', f'{model_size}-txt') + ".gz"
 
