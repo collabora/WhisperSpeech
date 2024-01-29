@@ -46,29 +46,19 @@ def random_trunc(random_trunc_p, atoks_len = 2250, stoks_len = 750):
 def pad_samples(atoks_len = 2250, stoks_len = 750, stoks_pad_token = 4096):
     def _pad(samples):
         for s in samples:
-            s['stoks.npy'] = F.pad(torch.tensor(s['stoks.npy']), (1, stoks_len - s['stoks.npy'].shape[-1]-1), value=stoks_pad_token)
-            s['out_stoks'] = F.pad(torch.tensor(s['stoks.npy']), (0, stoks_len - s['stoks.npy'].shape[-1]), value=stoks_pad_token)
-            s['atoks.npy'] = F.pad(torch.tensor(s['atoks.npy']), (0, atoks_len - s['atoks.npy'].shape[-1]), value=-100)
+            stoks = torch.tensor(s['stoks.npy'])
+            atoks = torch.tensor(s['atoks.npy'])
+            s['in_stoks'] = F.pad(stoks, (1, stoks_len - stoks.shape[-1]-1), value=stoks_pad_token)
+            q,n = atoks.shape
+            padatoks = [F.pad(   atoks[i], (i + 1, 0                    ), value=1025) for i in range(q)]
+            padatoks = [F.pad(padatoks[i], (0,     atoks_len - n - i - 1), value=1024) for i in range(q)]
+            s['in_atoks'] = torch.stack(padatoks)
             yield s
     return _pad
 
 # %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 10
-def make_speaker_map(shards):
-    speakers = set()
-    for shard in shards:
-        with open(shard+'.speakers.txt') as f: speakers = speakers.union(set(x.strip() for x in f.readlines()))
-    return {id:i for i,id in enumerate(sorted(speakers))}
-
-def speaker_id_extractor(speaker_map):
-    def _extractor(samples):
-        for s in samples:
-            s['speaker'] = torch.tensor(speaker_map[s['__key__'].split("/")[1]])
-            yield s
-    return _extractor
-
-# %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 27
 def load_dataset(
-        atoks_shard_spec:str,             # webdataset folder
+        atoks_shard_spec:str,  # webdataset folder
         stoks_shard_dir:str,   # stoks webdataset base dir
         samples:int,           # samples per epoch
         random_trunc_p:float=0,# probability of truncating the input to less than 30 seconds
@@ -80,7 +70,7 @@ def load_dataset(
         randomize_speakers:bool=False,
     ):
     import webdataset as wds
-    from whisperspeech import utils
+    from whisperspeech import utils, languages
 
     shards = utils.shard_glob(atoks_shard_spec)
     excludes = {x for file in exclude_files.split() for x in utils.readlines(file)} if exclude_files else set()
@@ -90,7 +80,7 @@ def load_dataset(
         return s
     
     def set_language(x):
-        x['language'] = language
+        x['language'] = languages.to_id(language)
         return x
     
     same_on_all_nodes = lambda urls: urls # will only be used for validation
@@ -103,7 +93,7 @@ def load_dataset(
         random_trunc(random_trunc_p) if random_trunc_p > 0 else lambda x: x,
         pad_samples(stoks_pad_token=vq_codes-1),
         wds.map(set_language),
-        wds.to_tuple('stoks.npy', 'atoks.npy', 'spk_emb.npy', 'language', 'out_stoks'),
+        wds.to_tuple('in_stoks', 'in_atoks', 'spk_emb.npy', 'language'),
         wds.shuffle(20000, initial=20000),
         wds.batched(64),
     )
@@ -119,7 +109,7 @@ def load_dataset(
     
     return ds
 
-# %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 37
+# %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 13
 class DelSumEmbedding(nn.Module):
     def __init__(self, n_head=6, head_width=64, atoks_width=None, length=2250, codes=1024, quantizers=8, pos_embs=None):
         super().__init__()
@@ -151,7 +141,7 @@ class DelSumEmbedding(nn.Module):
             x = embs.to(xenc.dtype)
         return x
 
-# %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 38
+# %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 14
 class DelSumHead(nn.Module):
     def __init__(self, quantizers=8, n_head=6, head_width=64):
         super().__init__()
@@ -184,6 +174,8 @@ class Tunables:
     encoder_depth_ratio :float = 0.25
     linear_heads :bool = False
     rope :bool = True
+    q0_loss_mult: float = 1
+    causal_encoder :bool = False
     
     lr0 :float = 3e-3
     clip_gradient_norm :float = 2
@@ -215,6 +207,7 @@ class Tunables:
             if name not in args: args[name] = value
         old_default('rope', False)
         old_default('linear_heads', True)
+        old_default('causal_encoder', False)
         return args
             
 class SADelARTransformer(nn.Module):
@@ -242,8 +235,7 @@ class SADelARTransformer(nn.Module):
             self.positional_embeddings = None
         else:
             self.register_buffer('positional_embeddings', sinusoids(ctx_n, width))
-        
-#         self.speaker_embedding = nn.Embedding(len(speaker_map), spk_width)
+
         self.semantic_embedding = nn.Embedding(stoks_codes, stoks_width)
         if self.emb_factor:
             self.emb_to_hidden = nn.Linear(stoks_width, width)
@@ -258,7 +250,7 @@ class SADelARTransformer(nn.Module):
         decoder_depth = depth * 2 - encoder_depth
         self.encoder = nn.Sequential(*[
             ResidualAttentionBlock(width, n_head, qk_scale=qk_scale, ffn_mult=ffn_mult, rope=tunables.rope) for _ in range(encoder_depth)
-        ]) # FIXME: enclm requires causal attention here
+        ])
         self.ln_post = LayerNorm(width)
 
         self.embds = DelSumEmbedding(
@@ -273,9 +265,6 @@ class SADelARTransformer(nn.Module):
         self.head = DelSumHead(n_head=n_head, head_width=head_width, quantizers=quantizers)
         for l in self.decoder.layers:
             l.cross_attn.key_subsampling = 3
-#         for l in self.encoder:
-#             l.attn.key_subsampling = 3
-#             l.attn.query_subsampling = 3
         
         self.register_buffer('val_true', torch.zeros(self.quantizers).cuda())
         self.register_buffer('val_total', torch.zeros(self.quantizers).cuda())
@@ -305,11 +294,6 @@ class SADelARTransformer(nn.Module):
             m.lr_scale = self.tunables.embeddings_lr_scale
             std = self.tunables.embeddings_std
             torch.nn.init.trunc_normal_(m.weight, std=std, a=-3*std, b=3*std)
-#         elif isinstance(m, EmbeddingProjector):
-#             m.lr_scale = self.tunables.embeddings_lr_scale #1/(m.weight.shape[1] / self.base_width)
-#             m.lr_scale = 2/(m.weight.shape[1] / self.base_width)
-#             std = self.tunables.init_std / m.weight.shape[1]
-#             torch.nn.init.trunc_normal_(m.weight, std=std, a=-3*std, b=3*std)
         elif isinstance(m, nn.Linear):
             m.lr_scale = 1/(m.weight.shape[1] / self.base_width)
             std = self.tunables.init_std / m.weight.shape[1]
@@ -331,7 +315,6 @@ class SADelARTransformer(nn.Module):
             x = x.reshape(b,n//2*3)
         else:
             # it's a lot easier with 25 toks/s
-#             x = Stoks.repeat_interleave(3, -1)
             x = Stoks
         # embed semantic tokens
         Sembs = self.semantic_embedding(x.to(torch.long))
@@ -341,7 +324,7 @@ class SADelARTransformer(nn.Module):
 
     def _encoder(self, semb, positions):
         x = semb
-        for l in self.encoder: x = l(x, positions)
+        for l in self.encoder: x = l(x, positions, causal=self.tunables.causal_encoder)
         return self.ln_post(x)
     
     def run_encoder(self, Stoks, speakers):
@@ -355,20 +338,15 @@ class SADelARTransformer(nn.Module):
             enc_logits = enc_logits * self.tunables.output_mult / (self.width / self.base_width)
         else:
             enc_logits = None
-#         print(xenc.shape, speakers.shape)
+
         spk_embs = F.normalize(speakers, dim=-1) # use extracted embeddings
         if self.spk_factor: spk_embs = self.spk_to_hidden(spk_embs)
         return xenc + spk_embs.unsqueeze(1), positions, enc_logits
 
-    def forward(self, Stoks, Atoks, speakers, langs=None, out_stoks=None, noloss=False, xenc=None, xenc_positions=None, atoks_positions=None):
+    def forward(self, Stoks, Atoks, speakers, langs=None, out_stoks=None, out_atoks=None, noloss=False, xenc=None, xenc_positions=None, atoks_positions=None):
         if xenc is None:
-            Atoks = Atoks.to(torch.long)
-            out_stoks = out_stoks.to(torch.long)
-            Atoks_gt = Atoks.clone()
-            Atoks_gt[Atoks == -100] = 1024
-            xenc, enc_logits = self.run_encoder(Stoks, speakers)
-        else:
-            Atoks_gt = Atoks
+            Stoks, Atoks = [x.to(dtype=torch.long) for x in (Stoks, Atoks)]
+            xenc, xenc_positions, enc_logits = self.run_encoder(Stoks, speakers)
         with record_function("decoder"):
             embs = self.embds(Atoks, xenc)
             if atoks_positions is None: atoks_positions = torch.arange(0, embs.shape[1], device=embs.device)
@@ -380,21 +358,22 @@ class SADelARTransformer(nn.Module):
             return logits
 
         with record_function("loss"):
-            N = Atoks.shape[-1]
             loss = 0
             for i in range(self.quantizers):
-                loss += F.cross_entropy(logits[:,i,i:].reshape(-1,logits.shape[-1]), Atoks[:,i,:N-i].reshape(-1))
+                loss += F.cross_entropy(logits[:,i,:-1].reshape(-1,logits.shape[-1]), Atoks[:,i,1:].reshape(-1), ignore_index=1024)
                 if self.training and i == 0:
-                    loss *= 5
-            loss /= self.quantizers
-            if self.training:
-                loss += 0.1 * F.cross_entropy(enc_logits.transpose(-1,-2), out_stoks)
+                    loss *= self.tunables.q0_loss_mult
+            loss_denom = self.quantizers
+            if self.training: loss_denom += - 1 + self.tunables.q0_loss_mult
+            loss /= loss_denom
+            if self.training and self.tunables.causal_encoder:
+                loss += 0.1 * F.cross_entropy(enc_logits[:,:-1].transpose(-1,-2), Stoks[:,1:])
 
         if not self.training:
             for i in range(self.quantizers):
-                Atoks_i = Atoks[:,i,:N-i]
-                valid_Atoks = Atoks_i != -100
-                self.val_true[i] += (logits[:,i,i:].argmax(-1)[valid_Atoks] == Atoks_i[valid_Atoks]).float().sum()
+                Atoks_i = Atoks[:,i,1:]
+                valid_Atoks = Atoks_i != 1024
+                self.val_true[i] += (logits[:,i,:-1].argmax(-1)[valid_Atoks] == Atoks_i[valid_Atoks]).float().sum()
                 self.val_total[i] += valid_Atoks.float().sum()
 
         return logits, loss
@@ -435,7 +414,7 @@ class SADelARTransformer(nn.Module):
 
     def load_checkpoint(self, local_filename_or_obj):
         if isinstance(local_filename_or_obj, (str, Path)):
-            spec = torch.load(local_filename, map_location='cpu')
+            spec = torch.load(local_filename_or_obj, map_location='cpu')
         else:
             spec = local_filename_or_obj
         assert 'pytorch-lightning_version' in spec, 'not a valid PyTorch Lightning checkpoint'
@@ -492,7 +471,7 @@ class SADelARTransformer(nn.Module):
         return probs
 
     def sample(self, logits, T=1.0, top_k=None):
-        probs = self.logits_to_probs(logits[0,:,-1], T, top_k)
+        probs = self.logits_to_probs(logits[:,:,-1], T, top_k)
         idx_next = self.multinomial_sample_one_no_sync(probs)
         return idx_next
 
@@ -504,33 +483,34 @@ class SADelARTransformer(nn.Module):
         return self.generate_one(*args, **kwargs)
     
     @torch.no_grad()
-    def generate(self, stoks, speakers, langs=None, N=None, T=0.7, top_k=None, show_progress_bar=True, step=None, subsample_enc=False):
+    def generate(self, stoks, speakers, langs=None, N=None, bs=1, T=0.7, top_k=None, show_progress_bar=True, step=None, subsample_enc=False):
         dev = self.device
         N = N or len(stoks) * 3
-        stoks = F.pad(stoks.to(dev), (1, self.stoks_len - len(stoks)-1), value=self.stoks_codes-1).unsqueeze(0)
+        stoks = F.pad(stoks.to(dev), (1, self.stoks_len - len(stoks) - 1), value=self.stoks_codes-1).unsqueeze(0)
         speakers = speakers.to(device=dev, dtype=self.dtype)
-        toks = torch.full((1,self.quantizers,2250), self.codes+1, dtype=torch.long, device=dev)
-        it = range(1,min(N,2250-1))
+        toks = torch.full((bs,self.quantizers,self.ctx_n), self.codes+1, dtype=torch.long, device=dev)
+        it = range(1,min(N,self.ctx_n-1))
         if show_progress_bar: it = progress_bar(it)
         with record_function("encode"):
+            stoks, speakers = [x.repeat(bs, 1) for x in (stoks, speakers)]
             xenc, xenc_positions, _ = self.run_encoder(stoks, speakers)
             toks_positions = torch.arange(N, device=dev)
         with record_function("prefill"):
-            toks[0,0,1] = self.generate_one(toks[:,:,:1], toks_positions[:1], langs, xenc, xenc_positions, T, top_k)[0,0]
+            toks[:,0,1] = self.generate_one(toks[:,:,:1], toks_positions[:1], langs, xenc, xenc_positions, T, top_k)[:,0,0]
         with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True):
             for i in it:
                 with record_function("generate_one"):
-                    toks[0,:i+1,i+1] = self.generate_next(toks[:,:,i:i+1], toks_positions[i:i+1], langs, xenc, xenc_positions, T, top_k)[:i+1,0]
+                    toks[:,:i+1,i+1] = self.generate_next(toks[:,:,i:i+1], toks_positions[i:i+1], langs, xenc, xenc_positions, T, top_k)[:,:i+1,0]
 
                 # for profiling, debugging or early exit
                 if step is not None: step()
         # shift tokens
         toks = toks[:,:,1:N]
         for j in range(self.quantizers):
-            toks[0, j] = torch.roll(toks[0, j], -j)
-        return toks[0]
+            toks[:, j] = torch.roll(toks[:, j], -j)
+        return toks[:]
 
-# %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 39
+# %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 15
 def _make_model(size:str, quantizers:int=4, tunables:Tunables=Tunables(), **kwargs):
     kwargs = dict(quantizers=quantizers, tunables=tunables, **kwargs)
     if size == 'micro':
