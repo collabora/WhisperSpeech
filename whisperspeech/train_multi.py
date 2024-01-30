@@ -5,8 +5,10 @@ __all__ = []
 
 # %% ../nbs/B2. Training (Lightning).ipynb 2
 import io
+import os
 import time
 import random
+import re
 from pathlib import Path
 
 from fastprogress import progress_bar, master_bar
@@ -20,6 +22,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data.dataloader import DataLoader
 from torch.profiler import record_function
+from whisperspeech import utils
 
 # %% ../nbs/B2. Training (Lightning).ipynb 3
 import lightning.pytorch as pl
@@ -97,10 +100,10 @@ class TrainingTask(pl.LightningModule):
         self.log("train_loss", train_loss, sync_dist=True)
         return train_loss
     
-    def validation_step(self, val_batch, batch_idx):
+    def validation_step(self, val_batch, batch_idx, dataloader_idx=0):
         val_logits, val_loss = self.model.forward(*val_batch)
 
-        self.log("val_loss", val_loss, sync_dist=True)
+        self.log(f"val_loss", val_loss, sync_dist=True)
         return val_loss
 
     def on_validation_epoch_end(self):
@@ -120,7 +123,8 @@ import shlex
 # watch out: we can only pass Python values as keyword arguments (not positional)
 # everything else has to be a string
 def parse_and_call(name, fun, args, kwargs={}, log_to_wandb=True):
-    p = anno_parser(fun)
+    print(f"Parsing arguments for {name}, {args}")
+    p = anno_parser(fun, prog=name)
     args = p.parse_args(args).__dict__
     args.pop('xtra'); args.pop('pdb')
     args.update({k:v for k, v in kwargs.items()})
@@ -137,6 +141,10 @@ parser.add_argument('--seed', type=int, default=0, help='Global training seed')
 parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs')
 parser.add_argument('--workers', type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
 parser.add_argument('--input-dir', type=str, default='', help='input data path') # fixed in the model for now
+parser.add_argument('--dataset-config', type=str, default='', help='common dataset options')
+parser.add_argument('--training-data', action='append', type=str, default=[], help='training dataset')
+parser.add_argument('--validation-data', action='append', type=str, default=[], help='validation dataset (can be passed multiple times)')
+parser.add_argument('--monitored-metric', type=str, default="val_loss", help='metric to monitor for checkpointing')
 parser.add_argument("--checkpoint-dir", type=str, default="./checkpoints/", help="directory to save the checkpoints")
 parser.add_argument('--epochs', type=int, default=10, help='total training epochs')
 parser.add_argument('--validate-every-n-steps', type=int, default=500, help='how training steps to run between validations')
@@ -157,6 +165,8 @@ args = parser.parse_args().__dict__
 task_args: list = shlex.split(args.pop("task"))
 task_name, task_args = task_args[0], task_args[1:]
 input_args: list = shlex.split(args.pop("input_dir"))
+dataset_config: list = shlex.split(args.pop("dataset_config"))
+monitored_metric: str = args.pop("monitored_metric")
 checkpoint_dir: str = args.pop("checkpoint_dir")
 num_workers: int = args.pop("workers")
 batch_size: int = args.pop("batch_size")
@@ -173,8 +183,21 @@ hyp_params['precision'] = args['precision']
 hyp_params['lr0'] = args['lr0']
 hyp_params['epochs'] = epochs
 hyp_params['strategy'] = args['strategy']
+if 'SLURM_NTASKS' in os.environ:
+    hyp_params['world_size'] = os.environ['SLURM_NTASKS']
+else:
+    hyp_params['world_size'] = 1
 
 # %% ../nbs/B2. Training (Lightning).ipynb 9
+def load_file_reference(matchobj):
+    with open(matchobj.group(1), 'r') as f:
+        return f.read().strip()
+
+def parse_dataset_string(s):
+    s = re.sub('@([^ ]+)', load_file_reference, s)
+    return shlex.split(s)
+
+# %% ../nbs/B2. Training (Lightning).ipynb 10
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import LearningRateMonitor
 import datetime
@@ -187,23 +210,46 @@ project = f"WhisperSpeech-{args['wandb_task_name'] or task_name}"
 if args['wandb_suffix']:
     project += "-"+args['wandb_suffix']
 
-wandb_logger = WandbLogger(project=project)
+from faker import Faker
+fake = Faker()
+name = (fake.name().split()[0] + "_" + fake.color_name()).lower()
+
+print(name)
+wandb_logger = WandbLogger(project=project, name=name)
 
 ckpt_callback = pl.callbacks.ModelCheckpoint(
-     dirpath=f'{task_name}-{epochs}e',
-     filename=task_name+"-{epoch}-{step}-{val_loss:.2f}",
-     monitor="val_loss",
-     save_top_k=4,
-     train_time_interval=datetime.timedelta(minutes=5),
- )
+     dirpath=f'{task_name}',
+     filename=f'{task_name}-{name}'+"-{epoch}-{step}-acc={"+monitored_metric+":.2f}",
+     monitor=monitored_metric,
+     save_top_k=16,
+     train_time_interval=datetime.timedelta(minutes=14),
+     auto_insert_metric_name=False
+)
 
 lr_monitor_callback = LearningRateMonitor(logging_interval='step')
 
-from torch.utils.data import DataLoader
-
 task = importlib.import_module("whisperspeech."+task_name)
 
-train_ds, val_ds = parse_and_call('dataset', task.load_datasets, input_args)
+# load all training sets
+train_dss = [parse_and_call(f'train_ds_{i}', task.load_dataset,
+                            parse_dataset_string(train_ds_config) + dataset_config)
+             for i,train_ds_config in enumerate(args['training_data'])]
+train_total_samples = sum(ds.total_samples for ds in train_dss)
+
+train_loader = wds.WebLoader(
+    utils.join_datasets(train_dss),
+    num_workers=num_workers, drop_last=False, batch_size=None, shuffle=False,
+).unbatched().shuffle(64*1024).batched(batch_size).with_length(int(train_total_samples / batch_size / int(hyp_params['world_size'])))
+
+# load all validation sets
+val_dss = [parse_and_call(f'val_ds_{i}', task.load_dataset,
+                          parse_dataset_string(val_ds_config) + dataset_config, {'validation': True})
+           for i,val_ds_config in enumerate(args['validation_data'])]
+val_loaders = [wds.WebLoader(
+        val_ds, num_workers=num_workers, drop_last=False, batch_size=None, shuffle=False,
+    ).unbatched().batched(batch_size).with_length(val_ds.total_samples // batch_size)
+   for val_ds in val_dss]
+
 
 tunables = None
 if hasattr(task, "Tunables"):
@@ -216,27 +262,7 @@ if hasattr(task, "Tunables"):
         val = getattr(tunables, name, None)
         if val is not None: hyp_params[name] = val
 
-if isinstance(train_ds, torch.utils.data.IterableDataset):
-    dl_batch_size, dl_shuffle = None, False
-    pin_memory = False
-else:
-    dl_batch_size, dl_shuffle = batch_size, True
-    pin_memory = True
-
-val_loader = wds.WebLoader(val_ds,
-    batch_size=dl_batch_size,
-    num_workers=num_workers,
-    drop_last=False,
-    pin_memory=pin_memory).unbatched().shuffle(1024).batched(batch_size).with_length(val_ds.total_samples // batch_size)
-
-train_loader = wds.WebLoader(train_ds,
-    batch_size=dl_batch_size,
-    num_workers=num_workers,
-    drop_last=False,
-    shuffle=dl_shuffle,
-    pin_memory=pin_memory).unbatched().shuffle(1024).batched(batch_size).with_length(train_ds.total_samples // batch_size)
-
-model_kwargs = dict(dataset=train_ds)
+model_kwargs = dict(dataset=train_dss[0])
 if tunables is not None: model_kwargs['tunables'] = tunables
 model = parse_and_call('model', task.make_model, task_args, model_kwargs)
 
@@ -252,6 +278,8 @@ trainer = pl.Trainer(strategy=hyp_params['strategy'],
                   val_check_interval=args.pop("validate_every_n_steps"),
                   enable_checkpointing=True,
                   logger=wandb_logger,
+                  num_nodes=int(os.environ.get('SLURM_NNODES', 1)),
+                  devices=int(os.environ.get('SLURM_NTASKS_PER_NODE', 1)),
                   callbacks=[ckpt_callback, lr_monitor_callback])
 
 if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
@@ -260,4 +288,4 @@ if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
 kwargs = {}
 if 'resume_from' in args:
     kwargs['ckpt_path'] = args['resume_from']
-trainer.fit(model=task, train_dataloaders=train_loader, val_dataloaders=val_loader, **kwargs)
+trainer.fit(model=task, train_dataloaders=train_loader, val_dataloaders=val_loaders, **kwargs)

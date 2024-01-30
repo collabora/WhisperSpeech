@@ -118,7 +118,7 @@ def load_dataset(
 
     return ds
 
-# %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 14
+# %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 12
 def rand(start, end):
     return random.random() * (end - start) + start
 
@@ -131,6 +131,7 @@ class Tunables:
     output_mult :float = .35
     query_mult :float = 1
     encoder_depth_ratio :float = 0.25
+    causal_encoder: bool = True
     eot_dropout_p :float = .5
     cps_input: bool = True
     cps_bins: int = 32
@@ -156,7 +157,7 @@ class Tunables:
             self.clip_gradient_norm = 10**rand(-3,0)
             self.warmup_steps = 100*(10**rand(1,1.85))
 
-# %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 15
+# %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 13
 class T2SEmbedding(nn.Module):
     def __init__(self, length=1500, codes=1024, width=384, pos_embs=None, stoks_width=384):
         super().__init__()
@@ -170,11 +171,12 @@ class T2SEmbedding(nn.Module):
         if cps is not None: xin = xin + cps
         return xin, offset
 
-# %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 16
+# %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 14
 class Encoder(nn.Module):
     def __init__(self, depth=6, width=384, n_head=6, length=1500, codes=1024, emb_width=384, ffn_mult=4, pos_embs=None, tunables=Tunables()):
         super().__init__()
         self.emb_width = emb_width
+        self.tunables = tunables
         
         self.embedding = FlexEmbeddings(codes, width, frozen_width=emb_width)
 
@@ -196,15 +198,16 @@ class Encoder(nn.Module):
 
         if lang_emb is not None: xin += lang_emb
         
-#         assert xin.shape[1:] == self.positional_embedding.shape, "incorrect semantic token shape"
         x = (xin +
              self.positional_embedding[positions]).to(xin.dtype)
 
-        for l in self.layers: x = l(x, positions, causal=False, mask=self.mask)
+        for l in self.layers: x = l(x, positions,
+                                    causal=self.tunables.causal_encoder and self.training,
+                                    mask=self.mask if self.tunables.causal_encoder and not self.training else None)
         
         return self.ln_post(x)
 
-# %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 17
+# %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 15
 class TSARTransformer(nn.Module):
     def __init__(self, depth=6, n_head=6, head_width=64, ffn_mult=4,
                  ttoks_len=200, ttoks_codes=256, ttoks_width=None,
@@ -295,9 +298,9 @@ class TSARTransformer(nn.Module):
 
         return xenc, positions, cps_emb
     
-    def forward(self, in_ttoks, out_ttoks, languages, cpss, in_stoks, in_stoks_positions, out_stoks=None, loss=True, offset=None, xenc=None, xenc_positions=None, cps_emb=None):
+    def forward(self, in_ttoks, out_ttoks, languages, cpss, in_stoks, out_stoks=None, in_stoks_positions=None, loss=True, offset=None, xenc=None, xenc_positions=None, cps_emb=None):
         if xenc is None:
-            xenc, cps_emb = self.run_encoder(in_ttoks, languages, cpss)
+            xenc, xenc_positions, cps_emb = self.run_encoder(in_ttoks, languages, cpss)
 
         with record_function("decoder"):
             x = (self.embeddings.embedding(in_stoks) + 
@@ -308,13 +311,13 @@ class TSARTransformer(nn.Module):
             logits = logits * self.tunables.output_mult / (self.width / self.base_width)
 
         if loss is not None:
-            enc_logits = self.encoder.embedding.unembed(xenc[0])
-            enc_logits = enc_logits * self.tunables.output_mult / (self.width / self.base_width)
             with record_function("loss"):
                 loss = F.cross_entropy(logits.transpose(-1,-2), out_stoks)
-                if self.training:
+                if self.training and self.tunables.causal_encoder:
+                    enc_logits = self.encoder.embedding.unembed(xenc)
+                    enc_logits = enc_logits * self.tunables.output_mult / (self.width / self.base_width)
                     loss += 0.1 * F.cross_entropy(enc_logits.transpose(-1,-2), out_ttoks)
-                
+
         return logits, loss
 
     #
@@ -401,12 +404,12 @@ class TSARTransformer(nn.Module):
         return probs
 
     def sample(self, logits, T=1.0, top_k=None):
-        probs = self.logits_to_probs(logits[0,-1], T, top_k)
+        probs = self.logits_to_probs(logits[:,-1], T, top_k)
         idx_next = self.multinomial_sample_one_no_sync(probs)
         return idx_next
 
     def generate_one(self, toks, toks_positions, cps_emb, xenc, xenc_positions, T, top_k):
-        probs, _ = self(None, None, None, None, toks, toks_positions, loss=None, xenc=xenc, xenc_positions=xenc_positions, cps_emb=cps_emb)
+        probs, _ = self(None, None, None, None, toks, in_stoks_positions=toks_positions, loss=None, xenc=xenc, xenc_positions=xenc_positions, cps_emb=cps_emb)
         return self.sample(probs, T, top_k)
 
     def generate_next(self, *args, **kwargs):
@@ -422,7 +425,7 @@ class TSARTransformer(nn.Module):
         return ttoks, cpss, langs
     
     @torch.no_grad()
-    def generate(self, txt, cps=15, lang="en", N=None, T=0.7, top_k=None, step=None, show_progress_bar=True):
+    def generate(self, txt, cps=15, lang="en", N=None, bs=1, T=0.7, top_k=None, step=None, show_progress_bar=True):
         self.ensure_tokenizer()
         N = N or self.stoks_len
         dev = self.device
@@ -451,10 +454,11 @@ class TSARTransformer(nn.Module):
         it = range(0,N-1)
         if show_progress_bar: it = progress_bar(it)
 
-        toks = torch.zeros((1,N), dtype=torch.long, device=dev)
+        toks = torch.zeros((bs,N), dtype=torch.long, device=dev)
         toks[:,0] = self.stoks_codes-1
         toks_positions = torch.arange(N, device=dev)
         with record_function("encode"):
+            ttoks, langs, cpss = [x.repeat(bs, 1) for x in (ttoks, langs, cpss)]
             xenc, xenc_positions, cps_emb = self.run_encoder(ttoks, langs, cpss)
             toks_positions = torch.arange(N+1, device=dev)
         # contrary to S2A this model works without prefill and is actually a tiny bit faster
@@ -462,12 +466,12 @@ class TSARTransformer(nn.Module):
         #     toks[0,1] = self.generate_one(toks[:,:1], toks_positions[:1], cps_emb, xenc, xenc_positions, T, top_k)
         with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True):
             for i in it:
-                toks[0,i+1] = self.generate_next(toks[:,i:i+1], toks_positions[i:i+1], cps_emb, xenc, xenc_positions, T, top_k)
-                if i % 25 == 0 and toks[0,i+1] == self.stoks_codes-1: return toks[0,:i+1]
+                toks[:,i+1] = self.generate_next(toks[:,i:i+1], toks_positions[i:i+1], cps_emb, xenc, xenc_positions, T, top_k)[:,0]
+                if i % 25 == 0 and (toks[:,i+1] == self.stoks_codes-1).all(): return toks[:,:i+1]
 
                 # for profiling, debugging or early exit
                 if step is not None: step()
-        return toks[0,:]
+        return toks[:,:]
     
     @torch.no_grad()
     def generate_batch(self, txts, N=None, T=1.1, top_k=7, show_progress_bar=True):
@@ -493,7 +497,7 @@ class TSARTransformer(nn.Module):
             if (toks[:,i] == self.stoks_codes-1).all(): return toks[:,:i]
         return toks
 
-# %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 18
+# %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 16
 def _make_model(size:str, tunables:Tunables=Tunables(), dataset=None, **kwargs):
     kwargs = dict(stoks_len = dataset.stoks_len, ttoks_len = dataset.ttoks_len, tunables=tunables, **kwargs)
     if 'stoks_codes' not in kwargs: kwargs['stoks_codes'] = dataset.stoks_codes

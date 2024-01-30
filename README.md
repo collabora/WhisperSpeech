@@ -26,6 +26,22 @@ Sample of the synthesized voice:
 
 https://github.com/collabora/WhisperSpeech/assets/107984/aa5a1e7e-dc94-481f-8863-b022c7fd7434
 
+## Progress update \[2024-01-29\]
+
+We successfully trained a `tiny` S2A model on an en+pl+fr dataset and it
+can do voice cloning in French:
+
+https://github.com/collabora/WhisperSpeech/assets/107984/267f2602-7eec-4646-a43b-059ff91b574e
+
+https://github.com/collabora/WhisperSpeech/assets/107984/fbf08e8e-0f9a-4b0d-ab5e-747ffba2ccb9
+
+We were able to do this with frozen semantic tokens that were only
+trained on English and Polish. This supports the idea that we will be
+able to train a single semantic token model to support all the languages
+in the world. Quite likely even ones that are not currently well
+supported by the Whisper model. Stay tuned for more updates on this
+front. :)
+
 ## Progress update \[2024-01-18\]
 
 We spend the last week optimizing inference performance. We integrated

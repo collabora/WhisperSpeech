@@ -115,19 +115,17 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
           weight_decay=0.1, warmup_steps=10000, epochs=10, clip_gradient_norm=None,
           dl_workers=8, visual_class = SimpleVisual, profiler=None,
           run_valid_every_iters=8000, table_row_every_iters=80000, chkpt_every_iters=None,
-          device="cuda", trainable_params=None):
+          device="cuda", trainable_params=None, callback=None):
     if chkpt_every_iters is None:
         chkpt_every_iters = table_row_every_iters
     
     mb = master_bar(range(epochs))
     if isinstance(train, torch.utils.data.IterableDataset):
-        pct_start = min(0.3, warmup_steps / (epochs * (train.total_samples//bs)))
-        visual = visual_class(model, mb, epochs * train.total_samples)
-#         pct_start = min(0.3, warmup_steps / (epochs * len(train)))
-#         visual = visual_class(model, mb, epochs*len(train)*bs)
+        total_steps = epochs * (train.total_samples // bs)
     else:
-        pct_start = min(0.3, warmup_steps / (epochs * len(train) / bs))
-        visual = visual_class(model, mb, epochs*len(train))
+        total_steps = epochs * len(train) / bs
+
+    visual = visual_class(model, mb, total_steps * bs)
     model.visual = visual
     
     Path(checkpoint_path).mkdir(exist_ok=True)
@@ -182,10 +180,20 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
         optimizer = torch.optim.AdamW(lr=lr, betas=(0.9, 0.95), fused=device!='cpu', params=groups)
         model._optimizer = optimizer
         scaler = torch.cuda.amp.GradScaler(enabled=half)
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer, pct_start=pct_start, steps_per_epoch=math.ceil(train.total_samples/bs), epochs=epochs,
-            max_lr=[pg.get('lr', lr) for pg in groups],
-            final_div_factor=25)
+        warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
+            optimizer, 1e-3, 1, warmup_steps
+        )
+        train_scheduler = torch.optim.lr_scheduler.LinearLR(
+            optimizer, 1, 1/25, total_steps - warmup_steps
+        )
+        scheduler = torch.optim.lr_scheduler.SequentialLR(
+            optimizer, schedulers=[warmup_scheduler, train_scheduler], milestones=[warmup_steps]
+        )
+#         pct_start = min(0.3, warmup_steps / total_steps)
+#         scheduler = torch.optim.lr_scheduler.OneCycleLR(
+#             optimizer, pct_start=pct_start, steps_per_epoch=math.ceil(train.total_samples/bs), epochs=epochs,
+#             max_lr=[pg.get('lr', lr) for pg in groups],
+#             final_div_factor=25)
         
         it = 0
         next_val_it = it + 50
@@ -261,6 +269,7 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
 
                 it += bs
                 visual.on_iter(bar, it, avg_train_loss, val_loss)
+                if callback is not None: callback(it)
     except KeyboardInterrupt:
         mb.write(f"interrupted")
         mb.show()
