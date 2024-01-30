@@ -53,21 +53,24 @@ def whisper_speech_demo(multilingual_text, speaker_audio):
     concatenated_audio = concatenate_audio_segments(audio_segments)
     concatenated_audio = concatenated_audio / np.max(np.abs(concatenated_audio))
 
-    with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
-        sf.write(tmp_file.name, concatenated_audio.T, 24000, format='WAV', subtype='PCM_16')
-        return tmp_file.name
+    return (24000, concatenated_audio.T)
+
 
 with gr.Blocks() as demo:
     gr.Markdown(title)
     output_audio = gr.Audio(label="🌟Collabora🌬️💬📝WhisperSpeech")
     generate_button = gr.Button("Try 🌟Collabora🌬️💬📝WhisperSpeech")
+    with gr.Accordion("🌟Collabora🌬️WhisperSpeech💬Voice Print and📝Language List", open=False):
+        with gr.Row():
+            speaker_input = gr.Audio(label="Upload or Record Speaker Audio (optional)🌬️💬", 
+                                     sources=["upload", "microphone"])
+        with gr.Row():
+            with gr.Accordion("Available Languages and Their Tags", open=False):
+                formatted_language_list = "\n".join([f"`<{lang}>` {LANGUAGES[lang]}" for lang in LANGUAGES])
+                gr.Markdown(formatted_language_list)
     with gr.Row():
-        text_input = gr.Textbox(label="Enter multilingual text💬📝", placeholder="e.g., <en> Hello <fr> Bonjour <es> Hola")
-        speaker_input = gr.Audio(label="Upload or Record Speaker Audio (optional)🌬️💬", sources=["upload", "microphone"])
-    with gr.Row():
-        with gr.Accordion("Available Languages and Their Tags", open=False):
-            formatted_language_list = "\n".join([f"`<{lang}>` {LANGUAGES[lang]}" for lang in LANGUAGES])
-            gr.Markdown(formatted_language_list)
+        text_input = gr.Textbox(label="Enter multilingual text💬📝", 
+                                placeholder="e.g., <en> Hello <fr> Bonjour <es> Hola")
     with gr.Row():
         with gr.Accordion("Try Multilingual Text Examples", open=False):
             gr.Examples(
@@ -78,6 +81,7 @@ with gr.Blocks() as demo:
                 cache_examples=False,
                 label="Try these to get started !🌟🌬️"
             )
+
     generate_button.click(whisper_speech_demo, inputs=[text_input, speaker_input], outputs=output_audio)
 
 demo.launch()
