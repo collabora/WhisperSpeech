@@ -24,7 +24,7 @@ pipe = Pipeline(s2a_ref='collabora/whisperspeech:s2a-q4-small-en+pl.model')
 # pipe = Pipeline(s2a_ref='collabora/whisperspeech:s2a-q4-base-en+pl.model')
 
 audio_tensor = pipe.generate("""
- This is some sample text.  You would add text here that you want spoken and then only leave one of the above lines ununcomment for the model you want to test.  Note that this script does not rely on the standard method within the whisperspeech pipeline.  Rather, it replaces a part of the functionality with reliance on pydub instead.  This approach "just worked."  Feel free to modify or distribute at your pleasure.
+ This is some sample text.  You would add text here that you want spoken and then only leave one of the above lines ununcommented for the model you want to test.  Note that this script does not rely on the standard method within the whisperspeech pipeline.  Rather, it replaces a part of the functionality with reliance on pydub instead.  This approach "just worked."  Feel free to modify or distribute at your pleasure.
 """)
 
 # generate uses CUDA if available; therefore, it's necessary to move to CPU before converting to NumPy array
