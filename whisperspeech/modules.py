@@ -76,6 +76,9 @@ class MultiHeadAttention(nn.Module):
         self.qkv = None
         self.kv = None
 
+        # track ID of the last kvx processed
+        self.cached_kvx_id = None
+
     def setup_kv_cache(self, max_batch_size, max_seq_len, dtype=torch.float32):
         cache_shape = (max_batch_size, self.n_head, max_seq_len, self.n_state//self.n_head)
         self.k_cache = torch.zeros(cache_shape, dtype=dtype, device=self.key.weight.device)
@@ -117,28 +120,31 @@ class MultiHeadAttention(nn.Module):
         causal = False,
         mask=None,
     ):
-        if self.qkv:
-            q,k,v = self.qkv(qx).split(self.odim, dim=-1)
-        elif self.kv:
-            q = self.q(qx)
-            k,v = self.kv(kvx).split(self.odim, dim=-1)
-        else:
-            q,k,v = None,None,None
-        
-        if q is None: q = self.query(qx) * self.sqrt_qk_scale
-        q = self.split_heads(q, q_positions, rope = self.rotary, subsampling = self.query_subsampling)
+        # Generate a unique identifier for kvx to check if it has changed
+        current_kvx_id = id(kvx)
 
-        if kvx is not self.cached_kvx:
-            if k is None: k = self.key(kvx) * self.sqrt_qk_scale
-            k = self.split_heads(k, kv_positions, rope = self.rotary, subsampling = self.key_subsampling)
-            if v is None: v = self.value(kvx)
+        # Check if the input kvx has changed since the last computation
+        if self.cached_kvx_id != current_kvx_id:
+            # recompute if input kvx has changed
+            k = self.key(kvx) * self.sqrt_qk_scale
+            k = self.split_heads(k, kv_positions, rope=self.rotary, subsampling=self.key_subsampling)
+            v = self.value(kvx)
             v = self.split_heads(v, kv_positions)
-            if self.k_cache is not None:
-                self.k_cache[:k.shape[0],:,kv_positions] = k
-                self.v_cache[:v.shape[0],:,kv_positions] = v
 
-        if self.k_cache is not None:
-            k, v = self.k_cache[:k.shape[0]], self.v_cache[:v.shape[0]]
+            # Update the cache keys and values
+            if self.k_cache is not None:
+                self.k_cache[:k.shape[0], :, kv_positions] = k
+                self.v_cache[:v.shape[0], :, kv_positions] = v
+
+            # Update cached_kvx_id
+            self.cached_kvx_id = current_kvx_id
+        else:
+            # nput kvx has not changed, use the cached keys and values
+            k = self.k_cache[:kvx.shape[0]]
+            v = self.v_cache[:kvx.shape[0]]
+
+        q = self.query(qx) * self.sqrt_qk_scale
+        q = self.split_heads(q, q_positions, rope=self.rotary, subsampling=self.query_subsampling)
 
         if mask is not None:
             mask = mask[q_positions]
