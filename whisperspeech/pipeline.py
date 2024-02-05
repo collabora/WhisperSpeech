@@ -75,7 +75,7 @@ class Pipeline:
         num_frames = actual_sample_rate * 30  # specify 30 seconds worth of frames
         samples, sr = torchaudio.load(fname, num_frames=num_frames)
         samples = samples[:, :num_frames]
-        samples = self.encoder.audio_normalizer(samples[0], sr).to(self.compute_device)
+        samples = self.encoder.audio_normalizer(samples[0], sr)
         spk_emb = self.encoder.encode_batch(samples.unsqueeze(0))
 
         return spk_emb[0,0]
