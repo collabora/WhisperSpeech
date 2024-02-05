@@ -28,7 +28,7 @@ class Vocoder:
             q,t = atoks.shape
         
         features = self.vocos.codes_to_features(atoks)
-        bandwidth_id = torch.tensor({2:0,4:1,8:2}[q]).cuda()
+                bandwidth_id = torch.tensor({2:0,4:1,8:2}[q], device=self.vocos.device) # automatically move tensors to same device
         return self.vocos.decode(features, bandwidth_id=bandwidth_id)
         
     def decode_to_file(self, fname, atoks):
