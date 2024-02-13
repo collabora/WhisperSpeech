@@ -81,10 +81,13 @@ class Pipeline:
             self.encoder = EncoderClassifier.from_hparams("speechbrain/spkrec-ecapa-voxceleb",
                                                           savedir="~/.cache/speechbrain/",
                                                           run_opts={"device": encoder_device})
-        samples, sr = torchaudio.load(fname)
-        samples = self.encoder.audio_normalizer(samples[0,:30*sr], sr)
-        spk_emb = self.encoder.encode_batch(samples)
-        return spk_emb[0,0]
+        audio_info = torchaudio.info(fname)
+        actual_sample_rate = audio_info.sample_rate
+        num_frames = actual_sample_rate * 30 # specify 30 seconds worth of frames
+        samples, sr = torchaudio.load(fname, num_frames=num_frames)
+        samples = samples[:, :num_frames]
+        samples = self.encoder.audio_normalizer(samples[0], sr)
+        spk_emb = self.encoder.encode_batch(samples.unsqueeze(0))
         
     def generate_atoks(self, text, speaker=None, lang='en', cps=15, step_callback=None):
         if speaker is None: speaker = self.default_speaker
