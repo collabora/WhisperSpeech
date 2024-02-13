@@ -18,6 +18,9 @@ import webdataset as wds
 
 import whisperx
 
+from utils import get_compute_device
+compute_device = get_compute_device()
+
 # %% ../nbs/1B. Voice activity detection.ipynb 5
 # some of the original file names have a dot in their name
 # webdataset does not like it so let's patch it
@@ -60,7 +63,7 @@ def process_shard(
     
     ds = load_dataset(input)
     dl = torch.utils.data.DataLoader(ds, num_workers=2, batch_size=None)
-    vad_model = whisperx.vad.load_vad_model('cuda')
+    vad_model = whisperx.vad.load_vad_model(compute_device)
     
     tmp = output+".tmp"
     with wds.TarWriter(tmp) as sink:

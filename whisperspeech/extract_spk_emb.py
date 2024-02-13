@@ -17,6 +17,9 @@ from torch.utils.data.dataloader import DataLoader
 from . import vad, utils
 
 from speechbrain.pretrained import EncoderClassifier
+from utils import get_compute_device
+
+compute_device = get_compute_device()
 
 # %% ../nbs/2A. Speaker Embeddings.ipynb 5
 def calc_len(x):
@@ -47,7 +50,7 @@ def process_shard(
     
     classifier = EncoderClassifier.from_hparams("speechbrain/spkrec-ecapa-voxceleb",
                                                 savedir=f"{os.environ['HOME']}/.cache/speechbrain/",
-                                                run_opts={"device": "cuda"})
+                                                run_opts = {"device": compute_device}
     
     with utils.AtomicTarWriter(utils.derived_name(input, f'spk_emb')) as sink:
         for keys, samples, seconds in progress_bar(dl, total=total):

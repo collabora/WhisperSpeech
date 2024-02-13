@@ -190,3 +190,11 @@ def AtomicTarWriter(name, throwaway=False):
 def readlines(fname):
     with open(fname) as file:
         return [line.rstrip() for line in file]
+
+def get_compute_device():
+    if torch.cuda.is_available() and (torch.version.cuda or torch.version.hip):
+        return 'cuda'
+    elif torch.backends.mps.is_available():
+        return 'mps'
+    else:
+        return 'cpu'
