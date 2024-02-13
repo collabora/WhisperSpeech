@@ -10,6 +10,16 @@ from whisperspeech.s2a_delar_mup_wds_mlang import SADelARTransformer
 from whisperspeech.a2wav import Vocoder
 import traceback
 from pathlib import Path
+from utils import get_compute_device
+
+compute_device = get_compute_device()
+
+if torch.cuda.is_available():
+    encoder_device = 'cuda'
+    vocoder_device = 'cuda'
+else:
+    encoder_device = 'cpu'
+    vocoder_device = 'cpu'
 
 # %% ../nbs/7. Pipeline.ipynb 2
 class Pipeline:
@@ -45,7 +55,7 @@ class Pipeline:
         try:
             if t2s_ref:
                 args["ref"] = t2s_ref
-            self.t2s = TSARTransformer.load_model(**args).cuda()
+            self.t2s = TSARTransformer.load_model(**args).to(compute_device)  # use obtained compute device
             if optimize: self.t2s.optimize(torch_compile=torch_compile)
         except:
             print("Failed to load the T2S model:")
@@ -53,12 +63,13 @@ class Pipeline:
         try:
             if s2a_ref:
                 args["ref"] = s2a_ref
-            self.s2a = SADelARTransformer.load_model(**args).cuda()
+            self.s2a = SADelARTransformer.load_model(**args).to(compute_device)  # use obtained compute device
             if optimize: self.s2a.optimize(torch_compile=torch_compile)
         except:
             print("Failed to load the S2A model:")
             print(traceback.format_exc())
-        self.vocoder = Vocoder()
+
+        self.vocoder = Vocoder().to(vocoder_device)
         self.encoder = None
 
     def extract_spk_emb(self, fname):
@@ -69,20 +80,20 @@ class Pipeline:
             from speechbrain.pretrained import EncoderClassifier
             self.encoder = EncoderClassifier.from_hparams("speechbrain/spkrec-ecapa-voxceleb",
                                                           savedir="~/.cache/speechbrain/",
-                                                          run_opts={"device": "cuda"})
+                                                          run_opts={"device": encoder_device})
         audio_info = torchaudio.info(fname)
         actual_sample_rate = audio_info.sample_rate
-        num_frames = actual_sample_rate * 30  # specify 30 seconds worth of frames
+        num_frames = actual_sample_rate * 30 # specify 30 seconds worth of frames
         samples, sr = torchaudio.load(fname, num_frames=num_frames)
         samples = samples[:, :num_frames]
         samples = self.encoder.audio_normalizer(samples[0], sr)
         spk_emb = self.encoder.encode_batch(samples.unsqueeze(0))
-
+        
         return spk_emb[0,0]
         
     def generate_atoks(self, text, speaker=None, lang='en', cps=15, step_callback=None):
         if speaker is None: speaker = self.default_speaker
-        elif isinstance(speaker, (str, Path)): speaker = self.extract_spk_emb(speaker)
+        elif isinstance(speaker, (str, Path)): speaker = self.extract_spk_emb(speaker).to(compute_device)  # use obtained compute device
         text = text.replace("\n", " ")
         stoks = self.t2s.generate(text, cps=cps, lang=lang, step=step_callback)[0]
         atoks = self.s2a.generate(stoks, speaker.unsqueeze(0), step=step_callback)

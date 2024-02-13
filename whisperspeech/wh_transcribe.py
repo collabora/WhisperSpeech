@@ -28,6 +28,9 @@ from fastcore.script import *
 from . import vad, utils
 import webdataset as wds
 
+from utils import get_compute_device
+compute_device = get_compute_device()
+
 # %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 9
 # let's make it a bit more conservative
 # with full 30 second chunks it sometimes misses a small part of the transcript
@@ -135,7 +138,7 @@ def process_shard(
     with wds.TarWriter(tmp) as sink:
         for keys, samples in progress_bar(dl, total=n_samples):
             with torch.no_grad():
-                embs = whmodel.encoder(whisper.log_mel_spectrogram(samples).cuda())
+                embs = whmodel.encoder(whisper.log_mel_spectrogram(samples).to(compute_device))
                 decs = whmodel.decode(embs, decoding_options)
             for key, dec in zip(keys, decs):
                 sink.write({
