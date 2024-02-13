@@ -27,6 +27,9 @@ from fastprogress import progress_bar, master_bar
 # %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 4
 from .modules import *
 
+from utils import get_compute_device
+compute_device = get_compute_device()
+
 # %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 8
 def rand(start, end):
     return random.random() * (end - start) + start
@@ -266,8 +269,8 @@ class SADelARTransformer(nn.Module):
         for l in self.decoder.layers:
             l.cross_attn.key_subsampling = 3
         
-        self.register_buffer('val_true', torch.zeros(self.quantizers).cuda())
-        self.register_buffer('val_total', torch.zeros(self.quantizers).cuda())
+        self.register_buffer('val_true', torch.zeros(self.quantizers).to(compute_device))
+        self.register_buffer('val_total', torch.zeros(self.quantizers).to(compute_device))
         self.apply(self.init_transformer)
 
     def setup(self, device):
@@ -399,7 +402,7 @@ class SADelARTransformer(nn.Module):
                 local_filename = ref
         if not local_filename:
             local_filename = hf_hub_download(repo_id=repo_id, filename=filename)
-        spec = torch.load(local_filename)
+        spec = torch.load(local_filename, map_location=compute_device)
         if '_extra_state' not in spec['state_dict'] and 'speaker_map' in spec['config']: spec['state_dict']['_extra_state'] = { 'speaker_map': spec['config']['speaker_map'] }
         model = cls(**spec['config'], tunables=Tunables(**Tunables.upgrade(spec['tunables'])))
         model.load_state_dict(spec['state_dict'])

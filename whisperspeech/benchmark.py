@@ -8,6 +8,9 @@ import time
 import torch
 from fastcore.script import call_parse
 from whisperspeech.pipeline import Pipeline
+from utils import get_compute_device
+
+compute_device = get_compute_device() # determine compute_device
 
 # %% ../nbs/C. Benchmark.ipynb 3
 def measure(fun, iterations = 10):
@@ -15,7 +18,12 @@ def measure(fun, iterations = 10):
     for x in range(iterations):
         start = time.time()
         fun()
-        torch.cuda.synchronize()
+        if compute_device == 'cuda':
+            torch.cuda.synchronize()
+        elif compute_device == 'mps':
+            torch.mps.synchronize()
+        elif compute_device == 'cpu':
+            torch.cpu.synchronize() # only kept for device-agnostic formatting; technically 
         ts.append(time.time() - start)
     ts = torch.tensor(ts)
     return ts.mean(), ts.std()
@@ -37,13 +45,13 @@ def benchmark(
 
     if t2s_ctx_n:
         pipe.t2s.stoks_len = t2s_ctx_n
-        pipe.t2s.decoder.mask = torch.empty(t2s_ctx_n, t2s_ctx_n).fill_(-torch.inf).triu_(1).cuda()
+        pipe.t2s.decoder.mask = torch.empty(t2s_ctx_n, t2s_ctx_n).fill_(-torch.inf).triu_(1).to(compute_device)
     
     pipe.t2s.optimize(max_batch_size=max_batch_size, torch_compile=not no_torch_compile)
 
     if s2a_ctx_n:
         pipe.s2a.ctx_n = s2a_ctx_n
-        pipe.s2a.decoder.mask = torch.empty(s2a_ctx_n, s2a_ctx_n).fill_(-torch.inf).triu_(1).cuda()
+        pipe.s2a.decoder.mask = torch.empty(s2a_ctx_n, s2a_ctx_n).fill_(-torch.inf).triu_(1).to(compute_device)
 
     pipe.s2a.optimize(max_batch_size=max_batch_size, torch_compile=not no_torch_compile)
 

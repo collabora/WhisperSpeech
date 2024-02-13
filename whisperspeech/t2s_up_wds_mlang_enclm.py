@@ -26,6 +26,9 @@ from whisperspeech import languages
 # %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 6
 import re
 
+from utils import get_compute_device
+compute_device = get_compute_device()
+
 class CharTokenizer:
     """Trivial tokenizer – just use UTF-8 bytes"""
     eot = 0
@@ -333,7 +336,7 @@ class TSARTransformer(nn.Module):
                 local_filename = ref
         if not local_filename:
             local_filename = hf_hub_download(repo_id=repo_id, filename=filename)
-        spec = torch.load(local_filename)
+        spec = torch.load(local_filename, map_location=compute_device)
         model = cls(**spec['config'], tunables=Tunables(**spec['tunables']))
         model.load_state_dict(spec['state_dict'])
         model.eval()
