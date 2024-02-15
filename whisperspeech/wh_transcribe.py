@@ -28,7 +28,7 @@ from fastcore.script import *
 from . import vad, utils
 import webdataset as wds
 
-from utils import get_compute_device
+from whisperspeech.utils import get_compute_device
 compute_device = get_compute_device()
 
 # %% ../nbs/2A. Whisper quantization dataset preparation.ipynb 9

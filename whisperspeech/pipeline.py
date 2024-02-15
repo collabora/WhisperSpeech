@@ -10,7 +10,7 @@ from whisperspeech.s2a_delar_mup_wds_mlang import SADelARTransformer
 from whisperspeech.a2wav import Vocoder
 import traceback
 from pathlib import Path
-from utils import get_compute_device
+from whisperspeech.utils import get_compute_device
 
 compute_device = get_compute_device()
 

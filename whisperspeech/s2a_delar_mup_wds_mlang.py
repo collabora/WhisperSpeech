@@ -27,7 +27,7 @@ from fastprogress import progress_bar, master_bar
 # %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 4
 from .modules import *
 
-from utils import get_compute_device
+from whisperspeech.utils import get_compute_device
 compute_device = get_compute_device()
 
 # %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 8

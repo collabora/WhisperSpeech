@@ -11,7 +11,7 @@ import gc
 from pathlib import Path
 from fastcore.script import *
 from fastprogress import progress_bar, master_bar
-from utils import get_compute_device
+from whisperspeech.utils import get_compute_device
 
 compute_device = get_compute_device()
 

@@ -26,7 +26,7 @@ from whisperspeech import languages
 # %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 6
 import re
 
-from utils import get_compute_device
+from whisperspeech.utils import get_compute_device
 compute_device = get_compute_device()
 
 class CharTokenizer:

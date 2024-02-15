@@ -20,7 +20,7 @@ import whisper, whisperx
 from . import utils, vad_merge
 import webdataset as wds
 
-from utils import get_compute_device
+from whisperspeech.utils import get_compute_device
 compute_device = get_compute_device()
 
 # %% ../nbs/3A. T2S transcripts preparation.ipynb 4

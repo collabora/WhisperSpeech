@@ -22,7 +22,7 @@ from speechbrain.pretrained import EncoderClassifier
 from . import vq_stoks, utils, vad_merge
 import webdataset as wds
 
-from utils import get_compute_device
+from whisperspeech.utils import get_compute_device
 compute_device = get_compute_device()
 
 # %% ../nbs/3B. Semantic token extraction.ipynb 7

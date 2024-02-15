@@ -18,7 +18,7 @@ import webdataset as wds
 
 import whisperx
 
-from utils import get_compute_device
+from whisperspeech.utils import get_compute_device
 compute_device = get_compute_device()
 
 # %% ../nbs/1B. Voice activity detection.ipynb 5
