@@ -69,7 +69,8 @@ class Pipeline:
             print("Failed to load the S2A model:")
             print(traceback.format_exc())
 
-        self.vocoder = Vocoder().to(vocoder_device)
+        #self.vocoder = Vocoder().to(vocoder_device)
+        self.vocoder = Vocoder()
         self.encoder = None
 
     def extract_spk_emb(self, fname):
