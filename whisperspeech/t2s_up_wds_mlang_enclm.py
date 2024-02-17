@@ -20,13 +20,13 @@ from fastprogress import progress_bar
 from pathlib import Path
 
 # %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 2
-from whisperspeech.modules import *
-from whisperspeech import languages
+from .modules import *
+from . import languages
 
 # %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 6
 import re
 
-from utils import get_compute_device
+from .utils import get_compute_device
 compute_device = get_compute_device()
 
 class CharTokenizer:
@@ -85,7 +85,7 @@ def load_dataset(
     exclude_files:str=None,
 ):
     import webdataset as wds
-    from whisperspeech import utils
+    from . import utils
 
     shards = utils.shard_glob(txt_shard_spec)
     excludes = {x for file in exclude_files.split() for x in utils.readlines(file)} if exclude_files else set()
@@ -467,13 +467,23 @@ class TSARTransformer(nn.Module):
         # contrary to S2A this model works without prefill and is actually a tiny bit faster
         # with record_function("prefill"):
         #     toks[0,1] = self.generate_one(toks[:,:1], toks_positions[:1], cps_emb, xenc, xenc_positions, T, top_k)
-        with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True):
+
+        # Currently torch lacks full support for scaled dot product attention
+        if torch.backends.mps.is_available() or not torch.cuda.is_available():
             for i in it:
                 toks[:,i+1] = self.generate_next(toks[:,i:i+1], toks_positions[i:i+1], cps_emb, xenc, xenc_positions, T, top_k)[:,0]
                 if i % 25 == 0 and (toks[:,i+1] == self.stoks_codes-1).all(): return toks[:,:i+1]
 
                 # for profiling, debugging or early exit
                 if step is not None: step()
+        else:
+            with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True):
+                for i in it:
+                    toks[:,i+1] = self.generate_next(toks[:,i:i+1], toks_positions[i:i+1], cps_emb, xenc, xenc_positions, T, top_k)[:,0]
+                    if i % 25 == 0 and (toks[:,i+1] == self.stoks_codes-1).all(): return toks[:,:i+1]
+
+                    # for profiling, debugging or early exit
+                    if step is not None: step()
         return toks[:,:]
     
     @torch.no_grad()
@@ -518,7 +528,7 @@ def _make_model(size:str, tunables:Tunables=Tunables(), dataset=None, **kwargs):
         return TSARTransformer(depth=24, n_head=16, **kwargs)
 
 def make_model(size:str, frozen_embeddings_model:str=None, tunables:Tunables=Tunables(), dataset:torch.utils.data.Dataset=None):
-    from whisperspeech import vq_stoks
+    from . import vq_stoks
 
     if frozen_embeddings_model:
         vqmodel = vq_stoks.RQBottleneckTransformer.load_model(frozen_embeddings_model)

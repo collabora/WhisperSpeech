@@ -16,7 +16,8 @@ class Vocoder:
         else:
             self.vocos_compute_device = 'cpu' # mps does not currently work with vocos, thus only cuda or cpu
         self.vocos = Vocos.from_pretrained(repo_id).to(self.vocos_compute_device)
-    
+        self.has_mps = torch.backends.mps.is_available()
+
     def is_notebook(self):
         try:
             return get_ipython().__class__.__name__ == "ZMQInteractiveShell"
@@ -27,12 +28,19 @@ class Vocoder:
     def decode(self, atoks):
         if len(atoks.shape) == 3:
             b,q,t = atoks.shape
+            # Ensure the atocks tensor remains on the CPU
+            if self.has_mps: 
+                atoks.to('cpu')
             atoks = atoks.permute(1,0,2)
         else:
             q,t = atoks.shape
         # print(atoks.dtype, atoks.device) # uncomment to check dtype and compute_device
         features = self.vocos.codes_to_features(atoks)
         bandwidth_id = torch.tensor({2: 0, 4: 1, 8: 2}[q]).to(self.vocos_compute_device)  # Move tensor to the same device as model
+        if self.has_mps:
+            features.to(self.vocos_compute_device)
+            # torch.set_default_device('cpu')
+            self.vocos.to(self.vocos_compute_device)
         return self.vocos.decode(features, bandwidth_id=bandwidth_id)
         
     def decode_to_file(self, fname, atoks):

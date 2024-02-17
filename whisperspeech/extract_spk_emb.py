@@ -17,7 +17,7 @@ from torch.utils.data.dataloader import DataLoader
 from . import vad, utils
 
 from speechbrain.pretrained import EncoderClassifier
-from utils import get_compute_device
+from .utils import get_compute_device
 
 compute_device = get_compute_device()
 

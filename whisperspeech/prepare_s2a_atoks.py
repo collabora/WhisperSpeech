@@ -16,9 +16,9 @@ import torch.nn.functional as F
 from fastprogress import progress_bar
 from fastcore.script import *
 
-from . import utils, vad_merge, extract_acoustic
 import webdataset as wds
-from utils import get_compute_device
+from . import utils, vad_merge, extract_acoustic
+from .utils import get_compute_device
 
 compute_device = get_compute_device()
 

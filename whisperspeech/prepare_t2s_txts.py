@@ -20,7 +20,7 @@ import whisper, whisperx
 from . import utils, vad_merge
 import webdataset as wds
 
-from utils import get_compute_device
+from .utils import get_compute_device
 compute_device = get_compute_device()
 
 # %% ../nbs/3A. T2S transcripts preparation.ipynb 4
@@ -86,10 +86,10 @@ def prepare_txt(
         for keys, rpads, samples in progress_bar(dl, total=total):
             csamples = samples.to(compute_device)
             txts = transcriber.transcribe(csamples)
-#             with torch.no_grad():
-#                 embs = whmodel.encoder(whisper.log_mel_spectrogram(csamples))
-#                 decs = whmodel.decode(embs, decoding_options)
-#                 txts = [x.text for x in decs]
+            # with torch.no_grad():
+            #     embs = whmodel.encoder(whisper.log_mel_spectrogram(csamples))
+            #     decs = whmodel.decode(embs, decoding_options)
+            #     txts = [x.text for x in decs]
 
             for key, rpad, txt in zip(keys, rpads, txts):
                 sink.write({

@@ -7,8 +7,8 @@ __all__ = []
 import time
 import torch
 from fastcore.script import call_parse
-from whisperspeech.pipeline import Pipeline
-from utils import get_compute_device
+from .pipeline import Pipeline
+from .utils import get_compute_device
 
 compute_device = get_compute_device() # determine compute_device
 

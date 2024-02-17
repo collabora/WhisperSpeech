@@ -28,7 +28,7 @@ def load_model():
     from encodec.model import EncodecModel
     model = EncodecModel.encodec_model_24khz()
     model.set_target_bandwidth(1.5)
-    model.to(compute_device).eval();
+    model.to(compute_device).eval()
     return model
 
 # %% ../nbs/1. Acoustic token extraction.ipynb 7
