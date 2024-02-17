@@ -5,12 +5,12 @@ __all__ = ['Pipeline']
 
 # %% ../nbs/7. Pipeline.ipynb 1
 import torch
-from whisperspeech.t2s_up_wds_mlang_enclm import TSARTransformer
-from whisperspeech.s2a_delar_mup_wds_mlang import SADelARTransformer
-from whisperspeech.a2wav import Vocoder
+from .t2s_up_wds_mlang_enclm import TSARTransformer
+from .s2a_delar_mup_wds_mlang import SADelARTransformer
+from .a2wav import Vocoder
 import traceback
 from pathlib import Path
-from utils import get_compute_device
+from .utils import get_compute_device
 
 compute_device = get_compute_device()
 
@@ -69,7 +69,7 @@ class Pipeline:
             print("Failed to load the S2A model:")
             print(traceback.format_exc())
 
-        self.vocoder = Vocoder().to(vocoder_device)
+        self.vocoder = Vocoder()
         self.encoder = None
 
     def extract_spk_emb(self, fname):
@@ -97,7 +97,12 @@ class Pipeline:
         text = text.replace("\n", " ")
         stoks = self.t2s.generate(text, cps=cps, lang=lang, step=step_callback)[0]
         atoks = self.s2a.generate(stoks, speaker.unsqueeze(0), step=step_callback)
-        return atoks
+
+        if torch.backends.mps.is_available():
+            # Keep atoks on the CPU due to certain torch operation compatability with MPS
+            return atoks.to('cpu')
+        else:
+            return atoks
         
     def generate(self, text, speaker=None, lang='en', cps=15, step_callback=None):
         return self.vocoder.decode(self.generate_atoks(text, speaker, lang=lang, cps=cps, step_callback=step_callback))

@@ -18,7 +18,7 @@ import webdataset as wds
 
 import whisperx
 
-from utils import get_compute_device
+from .utils import get_compute_device
 compute_device = get_compute_device()
 
 # %% ../nbs/1B. Voice activity detection.ipynb 5
@@ -29,6 +29,7 @@ def fix_dots_in_names(name):
     return ".".join((name.replace('.', '_'), ext))
 
 def load_dataset(url, decode=True):
+    import .utils
     ds = wds.WebDataset(url)
     if not decode: return ds
     return ds.compose(

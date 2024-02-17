@@ -27,7 +27,7 @@ from fastprogress import progress_bar, master_bar
 # %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 4
 from .modules import *
 
-from utils import get_compute_device
+from .utils import get_compute_device
 compute_device = get_compute_device()
 
 # %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 8
@@ -73,7 +73,7 @@ def load_dataset(
         randomize_speakers:bool=False,
     ):
     import webdataset as wds
-    from whisperspeech import utils, languages
+    from . import utils, languages
 
     shards = utils.shard_glob(atoks_shard_spec)
     excludes = {x for file in exclude_files.split() for x in utils.readlines(file)} if exclude_files else set()
@@ -500,13 +500,23 @@ class SADelARTransformer(nn.Module):
             toks_positions = torch.arange(N, device=dev)
         with record_function("prefill"):
             toks[:,0,1] = self.generate_one(toks[:,:,:1], toks_positions[:1], langs, xenc, xenc_positions, T, top_k)[:,0,0]
-        with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True):
+
+        # Currently torch lacks full support for scaled dot product attention
+        if torch.backends.mps.is_available() or not torch.cuda.is_available():
             for i in it:
                 with record_function("generate_one"):
                     toks[:,:i+1,i+1] = self.generate_next(toks[:,:,i:i+1], toks_positions[i:i+1], langs, xenc, xenc_positions, T, top_k)[:,:i+1,0]
 
                 # for profiling, debugging or early exit
                 if step is not None: step()
+        else:
+            with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True):
+                for i in it:
+                    with record_function("generate_one"):
+                        toks[:,:i+1,i+1] = self.generate_next(toks[:,:,i:i+1], toks_positions[i:i+1], langs, xenc, xenc_positions, T, top_k)[:,:i+1,0]
+
+                    # for profiling, debugging or early exit
+                    if step is not None: step()
         # shift tokens
         toks = toks[:,:,1:N]
         for j in range(self.quantizers):
@@ -537,7 +547,7 @@ def _make_model(size:str, quantizers:int=4, tunables:Tunables=Tunables(), **kwar
 
 def make_model(size:str, quantizers:int=4, frozen_embeddings_model:str=None, frozen_acoustic_embeddings:bool=False, spk_width:int=None, tunables:Tunables=Tunables(), dataset=None):
     from encodec.model import EncodecModel
-    from whisperspeech import vq_stoks
+    from . import vq_stoks
 
     amodel = EncodecModel.encodec_model_24khz() if frozen_acoustic_embeddings else None
     vqmodel = vq_stoks.RQBottleneckTransformer.load_model(frozen_embeddings_model) if frozen_embeddings_model else None

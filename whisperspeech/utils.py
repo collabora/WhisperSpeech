@@ -8,11 +8,10 @@ __all__ = ['shard_glob', 'join_datasets', 'resampler', 'derived_name', 'derived_
 import os
 import torch
 import torchaudio
-from pathlib import Path
-import webdataset as wds
-from contextlib import contextmanager
-
 import torch.nn.functional as F
+from pathlib import Path
+from contextlib import contextmanager
+import webdataset as wds
 
 # %% ../nbs/D. Common dataset utilities.ipynb 2
 def shard_glob(input):

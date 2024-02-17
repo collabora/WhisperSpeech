@@ -12,7 +12,7 @@ from fastcore.script import call_parse
 import numpy as np
 import random
 from collections import Counter
-from whisperspeech import utils
+from . import utils
 
 # %% ../nbs/3D. Split out validation.ipynb 4
 @call_parse

@@ -22,7 +22,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data.dataloader import DataLoader
 from torch.profiler import record_function
-from whisperspeech import utils
+from . import utils
 
 # %% ../nbs/B2. Training (Lightning).ipynb 3
 import lightning.pytorch as pl

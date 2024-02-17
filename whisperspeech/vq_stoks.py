@@ -35,7 +35,7 @@ from vector_quantize_pytorch import ResidualVQ
 
 from fastcore.script import *
 
-from utils import get_compute_device
+from .utils import get_compute_device
 compute_device = get_compute_device()
 
 # %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 9
@@ -147,8 +147,8 @@ def load_dataset(
     return ds
 
 # %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 28
-from whisperspeech.train import *
-from whisperspeech.modules import *
+from .train import *
+from .modules import *
 
 # %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 29
 import dataclasses
