@@ -19,14 +19,11 @@ https://pytorch.org/get-started/locally/
 
 (5)  pip3 install soundfile
 
-(6)  pip3 install pydub
+(6)  pip3 install sounddevice
 
-(7)  pip3 install sounddevice
-
-(8) python text_to_audio_playback.py
+(7) python text_to_audio_playback.py
 '''
 
-from pydub import AudioSegment
 import numpy as np
 import re
 import threading
