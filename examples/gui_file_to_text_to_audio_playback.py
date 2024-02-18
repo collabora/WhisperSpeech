@@ -12,11 +12,10 @@ WhisperSpeech relies on SpeechBrain, which automatically installs pytorch.  Howe
 (4)  Then reinstall pytorch by going here to get the appropriate command:
 https://pytorch.org/get-started/locally/
 (5)  pip3 install soundfile
-(6)  pip3 install pydub
-(7)  pip3 install sounddevice
-(8)  pip3 install pypdf
-(9)  pip3 install python-docx
-(10)  python gui_text_to_audio_playback.py
+(6)  pip3 install sounddevice
+(7)  pip3 install pypdf
+(8)  pip3 install python-docx
+(9)  python gui_text_to_audio_playback.py
 '''
 
 from tkinter import *
