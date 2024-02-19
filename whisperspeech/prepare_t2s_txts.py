@@ -20,8 +20,7 @@ import whisper, whisperx
 from . import utils, vad_merge
 import webdataset as wds
 
-from .utils import get_compute_device
-compute_device = get_compute_device()
+from .inference import get_compute_device
 
 # %% ../nbs/3A. T2S transcripts preparation.ipynb 4
 class Transcriber:
@@ -30,7 +29,7 @@ class Transcriber:
     """
     def __init__(self, model_size, lang=False):
         self.model = whisperx.asr.load_model(
-            model_size, compute_device, compute_type="float16", language=lang,
+            model_size, get_compute_device(), compute_type="float16", language=lang,
             asr_options=dict(repetition_penalty=1, no_repeat_ngram_size=0, prompt_reset_on_temperature=0.5))
         # without calling vad_model at least once the rest segfaults for some reason...
         self.model.vad_model({"waveform": torch.zeros(1, 16000), "sample_rate": 16000})
@@ -84,7 +83,7 @@ def prepare_txt(
 
     with utils.AtomicTarWriter(utils.derived_name(input, f'{transcription_model}-txt', dir="."), throwaway=n_samples is not None) as sink:
         for keys, rpads, samples in progress_bar(dl, total=total):
-            csamples = samples.to(compute_device)
+            csamples = samples.to(get_compute_device())
             txts = transcriber.transcribe(csamples)
             # with torch.no_grad():
             #     embs = whmodel.encoder(whisper.log_mel_spectrogram(csamples))

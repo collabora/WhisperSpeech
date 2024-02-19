@@ -35,9 +35,6 @@ from vector_quantize_pytorch import ResidualVQ
 
 from fastcore.script import *
 
-from .utils import get_compute_device
-compute_device = get_compute_device()
-
 # %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 9
 def merge_in(dataset_fun):
     """Merge a dataset into the current one returning samples with the union of keys. Pass in a function
@@ -147,8 +144,8 @@ def load_dataset(
     return ds
 
 # %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 28
-from .train import *
-from .modules import *
+from whisperspeech.train import *
+from whisperspeech.modules import *
 
 # %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 29
 import dataclasses
@@ -273,8 +270,8 @@ class RQBottleneckTransformer(nn.Module):
         self.whmodel = None
 
         self.apply(self.init_transformer)
-        self.register_buffer('val_true', torch.zeros(1).to(compute_device))
-        self.register_buffer('val_total', torch.zeros(1).to(compute_device))
+        self.register_buffer('val_true', torch.zeros(1))
+        self.register_buffer('val_total', torch.zeros(1))
     
     def setup(self, device):
         self.ensure_whisper(device)

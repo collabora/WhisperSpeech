@@ -18,8 +18,8 @@ import webdataset as wds
 
 import whisperx
 
-from .utils import get_compute_device
-compute_device = get_compute_device()
+from whisperspeech.inference import get_compute_device
+from . import utils
 
 # %% ../nbs/1B. Voice activity detection.ipynb 5
 # some of the original file names have a dot in their name
@@ -29,7 +29,6 @@ def fix_dots_in_names(name):
     return ".".join((name.replace('.', '_'), ext))
 
 def load_dataset(url, decode=True):
-    import .utils
     ds = wds.WebDataset(url)
     if not decode: return ds
     return ds.compose(
@@ -64,7 +63,7 @@ def process_shard(
     
     ds = load_dataset(input)
     dl = torch.utils.data.DataLoader(ds, num_workers=2, batch_size=None)
-    vad_model = whisperx.vad.load_vad_model(compute_device)
+    vad_model = whisperx.vad.load_vad_model(get_compute_device())
     
     tmp = output+".tmp"
     with wds.TarWriter(tmp) as sink:

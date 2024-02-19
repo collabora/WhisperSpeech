@@ -25,10 +25,8 @@ import json
 from fastprogress import progress_bar, master_bar
 
 # %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 4
+from . import inference
 from .modules import *
-
-from .utils import get_compute_device
-compute_device = get_compute_device()
 
 # %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 8
 def rand(start, end):
@@ -269,8 +267,8 @@ class SADelARTransformer(nn.Module):
         for l in self.decoder.layers:
             l.cross_attn.key_subsampling = 3
         
-        self.register_buffer('val_true', torch.zeros(self.quantizers).to(compute_device))
-        self.register_buffer('val_total', torch.zeros(self.quantizers).to(compute_device))
+        self.register_buffer('val_true', torch.zeros(self.quantizers))
+        self.register_buffer('val_total', torch.zeros(self.quantizers))
         self.apply(self.init_transformer)
 
     def setup(self, device):
@@ -394,7 +392,7 @@ class SADelARTransformer(nn.Module):
     #
     @classmethod
     def load_model(cls, ref="collabora/whisperspeech:s2a-q4-small-en+pl.model",
-                   repo_id=None, filename=None, local_filename=None):
+                   repo_id=None, filename=None, local_filename=None, device=None):
         if repo_id is None and filename is None and local_filename is None:
             if ":" in ref:
                 repo_id, filename = ref.split(":", 1)
@@ -402,11 +400,11 @@ class SADelARTransformer(nn.Module):
                 local_filename = ref
         if not local_filename:
             local_filename = hf_hub_download(repo_id=repo_id, filename=filename)
-        spec = torch.load(local_filename, map_location=compute_device)
+        spec = torch.load(local_filename, map_location=device)
         if '_extra_state' not in spec['state_dict'] and 'speaker_map' in spec['config']: spec['state_dict']['_extra_state'] = { 'speaker_map': spec['config']['speaker_map'] }
         model = cls(**spec['config'], tunables=Tunables(**Tunables.upgrade(spec['tunables'])))
         model.load_state_dict(spec['state_dict'])
-        model.eval()
+        model.eval().to(device)
         return model
     
     def get_extra_state(self):
@@ -458,29 +456,10 @@ class SADelARTransformer(nn.Module):
     def device(self):
         return next(self.parameters()).device
 
-    # from https://github.com/pytorch-labs/gpt-fast/blob/main/generate.py
-    def multinomial_sample_one_no_sync(self, probs_sort): # Does multinomial sampling without a cuda synchronization
-        q = torch.empty_like(probs_sort).exponential_(1)
-        return torch.argmax(probs_sort / q, dim=-1, keepdim=True).to(dtype=torch.int)
-
-    def logits_to_probs(self, logits, T=1.0, top_k=None):
-        logits = logits / max(T, 1e-5)
-
-        if top_k is not None:
-            v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
-            pivot = v.select(-1, -1).unsqueeze(-1)
-            logits = torch.where(logits < pivot, -float("Inf"), logits)
-        probs = torch.nn.functional.softmax(logits, dim=-1)
-        return probs
-
-    def sample(self, logits, T=1.0, top_k=None):
-        probs = self.logits_to_probs(logits[:,:,-1], T, top_k)
-        idx_next = self.multinomial_sample_one_no_sync(probs)
-        return idx_next
-
     def generate_one(self, toks, positions, langs, xenc, xenc_positions, T, top_k):
         probs = self(None, toks, None, langs, noloss=True, xenc=xenc, xenc_positions=xenc_positions, atoks_positions=positions)
-        return self.sample(probs, T, top_k)
+        probs = probs[:,:,-1]
+        return inference.sample(probs, T, top_k)
 
     def generate_next(self, *args, **kwargs):
         return self.generate_one(*args, **kwargs)
@@ -501,22 +480,13 @@ class SADelARTransformer(nn.Module):
         with record_function("prefill"):
             toks[:,0,1] = self.generate_one(toks[:,:,:1], toks_positions[:1], langs, xenc, xenc_positions, T, top_k)[:,0,0]
 
-        # Currently torch lacks full support for scaled dot product attention
-        if torch.backends.mps.is_available() or not torch.cuda.is_available():
+        with inference.inference_context():
             for i in it:
                 with record_function("generate_one"):
                     toks[:,:i+1,i+1] = self.generate_next(toks[:,:,i:i+1], toks_positions[i:i+1], langs, xenc, xenc_positions, T, top_k)[:,:i+1,0]
 
                 # for profiling, debugging or early exit
                 if step is not None: step()
-        else:
-            with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True):
-                for i in it:
-                    with record_function("generate_one"):
-                        toks[:,:i+1,i+1] = self.generate_next(toks[:,:,i:i+1], toks_positions[i:i+1], langs, xenc, xenc_positions, T, top_k)[:,:i+1,0]
-
-                    # for profiling, debugging or early exit
-                    if step is not None: step()
         # shift tokens
         toks = toks[:,:,1:N]
         for j in range(self.quantizers):
