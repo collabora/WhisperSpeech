@@ -5,18 +5,17 @@ __all__ = ['Vocoder']
 
 # %% ../nbs/6. Quality-boosting vocoder.ipynb 1
 from vocos import Vocos
+from whisperspeech import inference
 import torch
 import torchaudio
 
 # %% ../nbs/6. Quality-boosting vocoder.ipynb 2
 class Vocoder:
-    def __init__(self, repo_id="charactr/vocos-encodec-24khz"):
-        if torch.cuda.is_available() and (torch.version.cuda or torch.version.hip):
-                self.vocos_compute_device = 'cuda'
-        else:
-            self.vocos_compute_device = 'cpu' # mps does not currently work with vocos, thus only cuda or cpu
-        self.vocos = Vocos.from_pretrained(repo_id).to(self.vocos_compute_device)
-        self.has_mps = torch.backends.mps.is_available()
+    def __init__(self, repo_id="charactr/vocos-encodec-24khz", device=None):
+        if device is None: device = inference.get_compute_device()
+        if device == 'mps': device = 'cpu' # mps does not currently work with vocos, thus only cuda or cpu
+        self.device = device
+        self.vocos = Vocos.from_pretrained(repo_id).to(device)
 
     def is_notebook(self):
         try:
@@ -28,19 +27,15 @@ class Vocoder:
     def decode(self, atoks):
         if len(atoks.shape) == 3:
             b,q,t = atoks.shape
-            # Ensure the atocks tensor remains on the CPU
-            if self.has_mps: 
-                atoks.to('cpu')
+            
             atoks = atoks.permute(1,0,2)
         else:
             q,t = atoks.shape
+        # on mps we run Vocos on the CPU, make sure it's input is on the correct device
+        atoks = atoks.to(self.device)
         # print(atoks.dtype, atoks.device) # uncomment to check dtype and compute_device
         features = self.vocos.codes_to_features(atoks)
-        bandwidth_id = torch.tensor({2: 0, 4: 1, 8: 2}[q]).to(self.vocos_compute_device)  # Move tensor to the same device as model
-        if self.has_mps:
-            features.to(self.vocos_compute_device)
-            # torch.set_default_device('cpu')
-            self.vocos.to(self.vocos_compute_device)
+        bandwidth_id = torch.tensor({2: 0, 4: 1, 8: 2}[q]).to(self.device)  # Move tensor to the same device as model
         return self.vocos.decode(features, bandwidth_id=bandwidth_id)
         
     def decode_to_file(self, fname, atoks):

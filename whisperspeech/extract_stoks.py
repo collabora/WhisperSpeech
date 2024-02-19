@@ -22,8 +22,7 @@ from speechbrain.pretrained import EncoderClassifier
 from . import vq_stoks, utils, vad_merge
 import webdataset as wds
 
-from .utils import get_compute_device
-compute_device = get_compute_device()
+from .inference import get_compute_device
 
 # %% ../nbs/3B. Semantic token extraction.ipynb 7
 @call_parse
@@ -35,13 +34,14 @@ def prepare_stoks(
     kind:str="maxvad", # could be eqvad to get more uniform chunk lengths
     
 ):
-    vq_model = vq_stoks.RQBottleneckTransformer.load_model(vq_model).to(compute_device)
+    device = get_compute_device()
+    vq_model = vq_stoks.RQBottleneckTransformer.load_model(vq_model).to(device)
     vq_model.ensure_whisper()
 #     vq_model.encode_mel = torch.compile(vq_model.encode_mel, mode="reduce-overhead", fullgraph=True)
     
     spk_classifier = EncoderClassifier.from_hparams("speechbrain/spkrec-ecapa-voxceleb",
                                                     savedir=f"{os.environ['HOME']}/.cache/speechbrain/",
-                                                    run_opts = {"device": compute_device}
+                                                    run_opts = {"device": device})
     
     total = n_samples//batch_size if n_samples else 'noinfer'
 
@@ -56,7 +56,7 @@ def prepare_stoks(
     with utils.AtomicTarWriter(utils.derived_name(input, f'{kind}-stoks', dir="."), throwaway=n_samples is not None) as sink:
         for keys, rpad_ss, samples16k in progress_bar(dl, total=total):
             with torch.no_grad():
-                samples16k = samples16k.to(compute_device).to(torch.float16)
+                samples16k = samples16k.to(device).to(torch.float16)
                 stoks = vq_model.encode_audio(samples16k).cpu().numpy().astype(np.int16)
                 spk_embs = spk_classifier.encode_batch(
                    samples16k, wav_lens=torch.tensor(30 - rpad_ss, dtype=torch.float)/30)[:,0,:].cpu().numpy()

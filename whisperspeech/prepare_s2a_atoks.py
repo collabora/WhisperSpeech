@@ -18,9 +18,7 @@ from fastcore.script import *
 
 import webdataset as wds
 from . import utils, vad_merge, extract_acoustic
-from .utils import get_compute_device
-
-compute_device = get_compute_device()
+from .inference import get_compute_device
 
 # %% ../nbs/3C. S2A acoustic tokens preparation.ipynb 4
 @call_parse
@@ -30,7 +28,8 @@ def prepare_atoks(
     batch_size:int=1, # process several segments at once
     bandwidth:float=3,
 ):
-    amodel = extract_acoustic.load_model().to(compute_device)  # Move model to computed device
+    device = get_compute_device()
+    amodel = extract_acoustic.load_model().to(device)  # Move model to computed device
     amodel.set_target_bandwidth(bandwidth)
 
     total = n_samples//batch_size if n_samples else 'noinfer'
@@ -46,7 +45,7 @@ def prepare_atoks(
 
     with utils.AtomicTarWriter(utils.derived_name(input, f'atoks-{bandwidth}kbps', dir="."), throwaway=n_samples is not None) as sink:
         for keys, rpad_ss, samples in progress_bar(dl, total=total):
-            csamples = samples.to(compute_device).unsqueeze(1)  # Move tensors to computed device
+            csamples = samples.to(device).unsqueeze(1)  # Move tensors to computed device
             atokss = amodel.encode(csamples)[0][0]
             atokss = atokss.cpu().numpy().astype(np.int16)
             for key, rpad_s, atoks in zip(keys, rpad_ss, atokss):

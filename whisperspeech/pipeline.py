@@ -8,18 +8,9 @@ import torch
 from .t2s_up_wds_mlang_enclm import TSARTransformer
 from .s2a_delar_mup_wds_mlang import SADelARTransformer
 from .a2wav import Vocoder
+from . import inference
 import traceback
 from pathlib import Path
-from .utils import get_compute_device
-
-compute_device = get_compute_device()
-
-if torch.cuda.is_available():
-    encoder_device = 'cuda'
-    vocoder_device = 'cuda'
-else:
-    encoder_device = 'cpu'
-    vocoder_device = 'cpu'
 
 # %% ../nbs/7. Pipeline.ipynb 2
 class Pipeline:
@@ -50,12 +41,14 @@ class Pipeline:
          0.2702,  0.1699, -0.1443, -0.9614,  0.3261,  0.1718,  0.3545, -0.0686]
     )
     
-    def __init__(self, t2s_ref=None, s2a_ref=None, optimize=True, torch_compile=False):
+    def __init__(self, t2s_ref=None, s2a_ref=None, optimize=True, torch_compile=False, device=None):
+        if device is None: device = inference.get_compute_device()
+        self.device = device
         args = dict()
         try:
             if t2s_ref:
                 args["ref"] = t2s_ref
-            self.t2s = TSARTransformer.load_model(**args).to(compute_device)  # use obtained compute device
+            self.t2s = TSARTransformer.load_model(**args, device=device)  # use obtained compute device
             if optimize: self.t2s.optimize(torch_compile=torch_compile)
         except:
             print("Failed to load the T2S model:")
@@ -63,13 +56,13 @@ class Pipeline:
         try:
             if s2a_ref:
                 args["ref"] = s2a_ref
-            self.s2a = SADelARTransformer.load_model(**args).to(compute_device)  # use obtained compute device
+            self.s2a = SADelARTransformer.load_model(**args, device=device)  # use obtained compute device
             if optimize: self.s2a.optimize(torch_compile=torch_compile)
         except:
             print("Failed to load the S2A model:")
             print(traceback.format_exc())
 
-        self.vocoder = Vocoder()
+        self.vocoder = Vocoder(device=device)
         self.encoder = None
 
     def extract_spk_emb(self, fname):
@@ -77,10 +70,12 @@ class Pipeline:
         """
         import torchaudio
         if self.encoder is None:
+            device = self.device
+            if device == 'mps': device = 'cpu' # operator 'aten::_fft_r2c' is not currently implemented for the MPS device
             from speechbrain.pretrained import EncoderClassifier
             self.encoder = EncoderClassifier.from_hparams("speechbrain/spkrec-ecapa-voxceleb",
                                                           savedir="~/.cache/speechbrain/",
-                                                          run_opts={"device": encoder_device})
+                                                          run_opts={"device": device})
         audio_info = torchaudio.info(fname)
         actual_sample_rate = audio_info.sample_rate
         num_frames = actual_sample_rate * 30 # specify 30 seconds worth of frames
@@ -89,20 +84,15 @@ class Pipeline:
         samples = self.encoder.audio_normalizer(samples[0], sr)
         spk_emb = self.encoder.encode_batch(samples.unsqueeze(0))
         
-        return spk_emb[0,0]
+        return spk_emb[0,0].to(self.device)
         
     def generate_atoks(self, text, speaker=None, lang='en', cps=15, step_callback=None):
         if speaker is None: speaker = self.default_speaker
-        elif isinstance(speaker, (str, Path)): speaker = self.extract_spk_emb(speaker).to(compute_device)  # use obtained compute device
+        elif isinstance(speaker, (str, Path)): speaker = self.extract_spk_emb(speaker)
         text = text.replace("\n", " ")
         stoks = self.t2s.generate(text, cps=cps, lang=lang, step=step_callback)[0]
         atoks = self.s2a.generate(stoks, speaker.unsqueeze(0), step=step_callback)
-
-        if torch.backends.mps.is_available():
-            # Keep atoks on the CPU due to certain torch operation compatability with MPS
-            return atoks.to('cpu')
-        else:
-            return atoks
+        return atoks
         
     def generate(self, text, speaker=None, lang='en', cps=15, step_callback=None):
         return self.vocoder.decode(self.generate_atoks(text, speaker, lang=lang, cps=cps, step_callback=step_callback))

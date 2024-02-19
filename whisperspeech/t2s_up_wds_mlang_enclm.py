@@ -20,14 +20,11 @@ from fastprogress import progress_bar
 from pathlib import Path
 
 # %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 2
-from .modules import *
-from . import languages
+from whisperspeech.modules import *
+from whisperspeech import languages, inference
 
 # %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 6
 import re
-
-from .utils import get_compute_device
-compute_device = get_compute_device()
 
 class CharTokenizer:
     """Trivial tokenizer – just use UTF-8 bytes"""
@@ -328,7 +325,7 @@ class TSARTransformer(nn.Module):
     #
     @classmethod
     def load_model(cls, ref="collabora/whisperspeech:t2s-small-en+pl.model",
-                   repo_id=None, filename=None, local_filename=None):
+                   repo_id=None, filename=None, local_filename=None, device=None):
         if repo_id is None and filename is None and local_filename is None:
             if ":" in ref:
                 repo_id, filename = ref.split(":", 1)
@@ -336,10 +333,10 @@ class TSARTransformer(nn.Module):
                 local_filename = ref
         if not local_filename:
             local_filename = hf_hub_download(repo_id=repo_id, filename=filename)
-        spec = torch.load(local_filename, map_location=compute_device)
+        spec = torch.load(local_filename, map_location=device)
         model = cls(**spec['config'], tunables=Tunables(**spec['tunables']))
         model.load_state_dict(spec['state_dict'])
-        model.eval()
+        model.eval().to(device)
         return model
 
     def load_checkpoint(self, local_filename_or_obj):
@@ -388,32 +385,12 @@ class TSARTransformer(nn.Module):
     @property
     def device(self):
         return next(self.parameters()).device
-        
-    # from https://github.com/pytorch-labs/gpt-fast/blob/main/generate.py
-    def multinomial_sample_one_no_sync(self, probs_sort): # Does multinomial sampling without a cuda synchronization
-        q = torch.empty_like(probs_sort).exponential_(1)
-        return torch.argmax(probs_sort / q, dim=-1, keepdim=True).to(dtype=torch.int)
-
-    def logits_to_probs(self, logits, T=1.0, top_k=None):
-        logits = logits / max(T, 1e-5)
-
-        logits[self.embeddings.embedding.codes:] = -torch.inf
-        if top_k is not None:
-            v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
-            pivot = v.select(-1, -1).unsqueeze(-1)
-            logits = torch.where(logits < pivot, -float("Inf"), logits)
-
-        probs = torch.nn.functional.softmax(logits, dim=-1)
-        return probs
-
-    def sample(self, logits, T=1.0, top_k=None):
-        probs = self.logits_to_probs(logits[:,-1], T, top_k)
-        idx_next = self.multinomial_sample_one_no_sync(probs)
-        return idx_next
 
     def generate_one(self, toks, toks_positions, cps_emb, xenc, xenc_positions, T, top_k):
         probs, _ = self(None, None, None, None, toks, in_stoks_positions=toks_positions, loss=None, xenc=xenc, xenc_positions=xenc_positions, cps_emb=cps_emb)
-        return self.sample(probs, T, top_k)
+        probs = probs[:,-1]
+        probs[self.embeddings.embedding.codes:] = -torch.inf
+        return inference.sample(probs, T, top_k)
 
     def generate_next(self, *args, **kwargs):
         return self.generate_one(*args, **kwargs)
@@ -468,22 +445,13 @@ class TSARTransformer(nn.Module):
         # with record_function("prefill"):
         #     toks[0,1] = self.generate_one(toks[:,:1], toks_positions[:1], cps_emb, xenc, xenc_positions, T, top_k)
 
-        # Currently torch lacks full support for scaled dot product attention
-        if torch.backends.mps.is_available() or not torch.cuda.is_available():
+        with inference.inference_context():
             for i in it:
                 toks[:,i+1] = self.generate_next(toks[:,i:i+1], toks_positions[i:i+1], cps_emb, xenc, xenc_positions, T, top_k)[:,0]
                 if i % 25 == 0 and (toks[:,i+1] == self.stoks_codes-1).all(): return toks[:,:i+1]
 
                 # for profiling, debugging or early exit
                 if step is not None: step()
-        else:
-            with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True):
-                for i in it:
-                    toks[:,i+1] = self.generate_next(toks[:,i:i+1], toks_positions[i:i+1], cps_emb, xenc, xenc_positions, T, top_k)[:,0]
-                    if i % 25 == 0 and (toks[:,i+1] == self.stoks_codes-1).all(): return toks[:,:i+1]
-
-                    # for profiling, debugging or early exit
-                    if step is not None: step()
         return toks[:,:]
     
     @torch.no_grad()
