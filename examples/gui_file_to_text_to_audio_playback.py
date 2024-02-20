@@ -4,18 +4,18 @@ DESCRIPTION~
 Type text or load a file to be converted TTS, sentence by sentence, to quickstart playback.
 
 INSTALLATION INSTRUCTIONS~
+**Tested on Windows
 
-(1)  remember to create a virtual environment and activate it
-(2)  pip3 install WhisperSpeech
-WhisperSpeech relies on SpeechBrain, which automatically installs pytorch.  However, it reportedly installs a cpu-only version.  Thus, to use CUDA (which this script needs) you must run the following command after installing WhisperSpeech:
-(3)  pip3 uninstall torch torchvision torchaudio
-(4)  Then reinstall pytorch by going here to get the appropriate command:
+(1)  create a virtual environment and activate it
+(2)  install pytorch by going to the following website and running the appropriate command for your platform and setup:
+
 https://pytorch.org/get-started/locally/
-(5)  pip3 install soundfile
-(6)  pip3 install sounddevice
-(7)  pip3 install pypdf
-(8)  pip3 install python-docx
-(9)  python gui_text_to_audio_playback.py
+
+(3)  run pip3 install WhisperSpeech
+
+(4)  pip3 install soundfile==0.12.1 sounddevice==0.4.6 pypdf==4.0.2 python-docx==1.1.0 nltk==3.8.1
+
+(9)  python gui_file_to_text_to_audio_playback.py
 '''
 
 from tkinter import *
@@ -29,12 +29,9 @@ import sounddevice as sd
 from pypdf import PdfReader
 from docx import Document
 import nltk
-
-# Ensure NLTK punkt tokenizer is available
 nltk.download('punkt')
 from nltk.tokenize import sent_tokenize
 
-# color scheme
 main_bg = "#1B2A2F"
 widget_bg = "#303F46"
 button_bg = "#263238"
