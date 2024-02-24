@@ -4,6 +4,7 @@
 __all__ = ['Pipeline']
 
 # %% ../nbs/7. Pipeline.ipynb 1
+import os
 import torch
 from .t2s_up_wds_mlang_enclm import TSARTransformer
 from .s2a_delar_mup_wds_mlang import SADelARTransformer
@@ -74,7 +75,7 @@ class Pipeline:
             if device == 'mps': device = 'cpu' # operator 'aten::_fft_r2c' is not currently implemented for the MPS device
             from speechbrain.pretrained import EncoderClassifier
             self.encoder = EncoderClassifier.from_hparams("speechbrain/spkrec-ecapa-voxceleb",
-                                                          savedir="~/.cache/speechbrain/",
+                                                          savedir = os.path.expanduser("~/.cache/speechbrain/"),
                                                           run_opts={"device": device})
         audio_info = torchaudio.info(fname)
         actual_sample_rate = audio_info.sample_rate
