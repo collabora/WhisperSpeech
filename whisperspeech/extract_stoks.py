@@ -6,6 +6,7 @@ __all__ = []
 # %% ../nbs/3B. Semantic token extraction.ipynb 2
 import sys
 import os
+from os.path import expanduser
 import itertools
 from pathlib import Path
 
@@ -40,7 +41,7 @@ def prepare_stoks(
 #     vq_model.encode_mel = torch.compile(vq_model.encode_mel, mode="reduce-overhead", fullgraph=True)
     
     spk_classifier = EncoderClassifier.from_hparams("speechbrain/spkrec-ecapa-voxceleb",
-                                                    savedir=f"{os.environ['HOME']}/.cache/speechbrain/",
+                                                    savedir=expanduser("~/.cache/speechbrain/"),
                                                     run_opts = {"device": device})
     
     total = n_samples//batch_size if n_samples else 'noinfer'
