@@ -8,6 +8,7 @@ from fastcore.script import call_parse
 import whisperx
 import whisper
 from speechbrain.pretrained import EncoderClassifier
+from os.path import expanduser
 
 # %% ../nbs/0. Download models.ipynb 3
 def load_whisperx(model, lang):
@@ -25,4 +26,4 @@ def main():
     whisperx.vad.load_vad_model('cpu')
     load_whisperx('medium.en', 'en')
     load_whisperx('medium', 'en')
-    EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", savedir="~/.cache/speechbrain/")
+    EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", savedir=expanduser("~/.cache/speechbrain/"))
