@@ -435,6 +435,7 @@ class TSARTransformer(nn.Module):
         ttoks = torch.tensor(ttoks, device=dev)
         ttoks = F.pad(ttoks, (1, self.ttoks_len - len(ttoks) - 1), value=self.tokenizer.eot).unsqueeze(0)
         cpss = torch.tensor([cps], device=dev)
+        T = torch.tensor(T, device=dev)
         if not isinstance(langs, torch.Tensor):
             langs = torch.tensor(langs, device=dev)
             langs = F.pad(langs, (1, self.ttoks_len - len(langs) - 1), value=languages.to_id(lang0)).unsqueeze(0)

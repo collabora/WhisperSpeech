@@ -476,6 +476,7 @@ class SADelARTransformer(nn.Module):
         stoks = F.pad(stoks.to(dev), (1, self.stoks_len - len(stoks) - 1), value=self.stoks_codes-1).unsqueeze(0)
         speakers = speakers.to(device=dev, dtype=self.dtype)
         toks = torch.full((bs,self.quantizers,self.ctx_n), self.codes+1, dtype=torch.long, device=dev)
+        T = torch.tensor(T, device=dev)
         it = range(1,min(N,self.ctx_n-1))
         if show_progress_bar: it = progress_bar(it)
         with record_function("encode"):
