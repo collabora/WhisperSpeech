@@ -22,7 +22,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data.dataloader import DataLoader
 from torch.profiler import record_function
-from whisperspeech import utils
+from whisperspeech import utils, testing
 
 # %% ../nbs/B2. Training (Lightning).ipynb 3
 import lightning.pytorch as pl
@@ -37,6 +37,12 @@ class TrainingTask(pl.LightningModule):
     def on_fit_start(self):
         if getattr(self.model, 'setup'):
             self.model.setup(self.device)
+        if self.model_hparams['torch_compile'] and getattr(self.model, 'optimize_training'):
+            import torch._dynamo
+            torch._dynamo.config.optimize_ddp = False
+            # FIXME: define a batch of dummy tensors in the model
+            testing.test_model(model, train_dss[0], bs=batch_size)
+            model.optimize_training()
     
     def configure_optimizers(self):
         """ Initialize AdamW optimizer"""
@@ -153,6 +159,7 @@ parser.add_argument('--lr0', type=float, default=1e-4, help='optimizer initial l
 parser.add_argument('--clip-gradient-norm', type=float, default=None, help='enable gradient norm clipping')
 parser.add_argument('--accumulate-grad-batches', type=int, default=1, help='perform the optimizer step only after going through several batches of samples')
 parser.add_argument('--precision', type=str, default="16-mixed", help="floating point precision")
+parser.add_argument('--torch-compile', type=bool, default=False, help='compile (parts of) the model with torch.compile')
 parser.add_argument('--warmup-steps', type=int, default=10000, help='total number steps during which the learning rate rises (defaults to 10k updates)')
 parser.add_argument('--tunables', type=str, default="", help='tunable hyperparameters')
 parser.add_argument('--resume-from', type=Path, default=None, help='resume training from the given checkpoint')
@@ -180,6 +187,7 @@ hyp_params['weight_decay'] = args['weight_decay']
 hyp_params['clip_gradient_norm'] = args['clip_gradient_norm']
 hyp_params['accumulate_grad_batches'] = args['accumulate_grad_batches']
 hyp_params['precision'] = args['precision']
+hyp_params['torch_compile'] = args['torch_compile']
 hyp_params['lr0'] = args['lr0']
 hyp_params['epochs'] = epochs
 hyp_params['strategy'] = args['strategy']
