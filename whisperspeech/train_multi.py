@@ -235,6 +235,7 @@ def parse_dataset_string(s):
 # %% ../nbs/B2. Training (Lightning).ipynb 10
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import LearningRateMonitor
+from lightning.fabric.utilities.rank_zero import rank_zero_only
 import datetime
 import webdataset as wds
 import importlib
@@ -249,7 +250,8 @@ from faker import Faker
 fake = Faker()
 name = (fake.name().split()[0] + "_" + fake.color_name()).lower()
 
-print(name)
+if rank_zero_only.rank == 0:
+    print('Experiment name:', name)
 wandb_logger = WandbLogger(project=project, name=name)
 
 ckpt_callback = pl.callbacks.ModelCheckpoint(
@@ -299,9 +301,9 @@ if hasattr(task, "Tunables"):
     if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
         wandb_logger.experiment.config['tunables'] = dataclasses.asdict(tunables)
 
-    for name in ["lr0", "clip_gradient_norm", "weight_decay", "warmup_steps"]:
-        val = getattr(tunables, name, None)
-        if val is not None: hyp_params[name] = val
+    for k in ["lr0", "clip_gradient_norm", "weight_decay", "warmup_steps"]:
+        val = getattr(tunables, k, None)
+        if val is not None: hyp_params[k] = val
 
 model_kwargs = dict(dataset=train_dss[0])
 if tunables is not None: model_kwargs['tunables'] = tunables
@@ -331,3 +333,9 @@ kwargs = {}
 if 'resume_from' in args:
     kwargs['ckpt_path'] = args['resume_from']
 trainer.fit(model=task, train_dataloaders=train_loader, val_dataloaders=val_loaders, **kwargs)
+
+if rank_zero_only.rank == 0:
+    Path(task_name).mkdir(exist_ok=True, parents=True)
+    fname = f'{task_name}/{name}.model'
+    print('Saving:', fname)
+    model.save_model(fname)
