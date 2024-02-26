@@ -502,7 +502,7 @@ class SADelARTransformer(nn.Module):
         toks = toks[:,:,1:N]
         for j in range(self.quantizers):
             toks[:, j] = torch.roll(toks[:, j], -j)
-        return toks[:]
+        return toks[:,:,:N-4]
 
 # %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 15
 def _make_model(size:str, quantizers:int=4, tunables:Tunables=Tunables(), **kwargs):
