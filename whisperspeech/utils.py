@@ -33,20 +33,20 @@ def shard_glob(input):
 class join_datasets(torch.utils.data.IterableDataset):
     def __init__(self, datasets):
         self.datasets = datasets
+        self.iters = [iter(ds) for ds in self.datasets]
         
     def __iter__(self):
         probs = torch.tensor([getattr(ds, 'weight', 1) for ds in self.datasets], dtype=torch.float)
-        its = [iter(ds) for ds in self.datasets]
         while True:
             try:
-                yield next(its[torch.multinomial(probs, 1)])
+                yield next(self.iters[torch.multinomial(probs, 1)])
             except StopIteration:
-                return    
+                return
     
     def __len__(self):
         return sum([ds.total_samples for ds in self.datasets])
 
-# %% ../nbs/D. Common dataset utilities.ipynb 5
+# %% ../nbs/D. Common dataset utilities.ipynb 6
 def resampler(newsr = 24000, key = 'samples_24k'):
     _last_sr = None
     tform = None
@@ -63,12 +63,12 @@ def resampler(newsr = 24000, key = 'samples_24k'):
     
     return _resample
 
-# %% ../nbs/D. Common dataset utilities.ipynb 6
+# %% ../nbs/D. Common dataset utilities.ipynb 7
 def derived_name(input, kind, base="audio", suffix=".gz", dir=None):
     dir = Path(dir) if dir else Path(input).parent
     return str(dir/(Path(input).name.replace(f"-{base}-", f"-{kind}-") + suffix))
 
-# %% ../nbs/D. Common dataset utilities.ipynb 7
+# %% ../nbs/D. Common dataset utilities.ipynb 8
 def derived_dataset(kind, base='audio', suffix=".gz", decoders=[], dir=None):
     def deriver(url):
         url = str(derived_name(url, kind, base=base, suffix=suffix, dir=dir))
@@ -77,7 +77,7 @@ def derived_dataset(kind, base='audio', suffix=".gz", decoders=[], dir=None):
         ).decode(*decoders)
     return deriver
 
-# %% ../nbs/D. Common dataset utilities.ipynb 8
+# %% ../nbs/D. Common dataset utilities.ipynb 9
 def merge_in(dataset_fun):
     """Merge a dataset into the current one returning samples with the union of keys. Pass in a function
     that takes a URL of a sample and returns a dataset for it (called everytime the URL changes).
@@ -110,7 +110,7 @@ def merge_in(dataset_fun):
             yield news
     return merge_loop
 
-# %% ../nbs/D. Common dataset utilities.ipynb 9
+# %% ../nbs/D. Common dataset utilities.ipynb 10
 def split_to_chunks(stream, ikey='vad.npy', metakeys=[], pad_to_seconds=30, random_shift=False):
     for s in stream:
         audio, sr = s['audio']
@@ -133,11 +133,11 @@ def split_to_chunks(stream, ikey='vad.npy', metakeys=[], pad_to_seconds=30, rand
                 subs[k] = s[k][i]
             yield subs
 
-# %% ../nbs/D. Common dataset utilities.ipynb 10
+# %% ../nbs/D. Common dataset utilities.ipynb 11
 import re
 import tempfile
 
-# %% ../nbs/D. Common dataset utilities.ipynb 11
+# %% ../nbs/D. Common dataset utilities.ipynb 12
 def torch_audio_opus(key, data):
     """Decode audio using the torchaudio library.
 
@@ -156,7 +156,7 @@ def torch_audio_opus(key, data):
             stream.write(data)
         return torchaudio.load(fname)
 
-# %% ../nbs/D. Common dataset utilities.ipynb 12
+# %% ../nbs/D. Common dataset utilities.ipynb 13
 def find_audio(stream, okey='audio', ikeys='flac;mp3;wav;ogg;opus'):
     ikeys = ikeys.split(';')
     for s in stream:
@@ -167,7 +167,7 @@ def find_audio(stream, okey='audio', ikeys='flac;mp3;wav;ogg;opus'):
                 break
             # implicitly skips elements without any audio
 
-# %% ../nbs/D. Common dataset utilities.ipynb 13
+# %% ../nbs/D. Common dataset utilities.ipynb 14
 def vad_dataset(shards, ikey='vad.npy', kind='vad'):
     return wds.WebDataset(shards).compose(
         wds.decode(torch_audio_opus),
@@ -176,7 +176,7 @@ def vad_dataset(shards, ikey='vad.npy', kind='vad'):
         lambda x: split_to_chunks(x, ikey=ikey),
     )
 
-# %% ../nbs/D. Common dataset utilities.ipynb 14
+# %% ../nbs/D. Common dataset utilities.ipynb 15
 @contextmanager
 def AtomicTarWriter(name, throwaway=False):
     tmp = name+".tmp"
@@ -185,7 +185,7 @@ def AtomicTarWriter(name, throwaway=False):
     if not throwaway:
         os.rename(tmp, name)
 
-# %% ../nbs/D. Common dataset utilities.ipynb 15
+# %% ../nbs/D. Common dataset utilities.ipynb 16
 def readlines(fname):
     with open(fname) as file:
         return [line.rstrip() for line in file]

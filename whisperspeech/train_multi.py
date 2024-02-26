@@ -235,11 +235,17 @@ train_dss = [parse_and_call(f'train_ds_{i}', task.load_dataset,
                             parse_dataset_string(train_ds_config) + dataset_config)
              for i,train_ds_config in enumerate(args['training_data'])]
 train_total_samples = sum(ds.total_samples for ds in train_dss)
+train_total_batches = int(train_total_samples / batch_size / int(hyp_params['world_size']))
+if train_total_batches < hyp_params['validate_every_n_steps']:
+    # validate once at the end of every epoch for very short experiments
+    hyp_params['validate_every_n_steps'] = train_total_batches * 2
 
+# persistent_workers=True is critical here so we don't reset the sample shuffling buffers
+# with webdatasets sample shuffling is very bad initially, unless num_workers << num_shards
 train_loader = wds.WebLoader(
     utils.join_datasets(train_dss),
-    num_workers=num_workers, drop_last=False, batch_size=None, shuffle=False,
-).unbatched().shuffle(64*1024).batched(batch_size).with_length(int(train_total_samples / batch_size / int(hyp_params['world_size'])))
+    num_workers=num_workers, drop_last=False, batch_size=None, shuffle=False, persistent_workers=True,
+).unbatched().shuffle(64*1024).batched(batch_size).with_length(train_total_batches)
 
 # load all validation sets
 val_dss = [parse_and_call(f'val_ds_{i}', task.load_dataset,
