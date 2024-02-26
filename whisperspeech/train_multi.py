@@ -84,19 +84,43 @@ class TrainingTask(pl.LightningModule):
             num_steps = math.ceil(dataset_size / self.trainer.accumulate_grad_batches)
             return num_steps
         
+        warmup_steps = self.model_hparams['warmup_steps']
         total_steps = self.model_hparams['epochs'] * num_steps_per_epoch()
-        self.model_hparams['pct_start'] = min(0.3, self.model_hparams['warmup_steps'] / total_steps)
+        self.model_hparams['pct_start'] = min(0.3, warmup_steps / total_steps)
 
         print(f"{self.model_hparams['epochs']=} epochs x {num_steps_per_epoch()=} steps")
-        
-        lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer,
-            pct_start=self.model_hparams['pct_start'],
-            max_lr=[pg.get('lr', lr) for pg in param_groups],
-            steps_per_epoch=num_steps_per_epoch(),
-            epochs=int(self.model_hparams['epochs']),
-            final_div_factor=25
-        )
+
+        if self.model_hparams['lr_schedule'] == 'cosine':
+            lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                optimizer,
+                pct_start=self.model_hparams['pct_start'],
+                max_lr=[pg.get('lr', lr) for pg in param_groups],
+                steps_per_epoch=num_steps_per_epoch(),
+                epochs=int(self.model_hparams['epochs']),
+                final_div_factor=25
+            )
+        elif self.model_hparams['lr_schedule'] == 'linear':
+            warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
+                optimizer, 1e-3, 1, warmup_steps
+            )
+            train_scheduler = torch.optim.lr_scheduler.LinearLR(
+                optimizer, 1, 1/25, total_steps - warmup_steps
+            )
+            lr_scheduler = torch.optim.lr_scheduler.SequentialLR(
+                optimizer, schedulers=[warmup_scheduler, train_scheduler], milestones=[warmup_steps]
+            )
+        elif self.model_hparams['lr_schedule'] == 'wsd':
+            warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
+                optimizer, 1e-3, 1, warmup_steps
+            )
+            train_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+                optimizer, [int(total_steps - warmup_steps - 0.1*total_steps)], 1/8,
+            )
+            lr_scheduler = torch.optim.lr_scheduler.SequentialLR(
+                optimizer, schedulers=[warmup_scheduler, train_scheduler], milestones=[warmup_steps]
+            )
+        else:
+            raise Exception("Unknown learning rate schedule")
 
         return [optimizer], [{'scheduler': lr_scheduler, 'interval': 'step'}]
     
@@ -156,6 +180,7 @@ parser.add_argument('--epochs', type=int, default=10, help='total training epoch
 parser.add_argument('--validate-every-n-steps', type=int, default=500, help='how training steps to run between validations')
 parser.add_argument('--weight-decay', type=float, default=1e-2, help='optimizer weight decay')
 parser.add_argument('--lr0', type=float, default=1e-4, help='optimizer initial learning rate')
+parser.add_argument('--lr-schedule', type=str, default="cosine", help='the learning rate schedule [cosine, linear or wsd]')
 parser.add_argument('--clip-gradient-norm', type=float, default=None, help='enable gradient norm clipping')
 parser.add_argument('--accumulate-grad-batches', type=int, default=1, help='perform the optimizer step only after going through several batches of samples')
 parser.add_argument('--precision', type=str, default="16-mixed", help="floating point precision")
@@ -189,6 +214,7 @@ hyp_params['accumulate_grad_batches'] = args['accumulate_grad_batches']
 hyp_params['precision'] = args['precision']
 hyp_params['torch_compile'] = args['torch_compile']
 hyp_params['lr0'] = args['lr0']
+hyp_params['lr_schedule'] = args['lr_schedule']
 hyp_params['epochs'] = epochs
 hyp_params['strategy'] = args['strategy']
 if 'SLURM_NTASKS' in os.environ:
