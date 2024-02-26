@@ -452,6 +452,10 @@ class SADelARTransformer(nn.Module):
         self.switch_dtypes(dtype)
         if torch_compile:
             self.generate_next = torch.compile(self.generate_next, mode="reduce-overhead", fullgraph=True)
+            
+    def optimize_training(self):
+        self.decoder = torch.compile(self.decoder, fullgraph=True, mode="reduce-overhead")
+        self._encoder = torch.compile(self._encoder, fullgraph=True, mode="reduce-overhead")
 
     @property
     def device(self):

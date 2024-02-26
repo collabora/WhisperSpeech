@@ -196,7 +196,7 @@ class Encoder(nn.Module):
     def forward(self, Stoks, positions, lang_emb=None):
         xin = self.embedding(Stoks)
 
-        if lang_emb is not None: xin += lang_emb
+        if lang_emb is not None: xin = xin + lang_emb
         
         x = (xin +
              self.positional_embedding[positions]).to(xin.dtype)
@@ -306,7 +306,7 @@ class TSARTransformer(nn.Module):
             x = (self.embeddings.embedding(in_stoks) + 
                  self.embeddings.positional_embedding[in_stoks_positions] +
                  cps_emb).to(xenc[0].dtype)
-            x = self.decoder(x, in_stoks_positions, xenc, xenc_positions)
+            x = self.decoder(x, in_stoks_positions, xenc.clone(), xenc_positions)
             logits = self.embeddings.embedding.unembed(x)
             logits = logits * self.tunables.output_mult / (self.width / self.base_width)
 
@@ -382,6 +382,12 @@ class TSARTransformer(nn.Module):
         self.switch_dtypes(dtype)
         if torch_compile:
             self.generate_next = torch.compile(self.generate_next, mode="reduce-overhead", fullgraph=True)
+            
+    def optimize_training(self):
+        # breaks with: Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run.
+        # somewhere inside LayerNorm???
+        self.encoder = torch.compile(self.encoder, fullgraph=True, mode="reduce-overhead")
+        self.decoder = torch.compile(self.decoder, fullgraph=True, mode="reduce-overhead")
 
     @property
     def device(self):
