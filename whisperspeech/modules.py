@@ -141,7 +141,7 @@ class MultiHeadAttention(nn.Module):
             k, v = self.k_cache[:k.shape[0]], self.v_cache[:v.shape[0]]
 
         if mask is not None:
-            mask = mask[q_positions]
+            mask = mask[q_positions,:k.shape[-2]]
             
         wv = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, dropout_p=0, is_causal=causal)
         
