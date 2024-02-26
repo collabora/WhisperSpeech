@@ -460,11 +460,11 @@ class TSARTransformer(nn.Module):
         with inference.inference_context():
             for i in it:
                 toks[:,i+1] = self.generate_next(toks[:,i:i+1], toks_positions[i:i+1], cps_emb, xenc, xenc_positions, T, top_k)[:,0]
-                if i % 25 == 0 and (toks[:,i+1] == self.stoks_codes-1).all(): return toks[:,:i+1]
+                if i % 25 == 0 and (toks[:,i+1] == self.stoks_codes-1).all(): return toks[:,1:i+1]
 
                 # for profiling, debugging or early exit
                 if step is not None: step()
-        return toks[:,:]
+        return toks[:,1:]
     
     @torch.no_grad()
     def generate_batch(self, txts, N=None, T=1.1, top_k=7, show_progress_bar=True):
