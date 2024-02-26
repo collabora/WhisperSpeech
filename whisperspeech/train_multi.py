@@ -211,6 +211,7 @@ hyp_params['warmup_steps'] = args['warmup_steps']
 hyp_params['weight_decay'] = args['weight_decay']
 hyp_params['clip_gradient_norm'] = args['clip_gradient_norm']
 hyp_params['accumulate_grad_batches'] = args['accumulate_grad_batches']
+hyp_params['validate_every_n_steps'] = args["validate_every_n_steps"]
 hyp_params['precision'] = args['precision']
 hyp_params['torch_compile'] = args['torch_compile']
 hyp_params['lr0'] = args['lr0']
@@ -315,7 +316,8 @@ trainer = pl.Trainer(strategy=hyp_params['strategy'],
                   precision=hyp_params['precision'],
                   gradient_clip_val=hyp_params['clip_gradient_norm'],
                   accumulate_grad_batches=hyp_params['accumulate_grad_batches'],
-                  val_check_interval=args.pop("validate_every_n_steps"),
+                  val_check_interval=hyp_params['validate_every_n_steps'],
+                  check_val_every_n_epoch=None,
                   enable_checkpointing=True,
                   logger=wandb_logger,
                   num_nodes=int(os.environ.get('SLURM_NNODES', 1)),
