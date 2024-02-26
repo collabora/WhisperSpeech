@@ -412,7 +412,7 @@ class TSARTransformer(nn.Module):
         return ttoks, cpss, langs
     
     @torch.no_grad()
-    def generate(self, txt, cps=15, lang="en", N=None, bs=1, T=0.7, top_k=None, step=None, show_progress_bar=True):
+    def generate(self, txt, cps=15, lang="en", stoks_prompt=None, N=None, bs=1, T=0.7, top_k=None, step=None, show_progress_bar=True):
         self.ensure_tokenizer()
         N = N or self.stoks_len
         dev = self.device
@@ -439,20 +439,24 @@ class TSARTransformer(nn.Module):
         if not isinstance(langs, torch.Tensor):
             langs = torch.tensor(langs, device=dev)
             langs = F.pad(langs, (1, self.ttoks_len - len(langs) - 1), value=languages.to_id(lang0)).unsqueeze(0)
-        it = range(0,N-1)
-        if show_progress_bar: it = progress_bar(it)
 
         toks = torch.zeros((bs,N), dtype=torch.long, device=dev)
         toks[:,0] = self.stoks_codes-1
+        start = 0
+        if stoks_prompt is not None:
+            toks[:,1:len(stoks_prompt)+1] = stoks_prompt
+            start = len(stoks_prompt)
+        it = range(start+1,N-1)
+        if show_progress_bar: it = progress_bar(it)
+
         toks_positions = torch.arange(N, device=dev)
         with record_function("encode"):
             ttoks, langs, cpss = [x.repeat(bs, 1) for x in (ttoks, langs, cpss)]
             xenc, xenc_positions, cps_emb = self.run_encoder(ttoks, langs, cpss)
             toks_positions = torch.arange(N+1, device=dev)
-        # contrary to S2A this model works without prefill and is actually a tiny bit faster
-        # with record_function("prefill"):
-        #     toks[0,1] = self.generate_one(toks[:,:1], toks_positions[:1], cps_emb, xenc, xenc_positions, T, top_k)
-
+        
+        with record_function("prefill"):
+            toks[:,start+1] = self.generate_one(toks[:,:start+1].contiguous(), toks_positions[:start+1], cps_emb, xenc, xenc_positions, T, top_k)
         with inference.inference_context():
             for i in it:
                 toks[:,i+1] = self.generate_next(toks[:,i:i+1], toks_positions[i:i+1], cps_emb, xenc, xenc_positions, T, top_k)[:,0]

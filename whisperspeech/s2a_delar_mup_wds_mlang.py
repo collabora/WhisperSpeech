@@ -470,14 +470,19 @@ class SADelARTransformer(nn.Module):
         return self.generate_one(*args, **kwargs)
     
     @torch.no_grad()
-    def generate(self, stoks, speakers, langs=None, N=None, bs=1, T=0.7, top_k=None, show_progress_bar=True, step=None, subsample_enc=False):
+    def generate(self, stoks, speakers, langs=None, atoks_prompt=None, N=None, bs=1, T=0.7, top_k=None, show_progress_bar=True, step=None, subsample_enc=False):
         dev = self.device
         N = N or len(stoks) * 3
         stoks = F.pad(stoks.to(dev), (1, self.stoks_len - len(stoks) - 1), value=self.stoks_codes-1).unsqueeze(0)
         speakers = speakers.to(device=dev, dtype=self.dtype)
         toks = torch.full((bs,self.quantizers,self.ctx_n), self.codes+1, dtype=torch.long, device=dev)
         T = torch.tensor(T, device=dev)
-        it = range(1,min(N,self.ctx_n-1))
+        start = 0
+        if atoks_prompt is not None:
+            start = atoks_prompt.shape[-1]
+            for i in range(self.quantizers):
+                toks[:,i,1+i:start+i+1] = atoks_prompt[:,i]
+        it = range(start+1,min(N,self.ctx_n-1))
         if show_progress_bar: it = progress_bar(it)
         with record_function("encode"):
             stoks, speakers = [x.repeat(bs, 1) for x in (stoks, speakers)]
