@@ -188,6 +188,9 @@ class Tunables:
 
     random :bool = False
     random_finetune :bool = False
+        
+    # backwards compat
+    force_hidden_to_emb: bool = False
 
     def __post_init__(self):
         # randomize the hyperparams if requested
@@ -218,6 +221,7 @@ class Tunables:
         old_default('rope', False)
         old_default('linear_heads', True)
         old_default('causal_encoder', False)
+        old_default('force_hidden_to_emb', True)
         return args
             
 class SADelARTransformer(nn.Module):
@@ -249,7 +253,8 @@ class SADelARTransformer(nn.Module):
         self.semantic_embedding = nn.Embedding(stoks_codes, stoks_width)
         if self.emb_factor:
             self.emb_to_hidden = nn.Linear(stoks_width, width)
-            self.hidden_to_emb = nn.Linear(width, stoks_width)
+            if self.tunables.causal_encoder or self.tunables.force_hidden_to_emb:
+                self.hidden_to_emb = nn.Linear(width, stoks_width)
         
         if self.spk_factor:
             self.spk_to_hidden = nn.Linear(spk_width, width)
