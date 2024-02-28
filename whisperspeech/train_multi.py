@@ -188,6 +188,7 @@ parser.add_argument('--torch-compile', type=bool, default=False, help='compile (
 parser.add_argument('--warmup-steps', type=int, default=10000, help='total number steps during which the learning rate rises (defaults to 10k updates)')
 parser.add_argument('--tunables', type=str, default="", help='tunable hyperparameters')
 parser.add_argument('--resume-from', type=Path, default=None, help='resume training from the given checkpoint')
+parser.add_argument('--load-from', type=Path, default=None, help='initialize the weights from the given model')
 parser.add_argument('--strategy', type=str, default='ddp', help='distributed training strategy')
 parser.add_argument('--wandb-suffix', type=str, default=None, help='W&B project name suffix')
 parser.add_argument('--wandb-task-name', type=str, default=None, help='Task name for the W&B project name')
@@ -239,6 +240,7 @@ from lightning.fabric.utilities.rank_zero import rank_zero_only
 import datetime
 import webdataset as wds
 import importlib
+import dataclasses
 
 torch.set_float32_matmul_precision('medium')
 
@@ -293,22 +295,24 @@ val_loaders = [wds.WebLoader(
     ).unbatched().batched(batch_size).with_length(val_ds.total_samples // batch_size)
    for val_ds in val_dss]
 
-
 tunables = None
 if hasattr(task, "Tunables"):
-    import dataclasses
     tunables = parse_and_call('tunables', task.Tunables, tunables_args, log_to_wandb=False)
-    if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
-        wandb_logger.experiment.config['tunables'] = dataclasses.asdict(tunables)
-
+    # override command line args from the tunables object
     for k in ["lr0", "clip_gradient_norm", "weight_decay", "warmup_steps"]:
         val = getattr(tunables, k, None)
         if val is not None: hyp_params[k] = val
+    
+    if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
+        wandb_logger.experiment.config['tunables'] = dataclasses.asdict(tunables)
 
-model_kwargs = dict(dataset=train_dss[0])
-if tunables is not None: model_kwargs['tunables'] = tunables
-model = parse_and_call('model', task.make_model, task_args, model_kwargs)
-
+if args['load_from']:
+    model = task.load_model(str(args['load_from']))
+else:
+    model_kwargs = dict(dataset=train_dss[0])
+    if tunables is not None: model_kwargs['tunables'] = tunables
+    model = parse_and_call('model', task.make_model, task_args, model_kwargs)
+    
 task = TrainingTask(model, model_hparams=hyp_params)
 
 trainer = pl.Trainer(strategy=hyp_params['strategy'],
