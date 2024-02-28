@@ -32,6 +32,9 @@ from .modules import *
 def rand(start, end):
     return random.random() * (end - start) + start
 
+def logrand(start, end):
+    return 10**rand(math.log10(start), math.log10(end))
+
 # %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 9
 def random_trunc(random_trunc_p, atoks_len = 2250, stoks_len = 750):
     atoks_per_second = atoks_len / 30
@@ -184,6 +187,7 @@ class Tunables:
     warmup_steps :float = 2000
 
     random :bool = False
+    random_finetune :bool = False
 
     def __post_init__(self):
         # randomize the hyperparams if requested
@@ -200,6 +204,11 @@ class Tunables:
             self.lr0 = 3e-3
             self.clip_gradient_norm = 10**rand(-1,1)
             self.warmup_steps = 100*(10**rand(1.18,1.3))
+        if self.random_finetune:
+            self.lr0 = logrand(1e-5,1e-3)
+            self.clip_gradient_norm = logrand(1e-2,2e-1)
+            self.weight_decay = logrand(1e-5,1e-1)
+            self.warmup_steps = logrand(20,500)
             
     @staticmethod
     def upgrade(args):
@@ -539,3 +548,6 @@ def make_model(size:str, quantizers:int=4, frozen_embeddings_model:str=None, fro
     if vqmodel: model.load_frozen_semantic_embeddings(vqmodel)
     if amodel: model.load_frozen_acoustic_embeddings(amodel)
     return model
+
+def load_model(*args, **kwargs):
+    return SADelARTransformer.load_model(*args, **kwargs)
