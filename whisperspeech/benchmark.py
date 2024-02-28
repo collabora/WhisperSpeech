@@ -34,7 +34,7 @@ def benchmark(
 ):
     max_batch_size = max_batch_size or batch_size
 
-    pipe = Pipeline(s2a_ref='collabora/whisperspeech:s2a-q4-tiny-en+pl.model', optimize=False)
+    pipe = Pipeline(t2s_ref=t2s_ref, s2a_ref=s2a_ref, optimize=False)
 
     if t2s_ctx_n:
         pipe.t2s.stoks_len = t2s_ctx_n
@@ -50,6 +50,7 @@ def benchmark(
 
     txt = "This is the first demo of Whisper Speech, a fully open source text-to-speech model trained by Collabora and Lion on the Juwels supercomputer."
     stoks = torch.zeros(250)
+    t = len(stoks)/25
     
     def t2s():
         return pipe.t2s.generate(txt, bs=batch_size, show_progress_bar=False)
@@ -62,4 +63,5 @@ def benchmark(
     
     t2s_mean, t2s_std = measure(t2s, iterations=iterations)
     s2a_mean, s2a_std = measure(s2a, iterations=iterations)
-    print(f"T2S: {t2s_mean:.3f} ± {t2s_std:.3f} s    S2A: {s2a_mean:.3f} ± {s2a_std:.3f} s")
+    print(f"T2S: {t2s_mean:.3f} ± {t2s_std:.3f} s    S2A: {s2a_mean:.3f} ± {s2a_std:.3f} s    Total: {t2s_mean+s2a_mean:.3f} s")
+    print(f"     {t/t2s_mean:.2f}x                  {t/s2a_mean:.2f}x                    {t/(t2s_mean+s2a_mean):.2f}x")
