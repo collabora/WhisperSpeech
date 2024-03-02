@@ -6,10 +6,10 @@ __all__ = ['Pipeline']
 # %% ../nbs/7. Pipeline.ipynb 1
 from os.path import expanduser
 import torch
-from .t2s_up_wds_mlang_enclm import TSARTransformer
-from .s2a_delar_mup_wds_mlang import SADelARTransformer
-from .a2wav import Vocoder
-from . import inference
+from whisperspeech.t2s_up_wds_mlang_enclm import TSARTransformer
+from whisperspeech.s2a_delar_mup_wds_mlang import SADelARTransformer
+from whisperspeech.a2wav import Vocoder
+from whisperspeech import inference
 import traceback
 from pathlib import Path
 

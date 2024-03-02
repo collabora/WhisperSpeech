@@ -19,7 +19,7 @@ import webdataset as wds
 import whisperx
 
 from whisperspeech.inference import get_compute_device
-from . import utils
+from whisperspeech import utils
 
 # %% ../nbs/1B. Voice activity detection.ipynb 5
 # some of the original file names have a dot in their name
