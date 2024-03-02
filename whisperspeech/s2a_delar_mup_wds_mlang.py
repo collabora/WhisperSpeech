@@ -348,7 +348,7 @@ class SADelARTransformer(nn.Module):
             if self.positional_embeddings is not None: semb = semb + self.positional_embeddings
             positions = torch.arange(0, semb.shape[1], device=semb.device)
             xenc = self._encoder(semb, positions)
-        if self.training:
+        if self.training and self.tunables.causal_encoder:
             enc_logits = (self.hidden_to_emb(xenc) @ self.semantic_embedding.weight.to(xenc.dtype).T).float()
             enc_logits = enc_logits * self.tunables.output_mult / (self.width / self.base_width)
         else:
