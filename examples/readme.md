@@ -25,7 +25,7 @@ Contributions are welcome! If you have suggestions for improvements or new featu
 | Feature                           | gui_file_to...<br>audio_playback.py | gui_text_to...<br>audio_playback.py | minimal.py | text_to_audio...<br>file.py | text_to_audio...<br>playback.py |
 |:---------------------------------:|:-----------------------------------:|:-----------------------------------:|:----------:|:-------------------------:|:-------------------------------:|
 | **GUI Support**                   | <center>✅</center>                  | <center>✅</center>                  | <center>❌</center> | <center>❌</center>       | <center>❌</center>             |
-| **Input Method**                  | File                                | Text Entry                          | Text Entry | Text Entry                | Text Entry                      |
+| **Input Method**                  | File                                | Text Entry                          | Predefined Text | Predefined Text           | Predefined Text                 |
 | **Output Format**                 | Audio Playback                      | Audio Playback                      | WAV File   | WAV File                  | Audio Playback                  |
 | **Queue Management<br>for Playback** | <center>✅</center>                  | <center>✅</center>                  | <center>❌</center> | <center>❌</center>       | <center>✅</center>            |
 | **Live Text-to-Speech<br> Conversion**| <center>✅</center>                  | <center>✅</center>                  | <center>✅</center> | <center>✅</center>       | <center>✅</center>            |
