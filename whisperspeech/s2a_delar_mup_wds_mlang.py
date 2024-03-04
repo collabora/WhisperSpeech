@@ -74,7 +74,7 @@ def load_dataset(
         randomize_speakers:bool=False,
     ):
     import webdataset as wds
-    from . import utils, languages
+    from whisperspeech import utils, languages
 
     shards = utils.shard_glob(atoks_shard_spec)
     excludes = {x for file in exclude_files.split() for x in utils.readlines(file)} if exclude_files else set()
@@ -542,7 +542,7 @@ def _make_model(size:str, quantizers:int=4, tunables:Tunables=Tunables(), **kwar
 
 def make_model(size:str, quantizers:int=4, frozen_embeddings_model:str=None, frozen_acoustic_embeddings:bool=False, spk_width:int=None, tunables:Tunables=Tunables(), dataset=None):
     from encodec.model import EncodecModel
-    from . import vq_stoks
+    from whisperspeech import vq_stoks
 
     amodel = EncodecModel.encodec_model_24khz() if frozen_acoustic_embeddings else None
     vqmodel = vq_stoks.RQBottleneckTransformer.load_model(frozen_embeddings_model) if frozen_embeddings_model else None
