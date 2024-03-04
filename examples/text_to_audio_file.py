@@ -10,7 +10,7 @@ INSTALLATION INSTRUCTIONS~
 https://pytorch.org/get-started/locally/
 
 (3)  pip3 install WhisperSpeech
-(4)  pip3 install soundfile==0.12.1 pydub==0.25.1
+(4)  pip3 install pydub==0.25.1
 (5)  python text_to_audio_file.py
 '''
 
