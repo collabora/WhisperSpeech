@@ -21,3 +21,12 @@ Contributions are welcome! If you have suggestions for improvements or new featu
 ### `text_to_audio_playback.py`
 
 - **Description**: This script processes text one sentence at a time and adds them to a queue for playback, similar to `gui_text_to_audio_playback.py` but without the graphical interface. It's designed for users who prefer a command-line approach but still want the efficiency of queued playback.
+
+| Feature                           | gui_file_to...<br>audio_playback.py | gui_text_to...<br>audio_playback.py | minimal.py | text_to_audio...<br>file.py | text_to_audio...<br>playback.py |
+|:---------------------------------:|:-----------------------------------:|:-----------------------------------:|:----------:|:-------------------------:|:-------------------------------:|
+| **GUI Support**                   | <center>✅</center>                  | <center>✅</center>                  | <center>❌</center> | <center>❌</center>       | <center>❌</center>             |
+| **Input Method**                  | File                                | Text Entry                          | Text Entry | Text Entry                | Text Entry                      |
+| **Output Format**                 | Audio Playback                      | Audio Playback                      | WAV File   | WAV File                  | Audio Playback                  |
+| **Queue Management<br>for Playback** | <center>✅</center>                  | <center>✅</center>                  | <center>❌</center> | <center>❌</center>       | <center>✅</center>            |
+| **Live Text-to-Speech<br> Conversion**| <center>✅</center>                  | <center>✅</center>                  | <center>✅</center> | <center>✅</center>       | <center>✅</center>            |
+| **Batch Processing**              | <center>✅</center>                  | <center>❌</center>                  | <center>❌</center> | <center>❌</center>       | <center>❌</center>             |
