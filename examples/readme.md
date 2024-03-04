@@ -14,19 +14,15 @@ Contributions are welcome! If you have suggestions for improvements or new featu
 
 - Minimalistic script that takes text input and outputs an audio file. It's streamlined for simplicity and quick use, without the additional features of queue management or GUI.
 
-### `text_to_audio_file.py`
-
-- Demonstrates the basic functionality of converting text to speech. It speaks the provided text and creates an audio file named `output_audio.wav` in the script's directory.
-
 ### `text_to_audio_playback.py`
 
 - Processes text one sentence at a time and adds them to a queue for playback, similar to `gui_text_to_audio_playback.py` but without the graphical interface. It's designed for users who prefer a command-line approach but still want the efficiency of queued playback.
 
-| Feature                           | gui_file_to...<br>audio_playback.py | gui_text_to...<br>audio_playback.py | minimal.py | text_to_audio...<br>file.py | text_to_audio...<br>playback.py |
-|:---------------------------------:|:-----------------------------------:|:-----------------------------------:|:----------:|:-------------------------:|:-------------------------------:|
-| **GUI Support**                   | <center>✅</center>                  | <center>✅</center>                  | <center>❌</center> | <center>❌</center>       | <center>❌</center>             |
-| **Input Method**                  | File                                | Text Entry                          | Predefined Text | Predefined Text           | Predefined Text                 |
-| **Output Format**                 | Audio Playback                      | Audio Playback                      | WAV File   | WAV File                  | Audio Playback                  |
-| **Queue Management<br>for Playback** | <center>✅</center>                  | <center>✅</center>                  | <center>❌</center> | <center>❌</center>       | <center>✅</center>            |
-| **Live Text-to-Speech<br> Conversion**| <center>✅</center>                  | <center>✅</center>                  | <center>✅</center> | <center>✅</center>       | <center>✅</center>            |
-| **Batch Processing**              | <center>✅</center>                  | <center>❌</center>                  | <center>❌</center> | <center>❌</center>       | <center>❌</center>             |
+| Feature                           | gui_file_to...<br>audio_playback.py | gui_text_to...<br>audio_playback.py | minimal.py | text_to_audio...<br>playback.py |
+|:---------------------------------:|:-----------------------------------:|:-----------------------------------:|:----------:|:-------------------------------:|
+| **GUI Support**                   | <center>✅</center>                  | <center>✅</center>                  | <center>❌</center> | <center>❌</center>             |
+| **Input Method**                  | File                                | Text Entry                          | Predefined Text | Predefined Text                 |
+| **Output Format**                 | Audio Playback                      | Audio Playback                      | WAV File   | Audio Playback                  |
+| **Queue Management<br>for Playback** | <center>✅</center>                  | <center>✅</center>                  | <center>❌</center> | <center>✅</center>            |
+| **Live Text-to-Speech<br> Conversion**| <center>✅</center>                  | <center>✅</center>                  | <center>✅</center> | <center>✅</center>            |
+| **Batch Processing**              | <center>✅</center>                  | <center>❌</center>                  | <center>❌</center> | <center>❌</center>             |
