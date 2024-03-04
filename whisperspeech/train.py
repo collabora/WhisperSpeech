@@ -115,7 +115,7 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
           weight_decay=0.1, warmup_steps=10000, epochs=10, clip_gradient_norm=None,
           dl_workers=8, visual_class = SimpleVisual, profiler=None,
           run_valid_every_iters=8000, table_row_every_iters=80000, chkpt_every_iters=None,
-          device="cuda", trainable_params=None, callback=None):
+          device="cuda", trainable_params=None, callback=None, lr_schedule='wsd'):
     if chkpt_every_iters is None:
         chkpt_every_iters = table_row_every_iters
     
@@ -148,7 +148,7 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
         model.setup(device)
     
     try:
-        scheduler = None
+        lr_scheduler = None
 
         if trainable_params is None: trainable_params = model.parameters()
         all_params = set(trainable_params)
@@ -180,20 +180,38 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
         optimizer = torch.optim.AdamW(lr=lr, betas=(0.9, 0.95), fused=device!='cpu', params=groups)
         model._optimizer = optimizer
         scaler = torch.cuda.amp.GradScaler(enabled=half)
-        warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
-            optimizer, 1e-3, 1, warmup_steps
-        )
-        train_scheduler = torch.optim.lr_scheduler.LinearLR(
-            optimizer, 1, 1/25, total_steps - warmup_steps
-        )
-        scheduler = torch.optim.lr_scheduler.SequentialLR(
-            optimizer, schedulers=[warmup_scheduler, train_scheduler], milestones=[warmup_steps]
-        )
-#         pct_start = min(0.3, warmup_steps / total_steps)
-#         scheduler = torch.optim.lr_scheduler.OneCycleLR(
-#             optimizer, pct_start=pct_start, steps_per_epoch=math.ceil(train.total_samples/bs), epochs=epochs,
-#             max_lr=[pg.get('lr', lr) for pg in groups],
-#             final_div_factor=25)
+        
+        if lr_schedule == 'cosine':
+            lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                optimizer,
+                pct_start=self.model_hparams['pct_start'],
+                max_lr=[pg.get('lr', lr) for pg in param_groups],
+                steps_per_epoch=num_steps_per_epoch(),
+                epochs=int(self.model_hparams['epochs']),
+                final_div_factor=25
+            )
+        elif lr_schedule == 'linear':
+            warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
+                optimizer, 1e-3, 1, warmup_steps
+            )
+            train_scheduler = torch.optim.lr_scheduler.LinearLR(
+                optimizer, 1, 1/25, total_steps - warmup_steps
+            )
+            lr_scheduler = torch.optim.lr_scheduler.SequentialLR(
+                optimizer, schedulers=[warmup_scheduler, train_scheduler], milestones=[warmup_steps]
+            )
+        elif lr_schedule == 'wsd':
+            warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
+                optimizer, 1e-3, 1, warmup_steps
+            )
+            train_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+                optimizer, [int(total_steps - warmup_steps - 0.1*total_steps)], 1/8,
+            )
+            lr_scheduler = torch.optim.lr_scheduler.SequentialLR(
+                optimizer, schedulers=[warmup_scheduler, train_scheduler], milestones=[warmup_steps]
+            )
+        else:
+            raise Exception("Unknown learning rate schedule")
         
         it = 0
         next_val_it = it + 50
@@ -228,7 +246,7 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
                     scaler.step(optimizer)
                     scaler.update()
 
-                    scheduler.step()
+                    lr_scheduler.step()
 
                     if profiler is not None: profiler.step()
 
@@ -261,7 +279,7 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
                         with record_function("model.train"):
                             model.train()
                     with record_function("plotting"):
-                        visual.add_data(it, scheduler.get_last_lr(), avg_train_loss, val_loss)
+                        visual.add_data(it, lr_scheduler.get_last_lr(), avg_train_loss, val_loss)
                 
                 if it >= next_table_it:
                     visual.add_table_row(it, avg_train_loss, val_loss)
