@@ -10,6 +10,7 @@ import time
 import random
 import re
 from pathlib import Path
+import requests
 
 from fastprogress import progress_bar, master_bar
 import fastprogress
@@ -225,13 +226,21 @@ else:
     hyp_params['world_size'] = 1
 
 # %% ../nbs/B2. Training (Lightning).ipynb 9
-def load_file_reference(matchobj):
-    with open(matchobj.group(1), 'r') as f:
-        return f.read().strip()
-
 def parse_dataset_string(s):
+    cwd = [None]
+    def load_file_reference(matchobj):
+        fname = matchobj.group(1)
+        cwd[0] = Path(fname).parent
+        if fname.startswith('http://') or fname.startswith('https://'):
+            response = requests.get(target_url)
+            return response.text.strip()
+        else:
+            with open(fname, 'r') as f:
+                return f.read().strip()
     s = re.sub('@([^ ]+)', load_file_reference, s)
-    return shlex.split(s)
+    arg_list = shlex.split(s)
+    if cwd[0]: arg_list += ['--cwd', str(cwd[0])]
+    return arg_list
 
 # %% ../nbs/B2. Training (Lightning).ipynb 10
 from lightning.pytorch.loggers import WandbLogger

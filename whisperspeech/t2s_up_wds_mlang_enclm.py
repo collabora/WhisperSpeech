@@ -80,12 +80,13 @@ def load_dataset(
     weight:float=1,
     validation:bool=False,
     exclude_files:str=None,
+    cwd:Path=None,
 ):
     import webdataset as wds
     from . import utils
 
-    shards = utils.shard_glob(txt_shard_spec)
-    excludes = {x for file in exclude_files.split() for x in utils.readlines(file)} if exclude_files else set()
+    shards = utils.shard_glob(cwd/txt_shard_spec)
+    excludes = {x for file in exclude_files.split() for x in utils.readlines(cwd/file)} if exclude_files else set()
     
     language = languages.to_id(language)
     
@@ -96,7 +97,7 @@ def load_dataset(
     same_on_all_nodes = lambda urls: urls # will only be used for validation
     ds = wds.WebDataset(shards, resampled=not validation, nodesplitter=same_on_all_nodes).compose(
         wds.decode(),
-        utils.merge_in(utils.derived_dataset('eqvad-stoks', base=txt_kind, suffix='', dir=stoks_shard_dir)),
+        utils.merge_in(utils.derived_dataset('eqvad-stoks', base=txt_kind, suffix='', dir=cwd/stoks_shard_dir)),
         # discard validation samples, select samples > .5s
         wds.select(lambda s: s['__key__'] not in excludes and s['stoks.npy'].shape[-1] > 12),
         tokenizer('txt', 'ttoks', length=550),

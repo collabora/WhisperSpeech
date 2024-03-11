@@ -72,12 +72,13 @@ def load_dataset(
         validation:bool=False,
         exclude_files:str=None,
         randomize_speakers:bool=False,
+        cwd:Path=None,
     ):
     import webdataset as wds
     from whisperspeech import utils, languages
 
-    shards = utils.shard_glob(atoks_shard_spec)
-    excludes = {x for file in exclude_files.split() for x in utils.readlines(file)} if exclude_files else set()
+    shards = utils.shard_glob(cwd/atoks_shard_spec)
+    excludes = {x for file in exclude_files.split() for x in utils.readlines(cwd/file)} if exclude_files else set()
     
     def check_for_nan(s):
         if torch.tensor(s['spk_emb.npy']).isnan().any(): print("found NaN:", s['__key__'])
@@ -90,7 +91,7 @@ def load_dataset(
     same_on_all_nodes = lambda urls: urls # will only be used for validation
     ds = wds.WebDataset(shards, resampled=not validation, nodesplitter=same_on_all_nodes).compose(
         wds.decode(),
-        utils.merge_in(utils.derived_dataset('maxvad-stoks', base='atoks-3kbps', suffix='', dir=stoks_shard_dir)),
+        utils.merge_in(utils.derived_dataset('maxvad-stoks', base='atoks-3kbps', suffix='', dir=cwd/stoks_shard_dir)),
         wds.map(check_for_nan),
         wds.select(lambda s: s['__key__'] not in excludes),
         wds.map_dict(**{'spk_emb.npy':np.nan_to_num}), # remove nans from the speaker embedding model
