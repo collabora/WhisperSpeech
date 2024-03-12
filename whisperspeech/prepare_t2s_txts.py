@@ -30,7 +30,8 @@ class Transcriber:
     def __init__(self, model_size, lang=False):
         self.model = whisperx.asr.load_model(
             model_size, get_compute_device(), compute_type="float16", language=lang,
-            asr_options=dict(repetition_penalty=1, no_repeat_ngram_size=0, prompt_reset_on_temperature=0.5))
+            asr_options=dict(repetition_penalty=1, no_repeat_ngram_size=0, prompt_reset_on_temperature=0.5,
+                             max_new_tokens=500, clip_timestamps=None, hallucination_silence_threshold=None))
         # without calling vad_model at least once the rest segfaults for some reason...
         self.model.vad_model({"waveform": torch.zeros(1, 16000), "sample_rate": 16000})
         
