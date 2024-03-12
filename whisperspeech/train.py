@@ -22,6 +22,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data.dataloader import DataLoader
 from torch.profiler import record_function
+from whisperspeech import utils
 
 import webdataset as wds
 
@@ -133,10 +134,10 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
     if isinstance(train, torch.utils.data.IterableDataset):
 #         train_loader = DataLoader(train, batch_size=None, num_workers=dl_workers, pin_memory=True, drop_last=False, shuffle=False)
 #         val_loader = DataLoader(val, batch_size=None, num_workers=dl_workers, pin_memory=True, drop_last=False)
-        train_loader = wds.WebLoader(train, batch_size=None, num_workers=dl_workers, drop_last=drop_last) \
-            .unbatched().shuffle(1024).batched(bs, partial=False)
-        val_loader = wds.WebLoader(val, batch_size=None, num_workers=dl_workers, drop_last=drop_last) \
-            .unbatched().shuffle(1024).batched(bs)
+        train_loader = wds.WebLoader(utils.join_datasets([train]), batch_size=None, shuffle=False, num_workers=dl_workers, drop_last=drop_last, persistent_workers=True) \
+            .unbatched().shuffle(1024).batched(bs, partial=False).with_length(total_steps)
+        val_loader = wds.WebLoader(val, batch_size=None, shuffle=False, num_workers=dl_workers, drop_last=drop_last, ) \
+            .unbatched().batched(bs).with_length(val.total_samples // bs)
     else:
         train_loader = DataLoader(train, batch_size=bs, num_workers=dl_workers, pin_memory=True, drop_last=drop_last, shuffle=True)
         val_loader = DataLoader(val, batch_size=bs, num_workers=dl_workers, pin_memory=True, drop_last=drop_last)
