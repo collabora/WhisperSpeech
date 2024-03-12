@@ -215,9 +215,9 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
             raise Exception("Unknown learning rate schedule")
         
         it = 0
-        next_val_it = it + 50
+        next_val_it = 0
         next_chkpt_it = chkpt_every_iters
-        next_table_it = table_row_every_iters
+        next_table_it = 0
                 
         visual.show()
 
@@ -235,31 +235,14 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
                     with torch.autocast(device_type=device, dtype=torch.float16 if half else torch.float32, enabled=device!='cpu'):
                         ps, loss = model(*args)
                     loss = loss.mean()
-
+                    
                 with record_function("backward"):
                     scaler.scale(loss).backward()
-
-                    if clip_gradient_norm:
-                        scaler.unscale_(optimizer)
-                        # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-                        torch.nn.utils.clip_grad_norm_(model.parameters(), clip_gradient_norm)
-
-                    scaler.step(optimizer)
-                    scaler.update()
-
-                    lr_scheduler.step()
-
-                    if profiler is not None: profiler.step()
 
                 with record_function("running_loss"):
                     running_loss.append(loss.item())
                     running_loss = running_loss[-5:]
                     avg_train_loss = sum(running_loss)/len(running_loss)
-
-                if it >= next_chkpt_it:
-                    with record_function("checkpoint"):
-                        next_chkpt_it += chkpt_every_iters
-                        torch.save(model.state_dict(), f'{checkpoint_path}/{it:08d}.pt')
                     
                 if it >= next_val_it:
                     next_val_it += run_valid_every_iters
@@ -281,11 +264,29 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
                             model.train()
                     with record_function("plotting"):
                         visual.add_data(it, lr_scheduler.get_last_lr(), avg_train_loss, val_loss)
-                
+
                 if it >= next_table_it:
                     visual.add_table_row(it, avg_train_loss, val_loss)
                     next_table_it += table_row_every_iters
 
+                with record_function("optimizer"):
+                    if clip_gradient_norm:
+                        scaler.unscale_(optimizer)
+                        # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
+                        torch.nn.utils.clip_grad_norm_(model.parameters(), clip_gradient_norm)
+
+                    scaler.step(optimizer)
+                    scaler.update()
+
+                    lr_scheduler.step()
+
+                    if profiler is not None: profiler.step()
+
+                if it >= next_chkpt_it:
+                    with record_function("checkpoint"):
+                        next_chkpt_it += chkpt_every_iters
+                        torch.save(model.state_dict(), f'{checkpoint_path}/{it:08d}.pt')
+                
                 it += bs
                 visual.on_iter(bar, it, avg_train_loss, val_loss)
                 if callback is not None: callback(it)
