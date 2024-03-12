@@ -13,6 +13,7 @@ import numpy as np
 import random
 from collections import Counter
 from whisperspeech import utils
+import sys
 
 # %% ../nbs/3D. Split out validation.ipynb 4
 @call_parse
@@ -51,4 +52,4 @@ def split_dataset(
     
     if len(needles) > 0:
         print(f"Missed {len(needles)} samples!")
-        os.exit(1)
+        sys.exit(1)
