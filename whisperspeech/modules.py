@@ -117,6 +117,8 @@ class MultiHeadAttention(nn.Module):
         causal = False,
         mask=None,
     ):
+        if self.k_cache is not None:
+            assert qx.shape[0] <= self.k_cache.shape[0], "please pass in a larger max_batch_size to setup_kv_cache"
         if self.qkv:
             q,k,v = self.qkv(qx).split(self.odim, dim=-1)
         elif self.kv:

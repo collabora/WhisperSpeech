@@ -284,7 +284,7 @@ class TSARTransformer(nn.Module):
 
         cps_bin = (cpss / 20 * self.tunables.cps_bins).to(torch.long)
         cps_bin[cps_bin >= self.tunables.cps_bins] = self.tunables.cps_bins-1
-        return self.cps_embeddings(cps_bin).unsqueeze(1)
+        return self.cps_embeddings(cps_bin)
 
     def run_encoder(self, in_ttoks, languages, cpss):
         if len(languages.shape) != 3: lang_embs = self.lang_embeddings(languages)
@@ -457,7 +457,7 @@ class TSARTransformer(nn.Module):
             toks_positions = torch.arange(N+1, device=dev)
         
         with record_function("prefill"):
-            toks[:,start+1] = self.generate_one(toks[:,:start+1].contiguous(), toks_positions[:start+1], cps_emb, xenc, xenc_positions, T, top_k)
+            toks[:,start+1] = self.generate_one(toks[:,:start+1].contiguous(), toks_positions[:start+1], cps_emb, xenc, xenc_positions, T, top_k)[:,0]
         with inference.inference_context():
             for i in it:
                 toks[:,i+1] = self.generate_next(toks[:,i:i+1], toks_positions[i:i+1], cps_emb, xenc, xenc_positions, T, top_k)[:,0]
