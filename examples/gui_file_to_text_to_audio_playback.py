@@ -13,7 +13,7 @@ https://pytorch.org/get-started/locally/
 
 (3)  run pip3 install WhisperSpeech
 
-(4)  pip3 install soundfile==0.12.1 sounddevice==0.4.6 pypdf==4.0.2 python-docx==1.1.0 nltk==3.8.1
+(4)  pip3 install sounddevice==0.4.6 pypdf==4.0.2 python-docx==1.1.0 nltk==3.8.1
 
 (9)  python gui_file_to_text_to_audio_playback.py
 '''
