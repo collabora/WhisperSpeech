@@ -496,6 +496,7 @@ class SADelARTransformer(nn.Module):
             start = atoks_prompt.shape[-1]
             for i in range(self.quantizers):
                 toks[:,i,1+i:start+i+1] = atoks_prompt[:,i]
+            start = max(0, start - self.quantizers)
         it = range(start+1,min(N,self.ctx_n-1))
         if show_progress_bar: it = progress_bar(it)
         with record_function("encode"):
