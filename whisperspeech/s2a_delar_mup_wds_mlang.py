@@ -492,24 +492,30 @@ class SADelARTransformer(nn.Module):
         speakers = speakers.to(device=dev, dtype=self.dtype)
         toks = torch.full((bs,self.quantizers,self.ctx_n), self.codes+1, dtype=torch.long, device=dev)
         T = torch.tensor(T, device=dev)
-        start = 0
+
+        start = 0 # number of valid tokens or the index of first empty spot
         if atoks_prompt is not None:
             start = atoks_prompt.shape[-1]
             for i in range(self.quantizers):
                 toks[:,i,1+i:start+i+1] = atoks_prompt[:,i]
-        it = range(start+1,min(N,self.ctx_n-1))
-        if show_progress_bar: it = progress_bar(it)
+        start += 1 # we always start with at least an SOT
+
         with record_function("encode"):
             stoks, speakers = [x.repeat(bs, 1) for x in (stoks, speakers)]
             xenc, xenc_positions, _ = self.run_encoder(stoks, speakers)
             toks_positions = torch.arange(N, device=dev)
         with record_function("prefill"):
-            toks[:,0,1] = self.generate_one(toks[:,:,:1], toks_positions[:1], langs, xenc, xenc_positions, T, top_k)[:,0,0]
-
+            initial = self.generate_one(toks[:,:,:start], toks_positions[:start], langs, xenc, xenc_positions, T, top_k)
+            toks[:,:start,start:start+1] = initial[:,:start]
+            start += 1
+            
         with inference.inference_context():
+            it = range(start,min(N,self.ctx_n-1))
+            if show_progress_bar: it = progress_bar(it)
+
             for i in it:
                 with record_function("generate_one"):
-                    toks[:,:i+1,i+1] = self.generate_next(toks[:,:,i:i+1], toks_positions[i:i+1], langs, xenc, xenc_positions, T, top_k)[:,:i+1,0]
+                    toks[:,:i,i:i+1] = self.generate_next(toks[:,:,i-1:i], toks_positions[i-1:i], langs, xenc, xenc_positions, T, top_k)[:,:i]
 
                 # for profiling, debugging or early exit
                 if step is not None: step()
