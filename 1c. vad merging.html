@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.553">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>WhisperSpeech - VAD merging</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="WhisperSpeech - VAD merging">
+<meta property="og:description" content="An Open Source text-to-speech system built by inverting Whisper">
+<meta property="og:site_name" content="WhisperSpeech">
+<meta name="twitter:title" content="WhisperSpeech - VAD merging">
+<meta name="twitter:description" content="An Open Source text-to-speech system built by inverting Whisper">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="./index.html" class="navbar-brand navbar-brand-logo">
+    <img src="./logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">WhisperSpeech</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/collabora/WhisperSpeech"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">VAD merging</li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">WhisperSpeech</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dataset preparation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I can has speech? What data WhisperSpeech needs?</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#derived_name" id="toc-derived_name" class="nav-link active" data-scroll-target="#derived_name">derived_name</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/collabora/WhisperSpeech/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">VAD merging</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<hr>
+<p><a href="https://github.com/collabora/WhisperSpeech/blob/master/whisperspeech/vad_merge.py#L20" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="derived_name" class="level3">
+<h3 class="anchored" data-anchor-id="derived_name">derived_name</h3>
+<blockquote class="blockquote">
+<pre><code> derived_name (input, kind, base='audio')</code></pre>
+</blockquote>
+<div id="d4eb5cb9" class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>ds <span class="op">=</span> wds.WebDataset([<span class="st">'../wolnelektury-wds2/wolnelektury-audio-000000.tar'</span>]).compose(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    wds.decode(wds.torch_audio),</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    utils.merge_in(utils.derived_dataset(<span class="st">'vad'</span>)),</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    utils.find_audio,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    utils.split_to_chunks,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    utils.merge_in(utils.derived_dataset(<span class="st">'spk_emb'</span>)),</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="71a85cd8" class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> IPython</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fdd83c05" class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>prev <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> s <span class="kw">in</span> progress_bar(ds, total<span class="op">=</span><span class="dv">20</span>):</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    sim <span class="op">=</span> F.cosine_similarity(torch.tensor(s[<span class="st">'spk_emb.npy'</span>]), torch.tensor((prev <span class="cf">if</span> prev <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> s)[<span class="st">'spk_emb.npy'</span>]), dim<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    secs <span class="op">=</span> s[<span class="st">'tend'</span>] <span class="op">-</span> s[<span class="st">'tstart'</span>]</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    same <span class="op">=</span> sim <span class="op">&gt;</span> <span class="fl">0.6</span> <span class="cf">if</span> secs <span class="op">&gt;</span> <span class="dv">2</span> <span class="cf">else</span> sim <span class="op">&gt;</span> <span class="fl">0.1</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> same: <span class="bu">print</span>(<span class="st">"new"</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(s[<span class="st">'__key__'</span>], sim, secs)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    display(IPython.display.Audio(s[<span class="st">'samples'</span>], rate<span class="op">=</span>s[<span class="st">'sample_rate'</span>]))</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> secs <span class="op">&gt;</span> <span class="dv">2</span>:</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        prev <span class="op">=</span> s</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    time.sleep(<span class="fl">.5</span>)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>s</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="9de4aa8b" class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>ds <span class="op">=</span> wds.WebDataset([utils.derived_name(<span class="st">'../wolnelektury-wds2/wolnelektury-audio-000000.tar'</span>, <span class="st">'vad'</span>)]).compose(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    wds.decode(),</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    split,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    utils.merge_in(utils.derived_dataset(<span class="st">'spk_emb'</span>, base<span class="op">=</span><span class="st">'vad'</span>, suffix<span class="op">=</span><span class="st">''</span>)),</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    merge_by_src_key,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="13cea1b2" class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> s <span class="kw">in</span> ds: <span class="cf">break</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>s</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="a60e399e" class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>ds <span class="op">=</span> wds.WebDataset([utils.derived_name(<span class="st">'../wolnelektury-wds2/wolnelektury-audio-000000.tar'</span>, <span class="st">'vad'</span>)]).compose(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    wds.decode(),</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    split,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    utils.merge_in(utils.derived_dataset(<span class="st">'spk_emb'</span>, base<span class="op">=</span><span class="st">'vad'</span>, suffix<span class="op">=</span><span class="st">''</span>)),</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    merge_by_src_key,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    chunk_merger,</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="a5b171d5" class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> s <span class="kw">in</span> ds: <span class="cf">break</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>s</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="11ddaf1b" class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>ds <span class="op">=</span> wds.WebDataset([<span class="st">'../wolnelektury-wds2/wolnelektury-audio-000000.tar'</span>]).compose(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    wds.decode(wds.torch_audio),</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    utils.merge_in(utils.derived_dataset(<span class="st">'vad'</span>)),</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    utils.find_audio,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    utils.split_to_chunks,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    utils.merge_in(utils.derived_dataset(<span class="st">'spk_emb'</span>)),</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    merge_by_src_key,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    chunk_merger,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    utils.merge_in(utils.derived_dataset(<span class="st">'audio'</span>, suffix<span class="op">=</span><span class="st">''</span>, decoders<span class="op">=</span>[wds.torch_audio])),</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    utils.find_audio,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> x: utils.split_to_chunks(x, metakeys<span class="op">=</span>[<span class="st">'spk_emb.npy'</span>]),</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="2803c4c1" class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> s <span class="kw">in</span> ds: <span class="cf">break</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>s</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="dd15ddbc" class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>prev <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> s <span class="kw">in</span> progress_bar(ds, total<span class="op">=</span><span class="dv">20</span>):</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    sim <span class="op">=</span> F.cosine_similarity(torch.tensor(s[<span class="st">'spk_emb.npy'</span>]), torch.tensor((prev <span class="cf">if</span> prev <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> s)[<span class="st">'spk_emb.npy'</span>]), dim<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    secs <span class="op">=</span> s[<span class="st">'tend'</span>] <span class="op">-</span> s[<span class="st">'tstart'</span>]</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    same <span class="op">=</span> sim <span class="op">&gt;</span> <span class="fl">0.6</span> <span class="cf">if</span> secs <span class="op">&gt;</span> <span class="dv">2</span> <span class="cf">else</span> sim <span class="op">&gt;</span> <span class="fl">0.1</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> same: <span class="bu">print</span>(<span class="st">"new"</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(s[<span class="st">'__key__'</span>], sim, secs, <span class="bu">sum</span>([e<span class="op">-</span>s <span class="cf">for</span> s,e <span class="kw">in</span> s[<span class="st">'orig_s'</span>][<span class="st">'subvads.pyd'</span>][s[<span class="st">'i'</span>]]]))</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    display(IPython.display.Audio(s[<span class="st">'samples'</span>], rate<span class="op">=</span>s[<span class="st">'sample_rate'</span>]))</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> secs <span class="op">&gt;</span> <span class="dv">2</span>:</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>        prev <span class="op">=</span> s</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    time.sleep(<span class="fl">.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="4d0edead" class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>prepare_mvad(<span class="st">'../wolnelektury-wds2/wolnelektury-audio-000000.tar'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+
+<style>
+    /* Turns off some styling */
+    progress {
+        /* gets rid of default border in Firefox and Opera. */
+        border: none;
+        /* Needs to be in here for Safari polyfill so background images work as expected. */
+        background-size: auto;
+    }
+    progress:not([value]), progress:not([value])::-webkit-progress-bar {
+        background: repeating-linear-gradient(45deg, #7e7e7e, #7e7e7e 10px, #5c5c5c 10px, #5c5c5c 20px);
+    }
+    .progress-bar-interrupted, .progress-bar-interrupted::-webkit-progress-bar {
+        background: #F44336;
+    }
+</style>
+</div>
+<div class="cell-output cell-output-display">
+
+    <div>
+      <progress value="235" class="" max="235" style="width:300px; height:20px; vertical-align: middle;"></progress>
+      100.00% [235/235 00:04&lt;00:00]
+    </div>
+    
+</div>
+</div>
+<div id="21d80f52" class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>tar tf ..<span class="op">/</span>wolnelektury<span class="op">-</span>wds2<span class="op">/</span>wolnelektury<span class="op">-</span>maxvad<span class="op">-</span><span class="fl">000000.</span><span class="er">tar</span>.gz</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>./kornhauser-wiatr/kornhauser-wiatr_001.spk_emb.npy
+./kornhauser-wiatr/kornhauser-wiatr_001.subvads.pyd
+./kornhauser-wiatr/kornhauser-wiatr_001.vad.npy
+./fraszki-ksiegi-pierwsze-epitafium-wysockiemu/jan-kochanowski-fraszki-ksiegi-pierwsze-epitafium-wysockiemu.spk_emb.npy
+./fraszki-ksiegi-pierwsze-epitafium-wysockiemu/jan-kochanowski-fraszki-ksiegi-pierwsze-epitafium-wysockiemu.subvads.pyd
+./fraszki-ksiegi-pierwsze-epitafium-wysockiemu/jan-kochanowski-fraszki-ksiegi-pierwsze-epitafium-wysockiemu.vad.npy
+./kucharczyk-jak-modlitwa-ochrania-przed-zlodziejami/jak-modlitwa-ochrania-przed-zlodziejami.spk_emb.npy
+./kucharczyk-jak-modlitwa-ochrania-przed-zlodziejami/jak-modlitwa-ochrania-przed-zlodziejami.subvads.pyd
+./kucharczyk-jak-modlitwa-ochrania-przed-zlodziejami/jak-modlitwa-ochrania-przed-zlodziejami.vad.npy
+./nowakowska-niska-rozdzielczosc-proba-wody/proba-wody.spk_emb.npy
+./nowakowska-niska-rozdzielczosc-proba-wody/proba-wody.subvads.pyd
+./nowakowska-niska-rozdzielczosc-proba-wody/proba-wody.vad.npy
+./slowka-zbior-dziwna-przygoda-rodziny-polanieckich/tadeusz-boy-zelenski-slowka-zbior-dziwna-przygoda-rodziny-polanieckich.spk_emb.npy
+./slowka-zbior-dziwna-przygoda-rodziny-polanieckich/tadeusz-boy-zelenski-slowka-zbior-dziwna-przygoda-rodziny-polanieckich.subvads.pyd
+./slowka-zbior-dziwna-przygoda-rodziny-polanieckich/tadeusz-boy-zelenski-slowka-zbior-dziwna-przygoda-rodziny-polanieckich.vad.npy
+./piesni-ksiegi-wtore-piesn-xii/jan-kochanowski-piesni-ksiegi-wtore-piesn-xii-nie-masz-i-po-drugi-raz-nie-masz-watp.spk_emb.npy
+./piesni-ksiegi-wtore-piesn-xii/jan-kochanowski-piesni-ksiegi-wtore-piesn-xii-nie-masz-i-po-drugi-raz-nie-masz-watp.subvads.pyd
+./piesni-ksiegi-wtore-piesn-xii/jan-kochanowski-piesni-ksiegi-wtore-piesn-xii-nie-masz-i-po-drugi-raz-nie-masz-watp.vad.npy
+./sonety-krymskie-stepy-akermanskie/adam-mickiewicz-sonety-krymskie-stepy-akermanskie.spk_emb.npy
+./sonety-krymskie-stepy-akermanskie/adam-mickiewicz-sonety-krymskie-stepy-akermanskie.subvads.pyd
+./sonety-krymskie-stepy-akermanskie/adam-mickiewicz-sonety-krymskie-stepy-akermanskie.vad.npy
+./napoj-cienisty-balwan-ze-sniegu/boleslaw-lesmian-napoj-cienisty-postacie-cykl-balwan-ze-sniegu.spk_emb.npy
+./napoj-cienisty-balwan-ze-sniegu/boleslaw-lesmian-napoj-cienisty-postacie-cykl-balwan-ze-sniegu.subvads.pyd
+./napoj-cienisty-balwan-ze-sniegu/boleslaw-lesmian-napoj-cienisty-postacie-cykl-balwan-ze-sniegu.vad.npy
+./fraczek-zolw-wiercipieta-prosiaczek/fraczek-zolw-wiercipieta-prosiaczek_001.spk_emb.npy
+./fraczek-zolw-wiercipieta-prosiaczek/fraczek-zolw-wiercipieta-prosiaczek_001.subvads.pyd
+./fraczek-zolw-wiercipieta-prosiaczek/fraczek-zolw-wiercipieta-prosiaczek_001.vad.npy
+./grabinski-nietykalny/grabinski-nietykalny.spk_emb.npy
+./grabinski-nietykalny/grabinski-nietykalny.subvads.pyd
+./grabinski-nietykalny/grabinski-nietykalny.vad.npy
+./wol-i-mrowki/ignacy-krasicki-bajki-i-przypowiesci-wol-i-mrowki.spk_emb.npy
+./wol-i-mrowki/ignacy-krasicki-bajki-i-przypowiesci-wol-i-mrowki.subvads.pyd
+./wol-i-mrowki/ignacy-krasicki-bajki-i-przypowiesci-wol-i-mrowki.vad.npy
+./pszczola-w-bursztynie/jan-andrzej-morsztyn-pszczola-w-bursztynie.spk_emb.npy
+./pszczola-w-bursztynie/jan-andrzej-morsztyn-pszczola-w-bursztynie.subvads.pyd
+./pszczola-w-bursztynie/jan-andrzej-morsztyn-pszczola-w-bursztynie.vad.npy
+./jastrzab-i-sokol/ignacy-krasicki-bajki-i-przypowiesci-jastrzab-i-sokol.spk_emb.npy
+./jastrzab-i-sokol/ignacy-krasicki-bajki-i-przypowiesci-jastrzab-i-sokol.subvads.pyd
+./jastrzab-i-sokol/ignacy-krasicki-bajki-i-przypowiesci-jastrzab-i-sokol.vad.npy
+./fraszki-ksiegi-pierwsze-o-doktorze-hiszpanie/jan-kochanowski-fraszki-ksiegi-pierwsze-o-doktorze-hiszpanie.spk_emb.npy
+./fraszki-ksiegi-pierwsze-o-doktorze-hiszpanie/jan-kochanowski-fraszki-ksiegi-pierwsze-o-doktorze-hiszpanie.subvads.pyd
+./fraszki-ksiegi-pierwsze-o-doktorze-hiszpanie/jan-kochanowski-fraszki-ksiegi-pierwsze-o-doktorze-hiszpanie.vad.npy
+./perrault-kopciuszek/perrault-kopciuszek.spk_emb.npy
+./perrault-kopciuszek/perrault-kopciuszek.subvads.pyd
+./perrault-kopciuszek/perrault-kopciuszek.vad.npy
+./napoj-cienisty-wieczor/boleslaw-lesmian-napoj-cienisty-w-chmur-odbiciu-cykl-wieczor.spk_emb.npy
+./napoj-cienisty-wieczor/boleslaw-lesmian-napoj-cienisty-w-chmur-odbiciu-cykl-wieczor.subvads.pyd
+./napoj-cienisty-wieczor/boleslaw-lesmian-napoj-cienisty-w-chmur-odbiciu-cykl-wieczor.vad.npy
+./satyry-czesc-druga-malzenstwo/satyry-czesc-druga-malzenstwo.spk_emb.npy
+./satyry-czesc-druga-malzenstwo/satyry-czesc-druga-malzenstwo.subvads.pyd
+./satyry-czesc-druga-malzenstwo/satyry-czesc-druga-malzenstwo.vad.npy
+./slowka-zbior-spleen/tadeusz-boy-zelenski-slowka-zbior-spleen.spk_emb.npy
+./slowka-zbior-spleen/tadeusz-boy-zelenski-slowka-zbior-spleen.subvads.pyd
+./slowka-zbior-spleen/tadeusz-boy-zelenski-slowka-zbior-spleen.vad.npy
+./fraczek-zolw-wiercipieta-strus/fraczek-zolw-wiercipieta-strus_001.spk_emb.npy
+./fraczek-zolw-wiercipieta-strus/fraczek-zolw-wiercipieta-strus_001.subvads.pyd
+./fraczek-zolw-wiercipieta-strus/fraczek-zolw-wiercipieta-strus_001.vad.npy
+./janko-muzykant/janko-muzykant.spk_emb.npy
+./janko-muzykant/janko-muzykant.subvads.pyd
+./janko-muzykant/janko-muzykant.vad.npy
+./slowka-zbior-piosenki-zb-dobra-mama/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-dobra-mama.spk_emb.npy
+./slowka-zbior-piosenki-zb-dobra-mama/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-dobra-mama.subvads.pyd
+./slowka-zbior-piosenki-zb-dobra-mama/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-dobra-mama.vad.npy
+./lange-nowy-tarzan/antoni-lange-nowy-tarzan.spk_emb.npy
+./lange-nowy-tarzan/antoni-lange-nowy-tarzan.subvads.pyd
+./lange-nowy-tarzan/antoni-lange-nowy-tarzan.vad.npy
+./w-pamietniku-zofii-bobrowny/w-pamietniku-zofii-bobrowny.spk_emb.npy
+./w-pamietniku-zofii-bobrowny/w-pamietniku-zofii-bobrowny.subvads.pyd
+./w-pamietniku-zofii-bobrowny/w-pamietniku-zofii-bobrowny.vad.npy
+./fraczek-zolw-wiercipieta-zebra/fraczek-zolw-wiercipieta-zebra_001.spk_emb.npy
+./fraczek-zolw-wiercipieta-zebra/fraczek-zolw-wiercipieta-zebra_001.subvads.pyd
+./fraczek-zolw-wiercipieta-zebra/fraczek-zolw-wiercipieta-zebra_001.vad.npy
+./but-w-butonierce-milosc-na-aucie/bruno-jasienski-but-w-butonierce-tomik-milosc-na-aucie.spk_emb.npy
+./but-w-butonierce-milosc-na-aucie/bruno-jasienski-but-w-butonierce-tomik-milosc-na-aucie.subvads.pyd
+./but-w-butonierce-milosc-na-aucie/bruno-jasienski-but-w-butonierce-tomik-milosc-na-aucie.vad.npy
+./sonety-krymskie-grob-potockiej/adam-mickiewicz-sonety-krymskie-grob-potockiej.spk_emb.npy
+./sonety-krymskie-grob-potockiej/adam-mickiewicz-sonety-krymskie-grob-potockiej.subvads.pyd
+./sonety-krymskie-grob-potockiej/adam-mickiewicz-sonety-krymskie-grob-potockiej.vad.npy
+./do-matki/juliusz-slowacki-do-matki-zadrzy-ci-nieraz-serce-mila-matko-moja.spk_emb.npy
+./do-matki/juliusz-slowacki-do-matki-zadrzy-ci-nieraz-serce-mila-matko-moja.subvads.pyd
+./do-matki/juliusz-slowacki-do-matki-zadrzy-ci-nieraz-serce-mila-matko-moja.vad.npy
+./slowka-zbior-piosenki-zb-z-niewydanej-szopki-krakowskiej-na-rok-1908/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-z-niewydanej-szopki-krakowskiej-na-rok-1908.spk_emb.npy
+./slowka-zbior-piosenki-zb-z-niewydanej-szopki-krakowskiej-na-rok-1908/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-z-niewydanej-szopki-krakowskiej-na-rok-1908.subvads.pyd
+./slowka-zbior-piosenki-zb-z-niewydanej-szopki-krakowskiej-na-rok-1908/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-z-niewydanej-szopki-krakowskiej-na-rok-1908.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_030_tom-ii-rozdzial-lx.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_030_tom-ii-rozdzial-lx.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_030_tom-ii-rozdzial-lx.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_006_tom-ii-rozdzial-xxxv.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_006_tom-ii-rozdzial-xxxv.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_006_tom-ii-rozdzial-xxxv.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_017_tom-ii-rozdzial-xlvi.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_017_tom-ii-rozdzial-xlvi.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_017_tom-ii-rozdzial-xlvi.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_022_tom-ii-rozdzial-li.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_022_tom-ii-rozdzial-li.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_022_tom-ii-rozdzial-li.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_023_tom-ii-rozdzial-liii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_023_tom-ii-rozdzial-liii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_023_tom-ii-rozdzial-liii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_012_tom-ii-rozdzial-xli.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_012_tom-ii-rozdzial-xli.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_012_tom-ii-rozdzial-xli.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_019_tom-ii-rozdzial-xlviii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_019_tom-ii-rozdzial-xlviii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_019_tom-ii-rozdzial-xlviii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_010_tom-ii-rozdzial-xxxix.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_010_tom-ii-rozdzial-xxxix.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_010_tom-ii-rozdzial-xxxix.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_035_tom-ii-rozdzial-lii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_035_tom-ii-rozdzial-lii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_035_tom-ii-rozdzial-lii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_002_tom-ii-rozdzial-xxxi.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_002_tom-ii-rozdzial-xxxi.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_002_tom-ii-rozdzial-xxxi.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_025_tom-ii-rozdzial-lv.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_025_tom-ii-rozdzial-lv.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_025_tom-ii-rozdzial-lv.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_003_tom-ii-rozdzial-xxxii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_003_tom-ii-rozdzial-xxxii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_003_tom-ii-rozdzial-xxxii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_009_tom-ii-rozdzial-xxxviii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_009_tom-ii-rozdzial-xxxviii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_009_tom-ii-rozdzial-xxxviii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_008_tom-ii-rozdzial-xxxvii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_008_tom-ii-rozdzial-xxxvii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_008_tom-ii-rozdzial-xxxvii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_016_tom-ii-rozdzial-xlv.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_016_tom-ii-rozdzial-xlv.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_016_tom-ii-rozdzial-xlv.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_004_tom-ii-rozdzial-xxxiii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_004_tom-ii-rozdzial-xxxiii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_004_tom-ii-rozdzial-xxxiii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_032_tom-ii-rozdzial-lxii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_032_tom-ii-rozdzial-lxii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_032_tom-ii-rozdzial-lxii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_021_tom-ii-rozdzial-l.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_021_tom-ii-rozdzial-l.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_021_tom-ii-rozdzial-l.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_018_tom-ii-rozdzial-xlvii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_018_tom-ii-rozdzial-xlvii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_018_tom-ii-rozdzial-xlvii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_033_tom-ii-rozdzial-lxiii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_033_tom-ii-rozdzial-lxiii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_033_tom-ii-rozdzial-lxiii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_014_tom-ii-rozdzial-xliii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_014_tom-ii-rozdzial-xliii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_014_tom-ii-rozdzial-xliii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_005_tom-ii-rozdzial-xxxiv.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_005_tom-ii-rozdzial-xxxiv.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_005_tom-ii-rozdzial-xxxiv.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_034_tom-ii-rozdzial-lxiv.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_034_tom-ii-rozdzial-lxiv.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_034_tom-ii-rozdzial-lxiv.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_001_tom-ii-rozdzial-xxx.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_001_tom-ii-rozdzial-xxx.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_001_tom-ii-rozdzial-xxx.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_029_tom-ii-rozdzial-lix.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_029_tom-ii-rozdzial-lix.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_029_tom-ii-rozdzial-lix.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_007_tom-ii-rozdzial-xxxvi.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_007_tom-ii-rozdzial-xxxvi.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_007_tom-ii-rozdzial-xxxvi.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_024_tom-ii-rozdzial-liv.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_024_tom-ii-rozdzial-liv.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_024_tom-ii-rozdzial-liv.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_028_tom-ii-rozdzial-lviii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_028_tom-ii-rozdzial-lviii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_028_tom-ii-rozdzial-lviii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_026_tom-ii-rozdzial-lvi.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_026_tom-ii-rozdzial-lvi.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_026_tom-ii-rozdzial-lvi.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_011_tom-ii-rozdzial-xl.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_011_tom-ii-rozdzial-xl.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_011_tom-ii-rozdzial-xl.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_031_tom-ii-rozdzial-lxi.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_031_tom-ii-rozdzial-lxi.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_031_tom-ii-rozdzial-lxi.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_015_tom-ii-rozdzial-xliv.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_015_tom-ii-rozdzial-xliv.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_015_tom-ii-rozdzial-xliv.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_013_tom-ii-rozdzial-xlii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_013_tom-ii-rozdzial-xlii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_013_tom-ii-rozdzial-xlii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_027_tom-ii-rozdzial-lvii.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_027_tom-ii-rozdzial-lvii.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_027_tom-ii-rozdzial-lvii.vad.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_020_tom-ii-rozdzial-xlix.spk_emb.npy
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_020_tom-ii-rozdzial-xlix.subvads.pyd
+./dickens-dawid-copperfield-t2/dickens-dawid-copperfield-t2_020_tom-ii-rozdzial-xlix.vad.npy
+./historia-zoltej-cizemki/09-antonina-domanska-historia-zoltej-cizemki-tajemnica-dworku-pod-cmentarzem.spk_emb.npy
+./historia-zoltej-cizemki/09-antonina-domanska-historia-zoltej-cizemki-tajemnica-dworku-pod-cmentarzem.subvads.pyd
+./historia-zoltej-cizemki/09-antonina-domanska-historia-zoltej-cizemki-tajemnica-dworku-pod-cmentarzem.vad.npy
+./historia-zoltej-cizemki/11-antonina-domanska-historia-zoltej-cizemki-zakonczenie.spk_emb.npy
+./historia-zoltej-cizemki/11-antonina-domanska-historia-zoltej-cizemki-zakonczenie.subvads.pyd
+./historia-zoltej-cizemki/11-antonina-domanska-historia-zoltej-cizemki-zakonczenie.vad.npy
+./historia-zoltej-cizemki/08-antonina-domanska-historia-zoltej-cizemki-swiety-kazimierz.spk_emb.npy
+./historia-zoltej-cizemki/08-antonina-domanska-historia-zoltej-cizemki-swiety-kazimierz.subvads.pyd
+./historia-zoltej-cizemki/08-antonina-domanska-historia-zoltej-cizemki-swiety-kazimierz.vad.npy
+./historia-zoltej-cizemki/07-antonina-domanska-historia-zoltej-cizemki-jasiek.spk_emb.npy
+./historia-zoltej-cizemki/07-antonina-domanska-historia-zoltej-cizemki-jasiek.subvads.pyd
+./historia-zoltej-cizemki/07-antonina-domanska-historia-zoltej-cizemki-jasiek.vad.npy
+./historia-zoltej-cizemki/05-antonina-domanska-historia-zoltej-cizemki-u-jana-dlugosza.spk_emb.npy
+./historia-zoltej-cizemki/05-antonina-domanska-historia-zoltej-cizemki-u-jana-dlugosza.subvads.pyd
+./historia-zoltej-cizemki/05-antonina-domanska-historia-zoltej-cizemki-u-jana-dlugosza.vad.npy
+./historia-zoltej-cizemki/03-antonina-domanska-historia-zoltej-cizemki-u-wilow.spk_emb.npy
+./historia-zoltej-cizemki/03-antonina-domanska-historia-zoltej-cizemki-u-wilow.subvads.pyd
+./historia-zoltej-cizemki/03-antonina-domanska-historia-zoltej-cizemki-u-wilow.vad.npy
+./historia-zoltej-cizemki/10-antonina-domanska-historia-zoltej-cizemki-poreba.spk_emb.npy
+./historia-zoltej-cizemki/10-antonina-domanska-historia-zoltej-cizemki-poreba.subvads.pyd
+./historia-zoltej-cizemki/10-antonina-domanska-historia-zoltej-cizemki-poreba.vad.npy
+./historia-zoltej-cizemki/04-antonina-domanska-historia-zoltej-cizemki-konik-zwierzyniecki.spk_emb.npy
+./historia-zoltej-cizemki/04-antonina-domanska-historia-zoltej-cizemki-konik-zwierzyniecki.subvads.pyd
+./historia-zoltej-cizemki/04-antonina-domanska-historia-zoltej-cizemki-konik-zwierzyniecki.vad.npy
+./historia-zoltej-cizemki/02-antonina-domanska-historia-zoltej-cizemki-dziwny-pielgrzym.spk_emb.npy
+./historia-zoltej-cizemki/02-antonina-domanska-historia-zoltej-cizemki-dziwny-pielgrzym.subvads.pyd
+./historia-zoltej-cizemki/02-antonina-domanska-historia-zoltej-cizemki-dziwny-pielgrzym.vad.npy
+./historia-zoltej-cizemki/01-antonina-domanska-historia-zoltej-cizemki-w-domu-i-w-puszczy.spk_emb.npy
+./historia-zoltej-cizemki/01-antonina-domanska-historia-zoltej-cizemki-w-domu-i-w-puszczy.subvads.pyd
+./historia-zoltej-cizemki/01-antonina-domanska-historia-zoltej-cizemki-w-domu-i-w-puszczy.vad.npy
+./historia-zoltej-cizemki/06-antonina-domanska-historia-zoltej-cizemki-uczen-mistrza-wita.spk_emb.npy
+./historia-zoltej-cizemki/06-antonina-domanska-historia-zoltej-cizemki-uczen-mistrza-wita.subvads.pyd
+./historia-zoltej-cizemki/06-antonina-domanska-historia-zoltej-cizemki-uczen-mistrza-wita.vad.npy
+./slowka-zbior-piosenki-zb-piosenka-wzruszajaca/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-piosenka-wzruszajaca.spk_emb.npy
+./slowka-zbior-piosenki-zb-piosenka-wzruszajaca/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-piosenka-wzruszajaca.subvads.pyd
+./slowka-zbior-piosenki-zb-piosenka-wzruszajaca/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-piosenka-wzruszajaca.vad.npy
+./do-justyny/franciszek-karpinski-do-justyny.spk_emb.npy
+./do-justyny/franciszek-karpinski-do-justyny.subvads.pyd
+./do-justyny/franciszek-karpinski-do-justyny.vad.npy
+./pan-i-pies/ignacy-krasicki-bajki-i-przypowiesci-pan-i-pies.spk_emb.npy
+./pan-i-pies/ignacy-krasicki-bajki-i-przypowiesci-pan-i-pies.subvads.pyd
+./pan-i-pies/ignacy-krasicki-bajki-i-przypowiesci-pan-i-pies.vad.npy
+./pasterz-i-owce-bajki-nowe/pasterz-i-owce-bajki-nowe.spk_emb.npy
+./pasterz-i-owce-bajki-nowe/pasterz-i-owce-bajki-nowe.subvads.pyd
+./pasterz-i-owce-bajki-nowe/pasterz-i-owce-bajki-nowe.vad.npy
+./prawdziwy-opis-wypadku-z-p-waldemarem/prawdziwy-opis-wypadku-z-p-waldemarem.spk_emb.npy
+./prawdziwy-opis-wypadku-z-p-waldemarem/prawdziwy-opis-wypadku-z-p-waldemarem.subvads.pyd
+./prawdziwy-opis-wypadku-z-p-waldemarem/prawdziwy-opis-wypadku-z-p-waldemarem.vad.npy
+./grabinski-przypadek/grabinski-przypadek.spk_emb.npy
+./grabinski-przypadek/grabinski-przypadek.subvads.pyd
+./grabinski-przypadek/grabinski-przypadek.vad.npy
+./rozmowa-mistrza-polikarpa-ze-smiercia/rozmowa-mistrza-polikarpa-ze-smiercia.spk_emb.npy
+./rozmowa-mistrza-polikarpa-ze-smiercia/rozmowa-mistrza-polikarpa-ze-smiercia.subvads.pyd
+./rozmowa-mistrza-polikarpa-ze-smiercia/rozmowa-mistrza-polikarpa-ze-smiercia.vad.npy
+./hej-w-dzien-narodzenia/autor-nieznany-hej-w-dzien-narodzenia.spk_emb.npy
+./hej-w-dzien-narodzenia/autor-nieznany-hej-w-dzien-narodzenia.subvads.pyd
+./hej-w-dzien-narodzenia/autor-nieznany-hej-w-dzien-narodzenia.vad.npy
+./napoj-cienisty-dziewczyna/boleslaw-lesmian-napoj-cienisty-powiesc-o-rozumnej-dziewczynie-cykl-dziewczyna.spk_emb.npy
+./napoj-cienisty-dziewczyna/boleslaw-lesmian-napoj-cienisty-powiesc-o-rozumnej-dziewczynie-cykl-dziewczyna.subvads.pyd
+./napoj-cienisty-dziewczyna/boleslaw-lesmian-napoj-cienisty-powiesc-o-rozumnej-dziewczynie-cykl-dziewczyna.vad.npy
+./grabinski-niesamowita-opowiesc-na-tropie/grabinski-niesamowita-opowiesc-na-tropie.spk_emb.npy
+./grabinski-niesamowita-opowiesc-na-tropie/grabinski-niesamowita-opowiesc-na-tropie.subvads.pyd
+./grabinski-niesamowita-opowiesc-na-tropie/grabinski-niesamowita-opowiesc-na-tropie.vad.npy
+./sroczynska-lasowiackie-serce/lasowiackie-serce.spk_emb.npy
+./sroczynska-lasowiackie-serce/lasowiackie-serce.subvads.pyd
+./sroczynska-lasowiackie-serce/lasowiackie-serce.vad.npy
+./slowka-zbior-piosenki-zb-wiersz-inauguracyjny/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-wiersz-inauguracyjny-na-otwarcie-piatego-sezonu-zielonego-balonika.spk_emb.npy
+./slowka-zbior-piosenki-zb-wiersz-inauguracyjny/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-wiersz-inauguracyjny-na-otwarcie-piatego-sezonu-zielonego-balonika.subvads.pyd
+./slowka-zbior-piosenki-zb-wiersz-inauguracyjny/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-wiersz-inauguracyjny-na-otwarcie-piatego-sezonu-zielonego-balonika.vad.npy
+./nasza-czarna-jaskoleczka/nasza-czarna-jaskoleczka.spk_emb.npy
+./nasza-czarna-jaskoleczka/nasza-czarna-jaskoleczka.subvads.pyd
+./nasza-czarna-jaskoleczka/nasza-czarna-jaskoleczka.vad.npy
+./puszkin-bajka-o-rybaku-i-rybce/puszkin-bajka-o-rybaku-i-rybce.spk_emb.npy
+./puszkin-bajka-o-rybaku-i-rybce/puszkin-bajka-o-rybaku-i-rybce.subvads.pyd
+./puszkin-bajka-o-rybaku-i-rybce/puszkin-bajka-o-rybaku-i-rybce.vad.npy
+./nowakowska-niska-rozdzielczosc-daj-mi/daj-mi.spk_emb.npy
+./nowakowska-niska-rozdzielczosc-daj-mi/daj-mi.subvads.pyd
+./nowakowska-niska-rozdzielczosc-daj-mi/daj-mi.vad.npy
+./slowka-zbior-replika-kobiety-polskiej/tadeusz-boy-zelenski-slowka-zbior-replika-kobiety-polskiej.spk_emb.npy
+./slowka-zbior-replika-kobiety-polskiej/tadeusz-boy-zelenski-slowka-zbior-replika-kobiety-polskiej.subvads.pyd
+./slowka-zbior-replika-kobiety-polskiej/tadeusz-boy-zelenski-slowka-zbior-replika-kobiety-polskiej.vad.npy
+./but-w-butonierce-ipecacuana/bruno-jasienski-but-w-butonierce-tomik-ipecacuana.spk_emb.npy
+./but-w-butonierce-ipecacuana/bruno-jasienski-but-w-butonierce-tomik-ipecacuana.subvads.pyd
+./but-w-butonierce-ipecacuana/bruno-jasienski-but-w-butonierce-tomik-ipecacuana.vad.npy
+./madry-i-glupi/ignacy-krasicki-bajki-i-przypowiesci-madry-i-glupi.spk_emb.npy
+./madry-i-glupi/ignacy-krasicki-bajki-i-przypowiesci-madry-i-glupi.subvads.pyd
+./madry-i-glupi/ignacy-krasicki-bajki-i-przypowiesci-madry-i-glupi.vad.npy
+./sonety-krymskie-bakczysaraj-w-nocy/adam-mickiewicz-sonety-krymskie-bakczysaraj-w-nocy.spk_emb.npy
+./sonety-krymskie-bakczysaraj-w-nocy/adam-mickiewicz-sonety-krymskie-bakczysaraj-w-nocy.subvads.pyd
+./sonety-krymskie-bakczysaraj-w-nocy/adam-mickiewicz-sonety-krymskie-bakczysaraj-w-nocy.vad.npy
+./sklepy-cynamonowe-traktat-o-manekinach-dokonczenie/sklepy-cynamonowe-traktat-o-manekinach-dokonczenie.spk_emb.npy
+./sklepy-cynamonowe-traktat-o-manekinach-dokonczenie/sklepy-cynamonowe-traktat-o-manekinach-dokonczenie.subvads.pyd
+./sklepy-cynamonowe-traktat-o-manekinach-dokonczenie/sklepy-cynamonowe-traktat-o-manekinach-dokonczenie.vad.npy
+./schulz-sanatorium-pod-klepsydra-druga-jesien/schulz-sanatorium-pod-klepsydra-druga-jesien_001_druga-jesien.spk_emb.npy
+./schulz-sanatorium-pod-klepsydra-druga-jesien/schulz-sanatorium-pod-klepsydra-druga-jesien_001_druga-jesien.subvads.pyd
+./schulz-sanatorium-pod-klepsydra-druga-jesien/schulz-sanatorium-pod-klepsydra-druga-jesien_001_druga-jesien.vad.npy
+./medrcy-swiata/autor-nieznany-medrcy-swiata.spk_emb.npy
+./medrcy-swiata/autor-nieznany-medrcy-swiata.subvads.pyd
+./medrcy-swiata/autor-nieznany-medrcy-swiata.vad.npy
+./aniol/aniol.spk_emb.npy
+./aniol/aniol.subvads.pyd
+./aniol/aniol.vad.npy
+./do-motyla/jan-andrzej-morsztyn-do-motyla.spk_emb.npy
+./do-motyla/jan-andrzej-morsztyn-do-motyla.subvads.pyd
+./do-motyla/jan-andrzej-morsztyn-do-motyla.vad.npy
+./napoj-cienisty-dokola-klombu/boleslaw-lesmian-napoj-cienisty-postacie-cykl-dokola-klombu.spk_emb.npy
+./napoj-cienisty-dokola-klombu/boleslaw-lesmian-napoj-cienisty-postacie-cykl-dokola-klombu.subvads.pyd
+./napoj-cienisty-dokola-klombu/boleslaw-lesmian-napoj-cienisty-postacie-cykl-dokola-klombu.vad.npy
+./dabrowska-boze-narodzenie/maria-dabrowska-boze-narodzenie.spk_emb.npy
+./dabrowska-boze-narodzenie/maria-dabrowska-boze-narodzenie.subvads.pyd
+./dabrowska-boze-narodzenie/maria-dabrowska-boze-narodzenie.vad.npy
+./spiewak-spod-strzechy/spiewak-spod-strzechy.spk_emb.npy
+./spiewak-spod-strzechy/spiewak-spod-strzechy.subvads.pyd
+./spiewak-spod-strzechy/spiewak-spod-strzechy.vad.npy
+./ziemia-i-potok-bajki-nowe/ziemia-i-potok-bajki-nowe.spk_emb.npy
+./ziemia-i-potok-bajki-nowe/ziemia-i-potok-bajki-nowe.subvads.pyd
+./ziemia-i-potok-bajki-nowe/ziemia-i-potok-bajki-nowe.vad.npy
+./sonety-krymskie-aluszta-w-dzien/adam-mickiewicz-sonety-krymskie-aluszta-w-dzien.spk_emb.npy
+./sonety-krymskie-aluszta-w-dzien/adam-mickiewicz-sonety-krymskie-aluszta-w-dzien.subvads.pyd
+./sonety-krymskie-aluszta-w-dzien/adam-mickiewicz-sonety-krymskie-aluszta-w-dzien.vad.npy
+./napoj-cienisty-wiosna/boleslaw-lesmian-napoj-cienisty-postacie-cykl-wiosna.spk_emb.npy
+./napoj-cienisty-wiosna/boleslaw-lesmian-napoj-cienisty-postacie-cykl-wiosna.subvads.pyd
+./napoj-cienisty-wiosna/boleslaw-lesmian-napoj-cienisty-postacie-cykl-wiosna.vad.npy
+./berenice/edgar-allan-poe-berenice.spk_emb.npy
+./berenice/edgar-allan-poe-berenice.subvads.pyd
+./berenice/edgar-allan-poe-berenice.vad.npy
+./chlop-i-jowisz-bajki-nowe/chlop-i-jowisz-bajki-nowe.spk_emb.npy
+./chlop-i-jowisz-bajki-nowe/chlop-i-jowisz-bajki-nowe.subvads.pyd
+./chlop-i-jowisz-bajki-nowe/chlop-i-jowisz-bajki-nowe.vad.npy
+./podrozny-i-kaleka/ignacy-krasicki-bajki-i-przypowiesci-podrozny-i-kaleka.spk_emb.npy
+./podrozny-i-kaleka/ignacy-krasicki-bajki-i-przypowiesci-podrozny-i-kaleka.subvads.pyd
+./podrozny-i-kaleka/ignacy-krasicki-bajki-i-przypowiesci-podrozny-i-kaleka.vad.npy
+./grabinski-ksiega-ognia-czerwona-magda/grabinski-ksiega-ognia-czerwona-magda.spk_emb.npy
+./grabinski-ksiega-ognia-czerwona-magda/grabinski-ksiega-ognia-czerwona-magda.subvads.pyd
+./grabinski-ksiega-ognia-czerwona-magda/grabinski-ksiega-ognia-czerwona-magda.vad.npy
+./wino-i-woda/ignacy-krasicki-bajki-i-przypowiesci-wino-i-woda.spk_emb.npy
+./wino-i-woda/ignacy-krasicki-bajki-i-przypowiesci-wino-i-woda.subvads.pyd
+./wino-i-woda/ignacy-krasicki-bajki-i-przypowiesci-wino-i-woda.vad.npy
+./grabinski-z-wyjatkow-w-pomrokach-wiary-klatwa/grabinski-z-wyjatkow-w-pomrokach-wiary-klatwa.spk_emb.npy
+./grabinski-z-wyjatkow-w-pomrokach-wiary-klatwa/grabinski-z-wyjatkow-w-pomrokach-wiary-klatwa.subvads.pyd
+./grabinski-z-wyjatkow-w-pomrokach-wiary-klatwa/grabinski-z-wyjatkow-w-pomrokach-wiary-klatwa.vad.npy
+./blumengraber-do-profesorow/blumengraber-do-profesorow.spk_emb.npy
+./blumengraber-do-profesorow/blumengraber-do-profesorow.subvads.pyd
+./blumengraber-do-profesorow/blumengraber-do-profesorow.vad.npy
+./wyzel-i-brytan-ii-bajki-nowe/wyzel-i-brytan-ii-bajki-nowe.spk_emb.npy
+./wyzel-i-brytan-ii-bajki-nowe/wyzel-i-brytan-ii-bajki-nowe.subvads.pyd
+./wyzel-i-brytan-ii-bajki-nowe/wyzel-i-brytan-ii-bajki-nowe.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_017_17-oto-jest-to-dziecko.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_017_17-oto-jest-to-dziecko.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_017_17-oto-jest-to-dziecko.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_006_6-kopalnia-diamentow.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_006_6-kopalnia-diamentow.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_006_6-kopalnia-diamentow.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_011_11-ram-dass.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_011_11-ram-dass.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_011_11-ram-dass.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_012_12-po-drugiej-stronie-sciany.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_012_12-po-drugiej-stronie-sciany.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_012_12-po-drugiej-stronie-sciany.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_004_4-lottie.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_004_4-lottie.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_004_4-lottie.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_008_8-na-poddaszu.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_008_8-na-poddaszu.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_008_8-na-poddaszu.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_015_15-czarnoksieznik.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_015_15-czarnoksieznik.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_015_15-czarnoksieznik.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_010_10-przybysz-z-indii.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_010_10-przybysz-z-indii.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_010_10-przybysz-z-indii.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_018_18-staralam-sie-byc-nia-zawsze.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_018_18-staralam-sie-byc-nia-zawsze.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_018_18-staralam-sie-byc-nia-zawsze.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_019_19-anna.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_019_19-anna.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_019_19-anna.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_003_3-ermenegarda.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_003_3-ermenegarda.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_003_3-ermenegarda.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_013_13-jedna-z-szarego-tlumu.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_013_13-jedna-z-szarego-tlumu.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_013_13-jedna-z-szarego-tlumu.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_014_14-co-slyszal-i-widzial-melchizedech.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_014_14-co-slyszal-i-widzial-melchizedech.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_014_14-co-slyszal-i-widzial-melchizedech.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_005_5-becky.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_005_5-becky.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_005_5-becky.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_009_9-melchizedech.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_009_9-melchizedech.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_009_9-melchizedech.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_016_16-odwiedziny.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_016_16-odwiedziny.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_016_16-odwiedziny.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_001_1-sara.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_001_1-sara.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_001_1-sara.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_002_2-lekcja-francuskiego.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_002_2-lekcja-francuskiego.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_002_2-lekcja-francuskiego.vad.npy
+./mala-ksiezniczka/mala-ksiezniczka_007_7-jeszcze-o-kopalniach-diamentow.spk_emb.npy
+./mala-ksiezniczka/mala-ksiezniczka_007_7-jeszcze-o-kopalniach-diamentow.subvads.pyd
+./mala-ksiezniczka/mala-ksiezniczka_007_7-jeszcze-o-kopalniach-diamentow.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_014_czesc-14.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_014_czesc-14.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_014_czesc-14.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_006_czesc-6.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_006_czesc-6.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_006_czesc-6.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_002_czesc-2.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_002_czesc-2.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_002_czesc-2.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_013_czesc-13.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_013_czesc-13.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_013_czesc-13.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_011_czesc-11.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_011_czesc-11.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_011_czesc-11.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_001_czesc-1.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_001_czesc-1.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_001_czesc-1.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_005_czesc-5.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_005_czesc-5.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_005_czesc-5.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_003_czesc-3.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_003_czesc-3.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_003_czesc-3.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_009_czesc-9.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_009_czesc-9.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_009_czesc-9.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_012_czesc-12.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_012_czesc-12.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_012_czesc-12.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_016_czesc-16.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_016_czesc-16.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_016_czesc-16.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_008_czesc-8.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_008_czesc-8.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_008_czesc-8.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_015_czesc-15.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_015_czesc-15.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_015_czesc-15.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_010_czesc-10.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_010_czesc-10.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_010_czesc-10.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_007_czesc-7.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_007_czesc-7.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_007_czesc-7.vad.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_004_czesc-4.spk_emb.npy
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_004_czesc-4.subvads.pyd
+./balzac-komedia-ludzka-eugenia-grandet/balzac-komedia-ludzka-eugenia-grandet_004_czesc-4.vad.npy
+./kornhauser-tyle-rzeczy-niezwyklych-tyle-rzeczy-niezwyklych/kornhauser-tyle-rzeczy-niezwyklych-tyle-rzeczy-niezwyklych_001.spk_emb.npy
+./kornhauser-tyle-rzeczy-niezwyklych-tyle-rzeczy-niezwyklych/kornhauser-tyle-rzeczy-niezwyklych-tyle-rzeczy-niezwyklych_001.subvads.pyd
+./kornhauser-tyle-rzeczy-niezwyklych-tyle-rzeczy-niezwyklych/kornhauser-tyle-rzeczy-niezwyklych-tyle-rzeczy-niezwyklych_001.vad.npy
+./slowka-zbior-dziadzio/tadeusz-boy-zelenski-slowka-zbior-dziadzio.spk_emb.npy
+./slowka-zbior-dziadzio/tadeusz-boy-zelenski-slowka-zbior-dziadzio.subvads.pyd
+./slowka-zbior-dziadzio/tadeusz-boy-zelenski-slowka-zbior-dziadzio.vad.npy
+./osiel-i-wol/ignacy-krasicki-bajki-i-przypowiesci-osiel-i-wol.spk_emb.npy
+./osiel-i-wol/ignacy-krasicki-bajki-i-przypowiesci-osiel-i-wol.subvads.pyd
+./osiel-i-wol/ignacy-krasicki-bajki-i-przypowiesci-osiel-i-wol.vad.npy
+./hop-frog/edgar-allan-poe-hop-frog.spk_emb.npy
+./hop-frog/edgar-allan-poe-hop-frog.subvads.pyd
+./hop-frog/edgar-allan-poe-hop-frog.vad.npy
+./slowka-zbior-ernestynka/tadeusz-boy-zelenski-slowka-zbior-ernestynka.spk_emb.npy
+./slowka-zbior-ernestynka/tadeusz-boy-zelenski-slowka-zbior-ernestynka.subvads.pyd
+./slowka-zbior-ernestynka/tadeusz-boy-zelenski-slowka-zbior-ernestynka.vad.npy
+./maska-smierci-szkarlatnej/edgar-allan-poe-maska-smierci-szkarlatnej.spk_emb.npy
+./maska-smierci-szkarlatnej/edgar-allan-poe-maska-smierci-szkarlatnej.subvads.pyd
+./maska-smierci-szkarlatnej/edgar-allan-poe-maska-smierci-szkarlatnej.vad.npy
+./tulli-sny-i-kamienie/sny-i-kamienie.spk_emb.npy
+./tulli-sny-i-kamienie/sny-i-kamienie.subvads.pyd
+./tulli-sny-i-kamienie/sny-i-kamienie.vad.npy
+./beresewicz-czy-pisarzom-czy-lubil-pan-chodzic-do-szkoly/beresewicz-czy-pisarzom-czy-lubil-pan-chodzic-do-szkoly_001.spk_emb.npy
+./beresewicz-czy-pisarzom-czy-lubil-pan-chodzic-do-szkoly/beresewicz-czy-pisarzom-czy-lubil-pan-chodzic-do-szkoly_001.subvads.pyd
+./beresewicz-czy-pisarzom-czy-lubil-pan-chodzic-do-szkoly/beresewicz-czy-pisarzom-czy-lubil-pan-chodzic-do-szkoly_001.vad.npy
+./skrucha-jozi/skrucha-jozi.spk_emb.npy
+./skrucha-jozi/skrucha-jozi.subvads.pyd
+./skrucha-jozi/skrucha-jozi.vad.npy
+./piesni-ksiegi-pierwsze-piesn-xx/jan-kochanowski-piesni-ksiegi-pierwsze-piesn-xx-milo-szalec-kiedy-czas-po-temu.spk_emb.npy
+./piesni-ksiegi-pierwsze-piesn-xx/jan-kochanowski-piesni-ksiegi-pierwsze-piesn-xx-milo-szalec-kiedy-czas-po-temu.subvads.pyd
+./piesni-ksiegi-pierwsze-piesn-xx/jan-kochanowski-piesni-ksiegi-pierwsze-piesn-xx-milo-szalec-kiedy-czas-po-temu.vad.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_005_rozdzial-v-o-wierszach-wergilego.spk_emb.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_005_rozdzial-v-o-wierszach-wergilego.subvads.pyd
+./proby-ksiega-trzecia/proby-ksiega-trzecia_005_rozdzial-v-o-wierszach-wergilego.vad.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_012_rozdzial-xii-o-fizjonomii.spk_emb.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_012_rozdzial-xii-o-fizjonomii.subvads.pyd
+./proby-ksiega-trzecia/proby-ksiega-trzecia_012_rozdzial-xii-o-fizjonomii.vad.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_007_rozdzial-vii-o-ciezarach-wielkosci.spk_emb.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_007_rozdzial-vii-o-ciezarach-wielkosci.subvads.pyd
+./proby-ksiega-trzecia/proby-ksiega-trzecia_007_rozdzial-vii-o-ciezarach-wielkosci.vad.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_001_rozdzial-i-o-pozytecznym-i-poczciwym.spk_emb.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_001_rozdzial-i-o-pozytecznym-i-poczciwym.subvads.pyd
+./proby-ksiega-trzecia/proby-ksiega-trzecia_001_rozdzial-i-o-pozytecznym-i-poczciwym.vad.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_013_rozdzial-xiii-o-doswiadczeniu.spk_emb.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_013_rozdzial-xiii-o-doswiadczeniu.subvads.pyd
+./proby-ksiega-trzecia/proby-ksiega-trzecia_013_rozdzial-xiii-o-doswiadczeniu.vad.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_006_rozdzial-vi-o-pojazdach.spk_emb.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_006_rozdzial-vi-o-pojazdach.subvads.pyd
+./proby-ksiega-trzecia/proby-ksiega-trzecia_006_rozdzial-vi-o-pojazdach.vad.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_010_rozdzial-x-o-oszczedzaniu-woli.spk_emb.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_010_rozdzial-x-o-oszczedzaniu-woli.subvads.pyd
+./proby-ksiega-trzecia/proby-ksiega-trzecia_010_rozdzial-x-o-oszczedzaniu-woli.vad.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_003_rozdzial-iii-o-trzech-rodzajach-obcowania.spk_emb.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_003_rozdzial-iii-o-trzech-rodzajach-obcowania.subvads.pyd
+./proby-ksiega-trzecia/proby-ksiega-trzecia_003_rozdzial-iii-o-trzech-rodzajach-obcowania.vad.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_004_rozdzial-iv-o-dywersji.spk_emb.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_004_rozdzial-iv-o-dywersji.subvads.pyd
+./proby-ksiega-trzecia/proby-ksiega-trzecia_004_rozdzial-iv-o-dywersji.vad.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_011_rozdzial-xi-o-kulawych.spk_emb.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_011_rozdzial-xi-o-kulawych.subvads.pyd
+./proby-ksiega-trzecia/proby-ksiega-trzecia_011_rozdzial-xi-o-kulawych.vad.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_008_rozdzial-viii-o-sztuce-rozmawiania.spk_emb.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_008_rozdzial-viii-o-sztuce-rozmawiania.subvads.pyd
+./proby-ksiega-trzecia/proby-ksiega-trzecia_008_rozdzial-viii-o-sztuce-rozmawiania.vad.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_009_rozdzial-ix-o-proznosci.spk_emb.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_009_rozdzial-ix-o-proznosci.subvads.pyd
+./proby-ksiega-trzecia/proby-ksiega-trzecia_009_rozdzial-ix-o-proznosci.vad.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_002_rozdzial-ii-o-zalu.spk_emb.npy
+./proby-ksiega-trzecia/proby-ksiega-trzecia_002_rozdzial-ii-o-zalu.subvads.pyd
+./proby-ksiega-trzecia/proby-ksiega-trzecia_002_rozdzial-ii-o-zalu.vad.npy
+./slonce-i-zaby-bajki-nowe/slonce-i-zaby-bajki-nowe.spk_emb.npy
+./slonce-i-zaby-bajki-nowe/slonce-i-zaby-bajki-nowe.subvads.pyd
+./slonce-i-zaby-bajki-nowe/slonce-i-zaby-bajki-nowe.vad.npy
+./slowka-zbior-nowa-wiara/tadeusz-boy-zelenski-slowka-zbior-nowa-wiara.spk_emb.npy
+./slowka-zbior-nowa-wiara/tadeusz-boy-zelenski-slowka-zbior-nowa-wiara.subvads.pyd
+./slowka-zbior-nowa-wiara/tadeusz-boy-zelenski-slowka-zbior-nowa-wiara.vad.npy
+./sonety-krymskie-bakczysaraj/adam-mickiewicz-sonety-krymskie-bakczysaraj.spk_emb.npy
+./sonety-krymskie-bakczysaraj/adam-mickiewicz-sonety-krymskie-bakczysaraj.subvads.pyd
+./sonety-krymskie-bakczysaraj/adam-mickiewicz-sonety-krymskie-bakczysaraj.vad.npy
+./wolny-hamkalo-nikt-nic/nikt-nic.spk_emb.npy
+./wolny-hamkalo-nikt-nic/nikt-nic.subvads.pyd
+./wolny-hamkalo-nikt-nic/nikt-nic.vad.npy
+./wabik-bajki-nowe/wabik-bajki-nowe.spk_emb.npy
+./wabik-bajki-nowe/wabik-bajki-nowe.subvads.pyd
+./wabik-bajki-nowe/wabik-bajki-nowe.vad.npy
+./wilk-i-baran-bajki-nowe/wilk-i-baran-bajki-nowe.spk_emb.npy
+./wilk-i-baran-bajki-nowe/wilk-i-baran-bajki-nowe.subvads.pyd
+./wilk-i-baran-bajki-nowe/wilk-i-baran-bajki-nowe.vad.npy
+./grabinski-ksiega-ognia-bialy-wyrak/grabinski-ksiega-ognia-bialy-wyrak.spk_emb.npy
+./grabinski-ksiega-ognia-bialy-wyrak/grabinski-ksiega-ognia-bialy-wyrak.subvads.pyd
+./grabinski-ksiega-ognia-bialy-wyrak/grabinski-ksiega-ognia-bialy-wyrak.vad.npy
+./konopnicka-w-polu/w-polu-pojdziemy-w-pole-w-ranny-czas.spk_emb.npy
+./konopnicka-w-polu/w-polu-pojdziemy-w-pole-w-ranny-czas.subvads.pyd
+./konopnicka-w-polu/w-polu-pojdziemy-w-pole-w-ranny-czas.vad.npy
+./lis-i-osiel/ignacy-krasicki-bajki-i-przypowiesci-lis-i-osiel.spk_emb.npy
+./lis-i-osiel/ignacy-krasicki-bajki-i-przypowiesci-lis-i-osiel.subvads.pyd
+./lis-i-osiel/ignacy-krasicki-bajki-i-przypowiesci-lis-i-osiel.vad.npy
+./do-delljusa/do-delljusa.spk_emb.npy
+./do-delljusa/do-delljusa.subvads.pyd
+./do-delljusa/do-delljusa.vad.npy
+./satyry-czesc-pierwsza-zona-modna/satyry-czesc-pierwsza-zona-modna.spk_emb.npy
+./satyry-czesc-pierwsza-zona-modna/satyry-czesc-pierwsza-zona-modna.subvads.pyd
+./satyry-czesc-pierwsza-zona-modna/satyry-czesc-pierwsza-zona-modna.vad.npy
+./janicki-i-nas-wybawi/i-nas-wybawi.spk_emb.npy
+./janicki-i-nas-wybawi/i-nas-wybawi.subvads.pyd
+./janicki-i-nas-wybawi/i-nas-wybawi.vad.npy
+./napoj-cienisty-cmentarz/boleslaw-lesmian-napoj-cienisty-w-nicosc-sniaca-sie-droga-cykl-cmentarz.spk_emb.npy
+./napoj-cienisty-cmentarz/boleslaw-lesmian-napoj-cienisty-w-nicosc-sniaca-sie-droga-cykl-cmentarz.subvads.pyd
+./napoj-cienisty-cmentarz/boleslaw-lesmian-napoj-cienisty-w-nicosc-sniaca-sie-droga-cykl-cmentarz.vad.npy
+./przyjaciel/ignacy-krasicki-bajki-i-przypowiesci-przyjaciel.spk_emb.npy
+./przyjaciel/ignacy-krasicki-bajki-i-przypowiesci-przyjaciel.subvads.pyd
+./przyjaciel/ignacy-krasicki-bajki-i-przypowiesci-przyjaciel.vad.npy
+./but-w-butonierce-jak-introdukcja/bruno-jasienski-but-w-butonierce-tomik-jak-introdukcja.spk_emb.npy
+./but-w-butonierce-jak-introdukcja/bruno-jasienski-but-w-butonierce-tomik-jak-introdukcja.subvads.pyd
+./but-w-butonierce-jak-introdukcja/bruno-jasienski-but-w-butonierce-tomik-jak-introdukcja.vad.npy
+./czlowiek-i-zwierciadla/ignacy-krasicki-bajki-i-przypowiesci-czlowiek-i-zwierciadla.spk_emb.npy
+./czlowiek-i-zwierciadla/ignacy-krasicki-bajki-i-przypowiesci-czlowiek-i-zwierciadla.subvads.pyd
+./czlowiek-i-zwierciadla/ignacy-krasicki-bajki-i-przypowiesci-czlowiek-i-zwierciadla.vad.npy
+./dobroczynnosc/ignacy-krasicki-bajki-i-przypowiesci-dobroczynnosc.spk_emb.npy
+./dobroczynnosc/ignacy-krasicki-bajki-i-przypowiesci-dobroczynnosc.subvads.pyd
+./dobroczynnosc/ignacy-krasicki-bajki-i-przypowiesci-dobroczynnosc.vad.npy
+./krol-i-pisarze/ignacy-krasicki-bajki-i-przypowiesci-krol-i-pisarze.spk_emb.npy
+./krol-i-pisarze/ignacy-krasicki-bajki-i-przypowiesci-krol-i-pisarze.subvads.pyd
+./krol-i-pisarze/ignacy-krasicki-bajki-i-przypowiesci-krol-i-pisarze.vad.npy
+./grzegorzewska-wszystkie-wieczory-swiata/wszystkie-wieczory-swiata.spk_emb.npy
+./grzegorzewska-wszystkie-wieczory-swiata/wszystkie-wieczory-swiata.subvads.pyd
+./grzegorzewska-wszystkie-wieczory-swiata/wszystkie-wieczory-swiata.vad.npy
+./do-leukonoe/do-leukonoe.spk_emb.npy
+./do-leukonoe/do-leukonoe.subvads.pyd
+./do-leukonoe/do-leukonoe.vad.npy
+./slonecznik-i-fialek-bajki-nowe/slonecznik-i-fialek-bajki-nowe.spk_emb.npy
+./slonecznik-i-fialek-bajki-nowe/slonecznik-i-fialek-bajki-nowe.subvads.pyd
+./slonecznik-i-fialek-bajki-nowe/slonecznik-i-fialek-bajki-nowe.vad.npy
+./slowka-zbior-odsiecz-wiednia/tadeusz-boy-zelenski-slowka-zbior-odsiecz-wiednia.spk_emb.npy
+./slowka-zbior-odsiecz-wiednia/tadeusz-boy-zelenski-slowka-zbior-odsiecz-wiednia.subvads.pyd
+./slowka-zbior-odsiecz-wiednia/tadeusz-boy-zelenski-slowka-zbior-odsiecz-wiednia.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_022_rozdzial-22.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_022_rozdzial-22.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_022_rozdzial-22.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_010_rozdzial-10.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_010_rozdzial-10.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_010_rozdzial-10.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_027_rozdzial-27.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_027_rozdzial-27.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_027_rozdzial-27.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_001_rozdzial-1.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_001_rozdzial-1.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_001_rozdzial-1.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_025_rozdzial-25.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_025_rozdzial-25.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_025_rozdzial-25.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_020_rozdzial-20.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_020_rozdzial-20.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_020_rozdzial-20.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_003_rozdzial-3.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_003_rozdzial-3.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_003_rozdzial-3.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_011_rozdzial-11.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_011_rozdzial-11.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_011_rozdzial-11.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_007_rozdzial-7.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_007_rozdzial-7.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_007_rozdzial-7.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_019_rozdzial-19.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_019_rozdzial-19.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_019_rozdzial-19.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_018_rozdzial-18.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_018_rozdzial-18.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_018_rozdzial-18.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_013_rozdzial-13.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_013_rozdzial-13.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_013_rozdzial-13.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_016_rozdzial-16.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_016_rozdzial-16.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_016_rozdzial-16.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_008_rozdzial-8.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_008_rozdzial-8.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_008_rozdzial-8.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_023_rozdzial-23.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_023_rozdzial-23.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_023_rozdzial-23.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_021_rozdzial-21.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_021_rozdzial-21.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_021_rozdzial-21.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_002_rozdzial-2.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_002_rozdzial-2.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_002_rozdzial-2.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_014_rozdzial-14.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_014_rozdzial-14.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_014_rozdzial-14.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_024_rozdzial-24.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_024_rozdzial-24.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_024_rozdzial-24.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_009_rozdzial-9.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_009_rozdzial-9.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_009_rozdzial-9.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_017_rozdzial-17.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_017_rozdzial-17.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_017_rozdzial-17.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_005_rozdzial-5.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_005_rozdzial-5.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_005_rozdzial-5.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_012_rozdzial-12.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_012_rozdzial-12.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_012_rozdzial-12.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_028_rozdzial-28.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_028_rozdzial-28.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_028_rozdzial-28.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_006_rozdzial-6.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_006_rozdzial-6.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_006_rozdzial-6.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_026_rozdzial-26.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_026_rozdzial-26.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_026_rozdzial-26.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_015_rozdzial-15.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_015_rozdzial-15.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_015_rozdzial-15.vad.npy
+./arystoteles-poetyka/arystoteles-poetyka_004_rozdzial-4.spk_emb.npy
+./arystoteles-poetyka/arystoteles-poetyka_004_rozdzial-4.subvads.pyd
+./arystoteles-poetyka/arystoteles-poetyka_004_rozdzial-4.vad.npy
+./slowka-zbior-piosenki-zb-piosenka-w-stylu-klasycznym/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-piosenka-w-stylu-klasycznym.spk_emb.npy
+./slowka-zbior-piosenki-zb-piosenka-w-stylu-klasycznym/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-piosenka-w-stylu-klasycznym.subvads.pyd
+./slowka-zbior-piosenki-zb-piosenka-w-stylu-klasycznym/tadeusz-boy-zelenski-slowka-zbior-piosenki-zielonego-balonika-piosenka-w-stylu-klasycznym.vad.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_010_w-noska.spk_emb.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_010_w-noska.subvads.pyd
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_010_w-noska.vad.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_007_bijatyka.spk_emb.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_007_bijatyka.subvads.pyd
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_007_bijatyka.vad.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_004_rozstanie.spk_emb.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_004_rozstanie.subvads.pyd
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_004_rozstanie.vad.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_009_list.spk_emb.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_009_list.subvads.pyd
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_009_list.vad.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_011_pimpus-smialek.spk_emb.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_011_pimpus-smialek.subvads.pyd
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_011_pimpus-smialek.vad.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_012_postanowienie.spk_emb.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_012_postanowienie.subvads.pyd
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_012_postanowienie.vad.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_005_marsz-z-kuchni.spk_emb.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_005_marsz-z-kuchni.subvads.pyd
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_005_marsz-z-kuchni.vad.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_003_lekcja-tanca.spk_emb.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_003_lekcja-tanca.subvads.pyd
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_003_lekcja-tanca.vad.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_001_szkola.spk_emb.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_001_szkola.subvads.pyd
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_001_szkola.vad.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_008_pimpus-buty-czysci.spk_emb.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_008_pimpus-buty-czysci.subvads.pyd
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_008_pimpus-buty-czysci.vad.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_002_szczescie-rodzinne.spk_emb.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_002_szczescie-rodzinne.subvads.pyd
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_002_szczescie-rodzinne.vad.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_006_katastrofa.spk_emb.npy
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_006_katastrofa.subvads.pyd
+./konopnicka-szkolne-przygody-pimpusia-sadelko/konopnicka-szkolne-przygody-pimpusia-sadelko_006_katastrofa.vad.npy
+./but-w-butonierce-przejechali/bruno-jasienski-but-w-butonierce-tomik-przejechali.spk_emb.npy
+./but-w-butonierce-przejechali/bruno-jasienski-but-w-butonierce-tomik-przejechali.subvads.pyd
+./but-w-butonierce-przejechali/bruno-jasienski-but-w-butonierce-tomik-przejechali.vad.npy
+./fiedorczuk-kazdy-snil-swoj-sen/fiedorczuk-kazdy-snil-swoj-sen.spk_emb.npy
+./fiedorczuk-kazdy-snil-swoj-sen/fiedorczuk-kazdy-snil-swoj-sen.subvads.pyd
+./fiedorczuk-kazdy-snil-swoj-sen/fiedorczuk-kazdy-snil-swoj-sen.vad.npy</code></pre>
+</div>
+</div>
+<div id="00b924c0" class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>ds <span class="op">=</span> chunked_audio_dataset([<span class="st">'../wolnelektury-wds2/wolnelektury-audio-000000.tar'</span>])</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>prev <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> s <span class="kw">in</span> progress_bar(ds, total<span class="op">=</span><span class="dv">6</span>):</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    sim <span class="op">=</span> F.cosine_similarity(torch.tensor(s[<span class="st">'spk_emb.npy'</span>]), torch.tensor((prev <span class="cf">if</span> prev <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> s)[<span class="st">'spk_emb.npy'</span>]), dim<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> sim <span class="op">&lt;</span> <span class="fl">0.5</span>: <span class="bu">print</span>(<span class="st">"new"</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(s[<span class="st">'__key__'</span>], sim, s[<span class="st">'tend'</span>] <span class="op">-</span> s[<span class="st">'tstart'</span>], <span class="bu">sum</span>([e<span class="op">-</span>s <span class="cf">for</span> s,e <span class="kw">in</span> s[<span class="st">'orig_s'</span>][<span class="st">'subvads.pyd'</span>][s[<span class="st">'i'</span>]]]))</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    display(IPython.display.Audio(s[<span class="st">'samples'</span>], rate<span class="op">=</span>s[<span class="st">'sample_rate'</span>]))</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    time.sleep(<span class="fl">.5</span>)</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    prev <span class="op">=</span> s</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/collabora\.github\.io\/WhisperSpeech");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/collabora/WhisperSpeech/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

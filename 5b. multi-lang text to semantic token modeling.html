@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.553">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>WhisperSpeech - Text to semantic tokens model</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="WhisperSpeech - Text to semantic tokens model">
+<meta property="og:description" content="An Open Source text-to-speech system built by inverting Whisper">
+<meta property="og:site_name" content="WhisperSpeech">
+<meta name="twitter:title" content="WhisperSpeech - Text to semantic tokens model">
+<meta name="twitter:description" content="An Open Source text-to-speech system built by inverting Whisper">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="./index.html" class="navbar-brand navbar-brand-logo">
+    <img src="./logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">WhisperSpeech</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/collabora/WhisperSpeech"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Text to semantic tokens model</li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">WhisperSpeech</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dataset preparation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I can has speech? What data WhisperSpeech needs?</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#dataset" id="toc-dataset" class="nav-link active" data-scroll-target="#dataset">Dataset</a>
+  <ul>
+  <li><a href="#load_dataset" id="toc-load_dataset" class="nav-link" data-scroll-target="#load_dataset">load_dataset</a></li>
+  </ul></li>
+  <li><a href="#modeling" id="toc-modeling" class="nav-link" data-scroll-target="#modeling">Modeling</a>
+  <ul>
+  <li><a href="#tunables" id="toc-tunables" class="nav-link" data-scroll-target="#tunables">Tunables</a></li>
+  <li><a href="#rand" id="toc-rand" class="nav-link" data-scroll-target="#rand">rand</a></li>
+  <li><a href="#t2sembedding" id="toc-t2sembedding" class="nav-link" data-scroll-target="#t2sembedding">T2SEmbedding</a></li>
+  <li><a href="#encoder" id="toc-encoder" class="nav-link" data-scroll-target="#encoder">Encoder</a></li>
+  <li><a href="#tsartransformer" id="toc-tsartransformer" class="nav-link" data-scroll-target="#tsartransformer">TSARTransformer</a></li>
+  <li><a href="#make_model" id="toc-make_model" class="nav-link" data-scroll-target="#make_model">make_model</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/collabora/WhisperSpeech/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Text to semantic tokens model</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<div id="73c7d17d" class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> whisperspeech.wer_metrics <span class="im">import</span> <span class="op">*</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> whisperspeech.train <span class="im">import</span> <span class="op">*</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastprogress <span class="im">import</span> master_bar</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> webdataset <span class="im">as</span> wds</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="dataset" class="level1">
+<h1>Dataset</h1>
+<hr>
+<p><a href="https://github.com/collabora/WhisperSpeech/blob/master/whisperspeech/vq_stoks.py#L104" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="load_dataset" class="level3">
+<h3 class="anchored" data-anchor-id="load_dataset">load_dataset</h3>
+<blockquote class="blockquote">
+<pre><code> load_dataset (txt_shard_spec:str, stoks_shard_dir:str, samples:int,
+               txt_kind:str='small.en-txt', vq_codes:int=4096,
+               language:str='en', weight:float=1, validation:bool=False,
+               exclude_files:str=None, cwd:pathlib.Path=None)</code></pre>
+</blockquote>
+<table class="table">
+<thead>
+<tr class="header">
+<th></th>
+<th><strong>Type</strong></th>
+<th><strong>Default</strong></th>
+<th><strong>Details</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>txt_shard_spec</td>
+<td>str</td>
+<td></td>
+<td>transcription webdataset shards</td>
+</tr>
+<tr class="even">
+<td>stoks_shard_dir</td>
+<td>str</td>
+<td></td>
+<td>stoks webdataset base dir</td>
+</tr>
+<tr class="odd">
+<td>samples</td>
+<td>int</td>
+<td></td>
+<td>samples per epoch</td>
+</tr>
+<tr class="even">
+<td>txt_kind</td>
+<td>str</td>
+<td>small.en-txt</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>vq_codes</td>
+<td>int</td>
+<td>4096</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>language</td>
+<td>str</td>
+<td>en</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>weight</td>
+<td>float</td>
+<td>1</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>validation</td>
+<td>bool</td>
+<td>False</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>exclude_files</td>
+<td>str</td>
+<td>None</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>cwd</td>
+<td>Path</td>
+<td>None</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<div id="d2cc12e0" class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Automatic pdb calling has been turned ON</code></pre>
+</div>
+</div>
+<div id="635b477d" class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>train_ds <span class="op">=</span> load_dataset(<span class="st">'../wolnelektury-wds2/wolnelektury-medium-txt-*.tar.gz'</span>, <span class="st">'../wolnelektury-vqv2/'</span>, <span class="dv">190000</span>,</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                        txt_kind<span class="op">=</span><span class="st">'medium-txt'</span>, vq_codes<span class="op">=</span><span class="dv">513</span>, language<span class="op">=</span><span class="st">'pl'</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                        exclude_files<span class="op">=</span><span class="st">'../wolnelektury-wds2/validation-samples'</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>val_ds <span class="op">=</span> load_dataset(<span class="st">'../wolnelektury-wds2/validation-eqvad.tar.gz'</span>, <span class="st">'../wolnelektury-vqv2/'</span>, <span class="dv">520</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                      txt_kind<span class="op">=</span><span class="st">'medium-txt'</span>, vq_codes<span class="op">=</span><span class="dv">513</span>, language<span class="op">=</span><span class="st">'pl'</span>, validation<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="88d39875" class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> x <span class="kw">in</span> progress_bar(train_ds, total<span class="op">=</span><span class="dv">100</span>): <span class="cf">pass</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>x</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+
+<style>
+    /* Turns off some styling */
+    progress {
+        /* gets rid of default border in Firefox and Opera. */
+        border: none;
+        /* Needs to be in here for Safari polyfill so background images work as expected. */
+        background-size: auto;
+    }
+    progress:not([value]), progress:not([value])::-webkit-progress-bar {
+        background: repeating-linear-gradient(45deg, #7e7e7e, #7e7e7e 10px, #5c5c5c 10px, #5c5c5c 20px);
+    }
+    .progress-bar-interrupted, .progress-bar-interrupted::-webkit-progress-bar {
+        background: #F44336;
+    }
+</style>
+</div>
+<div class="cell-output cell-output-display">
+
+    <div>
+      <progress value="100" class="" max="100" style="width:300px; height:20px; vertical-align: middle;"></progress>
+      100.00% [100/100 00:06&lt;00:00]
+    </div>
+    
+</div>
+<div class="cell-output cell-output-display">
+<pre><code>[tensor([[  0,  80, 114,  ...,   0,   0,   0],
+         [  0,  74,  97,  ...,   0,   0,   0],
+         [  0,  80, 114,  ...,   0,   0,   0],
+         ...,
+         [  0,  90,  32,  ...,   0,   0,   0],
+         [  0,  78, 105,  ...,   0,   0,   0],
+         [  0,  74,  97,  ...,   0,   0,   0]]),
+ tensor([[ 80, 114, 111,  ...,   0,   0,   0],
+         [ 74,  97,  99,  ...,   0,   0,   0],
+         [ 80, 114, 111,  ...,   0,   0,   0],
+         ...,
+         [ 90,  32, 100,  ...,   0,   0,   0],
+         [ 78, 105, 101,  ...,   0,   0,   0],
+         [ 74,  97,  32,  ...,   0,   0,   0]]),
+ array([10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+        10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+        10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+        10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]),
+ array([16.87227866, 13.26666667, 10.44474394, 12.30366492, 17.85714286,
+        12.91291291, 17.57731959, 12.59044863, 13.08701657,  9.05923345,
+         6.64893617, 16.04938272, 13.57664234, 16.6958042 , 12.89986092,
+        12.30385164, 13.0044843 , 11.58280922,  6.55940594, 14.94444444,
+        14.01639344, 11.34085213, 14.24632353, 13.95348837, 13.08219178,
+        14.08382066, 17.42424242, 13.91006098, 12.85425101, 14.37296417,
+        13.3640553 , 12.09103841, 12.54098361, 11.59711075, 14.07380608,
+        13.40388007, 14.59537572, 11.70212766, 12.1559633 , 14.36781609,
+        13.86138614, 12.27272727, 14.36915888, 13.57388316, 12.84059946,
+        13.21478382, 11.01123596, 15.40041068, 14.14473684, 10.51401869,
+        11.55172414, 14.90990991, 16.0130719 , 12.80959752, 14.18511066,
+         6.04448743, 11.36      , 15.35087719, 15.41155867, 14.49880668,
+        12.47892074, 12.34375   , 14.04612159, 16.55629139]),
+ tensor([[512, 460,  66,  ..., 512, 512, 512],
+         [512, 336, 452,  ..., 116, 116, 116],
+         [512,  66, 309,  ..., 512, 512, 512],
+         ...,
+         [512, 336, 253,  ..., 512, 512, 512],
+         [512, 336, 141,  ..., 512, 512, 512],
+         [512, 336, 261,  ..., 512, 512, 512]]),
+ tensor([[460,  66, 337,  ..., 512, 512, 512],
+         [336, 452, 417,  ..., 116, 116, 460],
+         [ 66, 309,  58,  ..., 512, 512, 512],
+         ...,
+         [336, 253, 253,  ..., 512, 512, 512],
+         [336, 141, 248,  ..., 512, 512, 512],
+         [336, 261, 197,  ..., 512, 512, 512]])]</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="modeling" class="level1">
+<h1>Modeling</h1>
+<hr>
+<p><a href="https://github.com/collabora/WhisperSpeech/blob/master/whisperspeech/vq_stoks.py#L160" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="tunables" class="level3">
+<h3 class="anchored" data-anchor-id="tunables">Tunables</h3>
+<blockquote class="blockquote">
+<pre><code> Tunables (init_std:float=1, embeddings_std:float=0.01,
+           embeddings_lr_scale:float=5,
+           embedding_projector_lr_scale:float=2.5, output_mult:float=0.35,
+           query_mult:float=1, encoder_depth_ratio:float=0.25,
+           causal_encoder:bool=True, eot_dropout_p:float=0.5,
+           cps_input:bool=True, cps_bins:int=32, lr0:float=0.0015,
+           clip_gradient_norm:float=0.2, weight_decay:float=0.1,
+           warmup_steps:float=4000, random:bool=False)</code></pre>
+</blockquote>
+<hr>
+<p><a href="https://github.com/collabora/WhisperSpeech/blob/master/whisperspeech/vq_stoks.py#L153" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="rand" class="level3">
+<h3 class="anchored" data-anchor-id="rand">rand</h3>
+<blockquote class="blockquote">
+<pre><code> rand (start, end)</code></pre>
+</blockquote>
+<hr>
+<p><a href="https://github.com/collabora/WhisperSpeech/blob/master/whisperspeech/t2s_up_wds_mlang_enclm.py#L162" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="t2sembedding" class="level3">
+<h3 class="anchored" data-anchor-id="t2sembedding">T2SEmbedding</h3>
+<blockquote class="blockquote">
+<pre><code> T2SEmbedding (length=1500, codes=1024, width=384, pos_embs=None,
+               stoks_width=384)</code></pre>
+</blockquote>
+<p>Base class for all neural network modules.</p>
+<p>Your models should also subclass this class.</p>
+<p>Modules can also contain other Modules, allowing to nest them in a tree structure. You can assign the submodules as regular attributes::</p>
+<pre><code>import torch.nn as nn
+import torch.nn.functional as F
+
+class Model(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 20, 5)
+        self.conv2 = nn.Conv2d(20, 20, 5)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        return F.relu(self.conv2(x))</code></pre>
+<p>Submodules assigned in this way will be registered, and will have their parameters converted too when you call :meth:<code>to</code>, etc.</p>
+<p>.. note:: As per the example above, an <code>__init__()</code> call to the parent class must be made before assignment on the child.</p>
+<p>:ivar training: Boolean represents whether this module is in training or evaluation mode. :vartype training: bool</p>
+<hr>
+<p><a href="https://github.com/collabora/WhisperSpeech/blob/master/whisperspeech/t2s_up_wds_mlang_enclm.py#L176" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="encoder" class="level3">
+<h3 class="anchored" data-anchor-id="encoder">Encoder</h3>
+<blockquote class="blockquote">
+<pre><code> Encoder (depth=6, width=384, n_head=6, length=1500, codes=1024,
+          emb_width=384, ffn_mult=4, pos_embs=None,
+          tunables=Tunables(init_std=1, embeddings_std=0.01,
+          embeddings_lr_scale=5, embedding_projector_lr_scale=2.5,
+          output_mult=0.35, query_mult=1, encoder_depth_ratio=0.25,
+          causal_encoder=True, eot_dropout_p=0.5, cps_input=True,
+          cps_bins=32, lr0=0.0015, clip_gradient_norm=0.2,
+          weight_decay=0.1, warmup_steps=4000, random=False))</code></pre>
+</blockquote>
+<p>Base class for all neural network modules.</p>
+<p>Your models should also subclass this class.</p>
+<p>Modules can also contain other Modules, allowing to nest them in a tree structure. You can assign the submodules as regular attributes::</p>
+<pre><code>import torch.nn as nn
+import torch.nn.functional as F
+
+class Model(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 20, 5)
+        self.conv2 = nn.Conv2d(20, 20, 5)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        return F.relu(self.conv2(x))</code></pre>
+<p>Submodules assigned in this way will be registered, and will have their parameters converted too when you call :meth:<code>to</code>, etc.</p>
+<p>.. note:: As per the example above, an <code>__init__()</code> call to the parent class must be made before assignment on the child.</p>
+<p>:ivar training: Boolean represents whether this module is in training or evaluation mode. :vartype training: bool</p>
+<hr>
+<p><a href="https://github.com/collabora/WhisperSpeech/blob/master/whisperspeech/t2s_up_wds_mlang_enclm.py#L212" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="tsartransformer" class="level3">
+<h3 class="anchored" data-anchor-id="tsartransformer">TSARTransformer</h3>
+<blockquote class="blockquote">
+<pre><code> TSARTransformer (depth=6, n_head=6, head_width=64, ffn_mult=4,
+                  ttoks_len=200, ttoks_codes=256, ttoks_width=None,
+                  stoks_len=1500, stoks_codes=1024, stoks_width=None,
+                  tunables=Tunables(init_std=1, embeddings_std=0.01,
+                  embeddings_lr_scale=5, embedding_projector_lr_scale=2.5,
+                  output_mult=0.35, query_mult=1,
+                  encoder_depth_ratio=0.25, causal_encoder=True,
+                  eot_dropout_p=0.5, cps_input=True, cps_bins=32,
+                  lr0=0.0015, clip_gradient_norm=0.2, weight_decay=0.1,
+                  warmup_steps=4000, random=False))</code></pre>
+</blockquote>
+<p>Base class for all neural network modules.</p>
+<p>Your models should also subclass this class.</p>
+<p>Modules can also contain other Modules, allowing to nest them in a tree structure. You can assign the submodules as regular attributes::</p>
+<pre><code>import torch.nn as nn
+import torch.nn.functional as F
+
+class Model(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 20, 5)
+        self.conv2 = nn.Conv2d(20, 20, 5)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        return F.relu(self.conv2(x))</code></pre>
+<p>Submodules assigned in this way will be registered, and will have their parameters converted too when you call :meth:<code>to</code>, etc.</p>
+<p>.. note:: As per the example above, an <code>__init__()</code> call to the parent class must be made before assignment on the child.</p>
+<p>:ivar training: Boolean represents whether this module is in training or evaluation mode. :vartype training: bool</p>
+<hr>
+<p><a href="https://github.com/collabora/WhisperSpeech/blob/master/whisperspeech/vq_stoks.py#L458" target="_blank" style="float:right; font-size:smaller">source</a></p>
+</section>
+<section id="make_model" class="level3">
+<h3 class="anchored" data-anchor-id="make_model">make_model</h3>
+<blockquote class="blockquote">
+<pre><code> make_model (size:str, frozen_embeddings_model:str=None,
+             tunables:__main__.Tunables=Tunables(init_std=1,
+             embeddings_std=0.01, embeddings_lr_scale=5,
+             embedding_projector_lr_scale=2.5, output_mult=0.35,
+             query_mult=1, encoder_depth_ratio=0.25, causal_encoder=True,
+             eot_dropout_p=0.5, cps_input=True, cps_bins=32, lr0=0.0015,
+             clip_gradient_norm=0.2, weight_decay=0.1, warmup_steps=4000,
+             random=False), dataset:torch.utils.data.dataset.Dataset=None)</code></pre>
+</blockquote>
+<div id="e23e1860" class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># baseline</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> make_model(<span class="st">'micro'</span>, dataset<span class="op">=</span>train_ds, frozen_embeddings_model<span class="op">=</span><span class="st">'vqmodel-medium-en+pl-512c-dim64.model'</span>,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                   tunables<span class="op">=</span>Tunables()).cuda()</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>train(<span class="st">"tsar-wx"</span>, model, train_ds, val_ds, half<span class="op">=</span><span class="va">True</span>, bs<span class="op">=</span><span class="dv">32</span>, lr<span class="op">=</span>model.tunables.lr0, epochs<span class="op">=</span><span class="dv">4</span>,</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>      warmup_steps<span class="op">=</span>model.tunables.warmup_steps, weight_decay<span class="op">=</span>model.tunables.weight_decay, clip_gradient_norm<span class="op">=</span>model.tunables.clip_gradient_norm,</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>      table_row_every_iters<span class="op">=</span><span class="dv">100000</span>, run_valid_every_iters<span class="op">=</span><span class="dv">10000</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+
+</div>
+<div class="cell-output cell-output-display">
+
+<style>
+    /* Turns off some styling */
+    progress {
+        /* gets rid of default border in Firefox and Opera. */
+        border: none;
+        /* Needs to be in here for Safari polyfill so background images work as expected. */
+        background-size: auto;
+    }
+    progress:not([value]), progress:not([value])::-webkit-progress-bar {
+        background: repeating-linear-gradient(45deg, #7e7e7e, #7e7e7e 10px, #5c5c5c 10px, #5c5c5c 20px);
+    }
+    .progress-bar-interrupted, .progress-bar-interrupted::-webkit-progress-bar {
+        background: #F44336;
+    }
+</style>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+
+    <div>
+      <progress value="4" class="" max="4" style="width:300px; height:20px; vertical-align: middle;"></progress>
+      100.00% [4/4 07:59&lt;00:00]
+    </div>
+    
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">samples</th>
+<th data-quarto-table-cell-role="th">train</th>
+<th data-quarto-table-cell-role="th">val</th>
+<th data-quarto-table-cell-role="th">time</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>100000</td>
+<td>2.62064</td>
+<td>2.48393</td>
+<td>01:06</td>
+</tr>
+<tr class="even">
+<td>200000</td>
+<td>1.79376</td>
+<td>1.77248</td>
+<td>02:11</td>
+</tr>
+<tr class="odd">
+<td>300000</td>
+<td>1.69666</td>
+<td>1.66202</td>
+<td>03:11</td>
+</tr>
+<tr class="even">
+<td>400000</td>
+<td>1.73755</td>
+<td>1.60740</td>
+<td>04:17</td>
+</tr>
+<tr class="odd">
+<td>500000</td>
+<td>1.75108</td>
+<td>1.56827</td>
+<td>05:17</td>
+</tr>
+<tr class="even">
+<td>600000</td>
+<td>1.59873</td>
+<td>1.53394</td>
+<td>06:23</td>
+</tr>
+<tr class="odd">
+<td>700000</td>
+<td>1.50289</td>
+<td>1.49515</td>
+<td>07:23</td>
+</tr>
+<tr class="even">
+<td>759936</td>
+<td>1.52261</td>
+<td>1.47473</td>
+<td>08:00</td>
+</tr>
+</tbody>
+</table>
+<p>
+
+    </p><div>
+      <progress value="5937" class="" max="5937" style="width:300px; height:20px; vertical-align: middle;"></progress>
+      100.00% [5937/5937 02:00&lt;00:00 #189984/189984 loss: 1.523 / 1.475]
+    </div>
+    
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="5B. Multi-lang text to semantic token modeling_files/figure-html/cell-13-output-4.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="f7029b8f" class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>model.save_model(<span class="st">'t2s-micro.model'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="8db2d673" class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># no encoder LM loss, trains visibly slower</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> make_model(<span class="st">'micro'</span>, dataset<span class="op">=</span>train_ds, frozen_embeddings_model<span class="op">=</span><span class="st">'vqmodel-medium-en+pl-512c-dim64.model'</span>,</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                   tunables<span class="op">=</span>Tunables(causal_encoder<span class="op">=</span><span class="va">False</span>)).cuda()</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>train(<span class="st">"tsar-wx"</span>, model, train_ds, val_ds, half<span class="op">=</span><span class="va">True</span>, bs<span class="op">=</span><span class="dv">32</span>, lr<span class="op">=</span>model.tunables.lr0, epochs<span class="op">=</span><span class="dv">4</span>,</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>      warmup_steps<span class="op">=</span><span class="dv">1500</span>, weight_decay<span class="op">=</span>model.tunables.weight_decay, clip_gradient_norm<span class="op">=</span>model.tunables.clip_gradient_norm,</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>      table_row_every_iters<span class="op">=</span><span class="dv">100000</span>, run_valid_every_iters<span class="op">=</span><span class="dv">10000</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+
+</div>
+<div class="cell-output cell-output-display">
+
+<style>
+    /* Turns off some styling */
+    progress {
+        /* gets rid of default border in Firefox and Opera. */
+        border: none;
+        /* Needs to be in here for Safari polyfill so background images work as expected. */
+        background-size: auto;
+    }
+    progress:not([value]), progress:not([value])::-webkit-progress-bar {
+        background: repeating-linear-gradient(45deg, #7e7e7e, #7e7e7e 10px, #5c5c5c 10px, #5c5c5c 20px);
+    }
+    .progress-bar-interrupted, .progress-bar-interrupted::-webkit-progress-bar {
+        background: #F44336;
+    }
+</style>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+
+    <div>
+      <progress value="4" class="" max="4" style="width:300px; height:20px; vertical-align: middle;"></progress>
+      100.00% [4/4 07:57&lt;00:00]
+    </div>
+    
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">samples</th>
+<th data-quarto-table-cell-role="th">train</th>
+<th data-quarto-table-cell-role="th">val</th>
+<th data-quarto-table-cell-role="th">time</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>100000</td>
+<td>2.44452</td>
+<td>2.38181</td>
+<td>01:04</td>
+</tr>
+<tr class="even">
+<td>200000</td>
+<td>2.33279</td>
+<td>2.19010</td>
+<td>02:11</td>
+</tr>
+<tr class="odd">
+<td>300000</td>
+<td>1.83019</td>
+<td>1.82918</td>
+<td>03:12</td>
+</tr>
+<tr class="even">
+<td>400000</td>
+<td>1.74988</td>
+<td>1.73074</td>
+<td>04:16</td>
+</tr>
+<tr class="odd">
+<td>500000</td>
+<td>1.58686</td>
+<td>1.67560</td>
+<td>05:15</td>
+</tr>
+<tr class="even">
+<td>600000</td>
+<td>1.54544</td>
+<td>1.62922</td>
+<td>06:21</td>
+</tr>
+<tr class="odd">
+<td>700000</td>
+<td>1.68379</td>
+<td>1.59513</td>
+<td>07:21</td>
+</tr>
+<tr class="even">
+<td>759936</td>
+<td>1.61915</td>
+<td>1.57619</td>
+<td>07:57</td>
+</tr>
+</tbody>
+</table>
+<p>
+
+    </p><div>
+      <progress value="5937" class="" max="5937" style="width:300px; height:20px; vertical-align: middle;"></progress>
+      100.00% [5937/5937 01:59&lt;00:00 #189984/189984 loss: 1.619 / 1.576]
+    </div>
+    
+</div>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>/opt/conda/lib/python3.10/site-packages/torch/optim/lr_scheduler.py:149: UserWarning: The epoch parameter in `scheduler.step()` was not necessary and is being deprecated where possible. Please use `scheduler.step()` to step the scheduler. During the deprecation, if epoch is different from None, the closed form is used instead of the new chainable form, where available. Please open an issue if you are unable to replicate your use case: https://github.com/pytorch/pytorch/issues/new/choose.
+  warnings.warn(EPOCH_DEPRECATION_WARNING, UserWarning)</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="5B. Multi-lang text to semantic token modeling_files/figure-html/cell-15-output-5.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/collabora\.github\.io\/WhisperSpeech");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/collabora/WhisperSpeech/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

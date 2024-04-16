@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.553">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>WhisperSpeech</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="WhisperSpeech">
+<meta property="og:site_name" content="WhisperSpeech">
+<meta name="twitter:title" content="WhisperSpeech">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="./index.html" class="navbar-brand navbar-brand-logo">
+    <img src="./logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">WhisperSpeech</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/collabora/WhisperSpeech"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">WhisperSpeech</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dataset preparation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">I can has speech? What data WhisperSpeech needs?</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<div id="528da33e" class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>ds <span class="op">=</span> wds.WebDataset(utils.shard_glob(<span class="st">'../wolnelektury-wds2/wolnelektury-eqvad-000000.tar.gz'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="0d7d5f1a" class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> s <span class="kw">in</span> ds: <span class="cf">break</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>s.keys()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<pre><code>dict_keys(['__key__', '__url__', 'spk_emb.npy', 'vad.npy'])</code></pre>
+</div>
+</div>
+<div id="9d54a45a" class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>split_dataset(<span class="st">'../wolnelektury-wds2/wolnelektury-eqvad-stoks-*.tar.gz'</span>, <span class="st">'../wolnelektury-wds2/validation-eqvad'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>['../wolnelektury-wds2/wolnelektury-eqvad-stoks-000014.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000008.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000010.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000004.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000011.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000003.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000002.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000007.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000013.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000005.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000009.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000000.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000006.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000012.tar.gz', '../wolnelektury-wds2/wolnelektury-eqvad-stoks-000001.tar.gz']
+{'../wolnelektury-wds2/validation-eqvad': &lt;webdataset.writer.TarWriter object&gt;}
+Looking for 520 samples...</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+
+<style>
+    /* Turns off some styling */
+    progress {
+        /* gets rid of default border in Firefox and Opera. */
+        border: none;
+        /* Needs to be in here for Safari polyfill so background images work as expected. */
+        background-size: auto;
+    }
+    progress:not([value]), progress:not([value])::-webkit-progress-bar {
+        background: repeating-linear-gradient(45deg, #7e7e7e, #7e7e7e 10px, #5c5c5c 10px, #5c5c5c 20px);
+    }
+    .progress-bar-interrupted, .progress-bar-interrupted::-webkit-progress-bar {
+        background: #F44336;
+    }
+</style>
+</div>
+<div class="cell-output cell-output-display">
+
+    <div>
+      <progress value="520" class="" max="520" style="width:300px; height:20px; vertical-align: middle;"></progress>
+      100.00% [520/520 00:01&lt;00:00]
+    </div>
+    
+</div>
+</div>
+<div id="ff744f31" class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>split_dataset(<span class="st">'whisperspeech-s2a-512c-tts-r/*.tar.gz'</span>, <span class="st">'s2a-dim64-ttsr-valfix'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># writing s2a-dim64-ttsr-valfix/train-000000.tar.gz 0 0.0 GB 00350 00:13&lt;00:00]
+# writing s2a-dim64-ttsr-valfix/train-000001.tar.gz 400 0.0 GB 4000&lt;04:44]]
+# writing s2a-dim64-ttsr-valfix/train-000002.tar.gz 400 0.0 GB 8000&lt;02:47]
+# writing s2a-dim64-ttsr-valfix/train-000003.tar.gz 400 0.0 GB 12000&lt;02:12]
+# writing s2a-dim64-ttsr-valfix/train-000004.tar.gz 400 0.0 GB 16001&lt;02:01]
+# writing s2a-dim64-ttsr-valfix/train-000005.tar.gz 400 0.0 GB 20001&lt;01:45]
+# writing s2a-dim64-ttsr-valfix/train-000006.tar.gz 400 0.0 GB 24001&lt;01:39]
+# writing s2a-dim64-ttsr-valfix/train-000007.tar.gz 400 0.0 GB 28001&lt;01:35]
+# writing s2a-dim64-ttsr-valfix/train-000008.tar.gz 400 0.0 GB 32001&lt;01:32]
+# writing s2a-dim64-ttsr-valfix/train-000009.tar.gz 400 0.0 GB 36001&lt;01:26]
+# writing s2a-dim64-ttsr-valfix/train-000010.tar.gz 400 0.0 GB 40002&lt;01:24]
+# writing s2a-dim64-ttsr-valfix/train-000011.tar.gz 400 0.0 GB 44002&lt;01:22]
+# writing s2a-dim64-ttsr-valfix/train-000012.tar.gz 400 0.0 GB 48002&lt;01:21]
+# writing s2a-dim64-ttsr-valfix/train-000013.tar.gz 400 0.0 GB 52002&lt;01:19]
+# writing s2a-dim64-ttsr-valfix/train-000014.tar.gz 400 0.0 GB 56002&lt;01:18]
+# writing s2a-dim64-ttsr-valfix/train-000015.tar.gz 400 0.0 GB 60002&lt;01:17]
+# writing s2a-dim64-ttsr-valfix/train-000016.tar.gz 400 0.0 GB 64003&lt;01:16]
+# writing s2a-dim64-ttsr-valfix/train-000017.tar.gz 400 0.0 GB 68003&lt;01:15]
+# writing s2a-dim64-ttsr-valfix/train-000018.tar.gz 400 0.0 GB 72003&lt;01:15]
+# writing s2a-dim64-ttsr-valfix/train-000019.tar.gz 400 0.0 GB 76003&lt;01:14]
+# writing s2a-dim64-ttsr-valfix/train-000020.tar.gz 400 0.0 GB 80003&lt;01:13]
+# writing s2a-dim64-ttsr-valfix/train-000021.tar.gz 400 0.0 GB 84003&lt;01:13]
+# writing s2a-dim64-ttsr-valfix/train-000022.tar.gz 400 0.0 GB 88004&lt;01:12]
+# writing s2a-dim64-ttsr-valfix/train-000023.tar.gz 400 0.0 GB 92004&lt;01:11]
+# writing s2a-dim64-ttsr-valfix/train-000024.tar.gz 400 0.0 GB 96004&lt;01:11]
+# writing s2a-dim64-ttsr-valfix/train-000025.tar.gz 400 0.0 GB 10000&lt;01:10]
+# writing s2a-dim64-ttsr-valfix/train-000026.tar.gz 400 0.0 GB 104004&lt;01:10]
+# writing s2a-dim64-ttsr-valfix/train-000027.tar.gz 400 0.0 GB 108005&lt;01:09]
+# writing s2a-dim64-ttsr-valfix/train-000028.tar.gz 400 0.0 GB 112005&lt;01:09]
+# writing s2a-dim64-ttsr-valfix/train-000029.tar.gz 400 0.0 GB 116005&lt;01:09]
+# writing s2a-dim64-ttsr-valfix/train-000030.tar.gz 400 0.0 GB 12000
+# writing s2a-dim64-ttsr-valfix/train-000031.tar.gz 400 0.0 GB 124005&lt;01:08]
+# writing s2a-dim64-ttsr-valfix/train-000032.tar.gz 400 0.0 GB 128005&lt;01:08]
+# writing s2a-dim64-ttsr-valfix/train-000033.tar.gz 400 0.0 GB 132005&lt;01:07]
+# writing s2a-dim64-ttsr-valfix/train-000034.tar.gz 400 0.0 GB 136006&lt;01:07]
+# writing s2a-dim64-ttsr-valfix/train-000035.tar.gz 400 0.0 GB 140006&lt;01:07]
+# writing s2a-dim64-ttsr-valfix/train-000036.tar.gz 400 0.0 GB 144006&lt;01:07]
+# writing s2a-dim64-ttsr-valfix/train-000037.tar.gz 400 0.0 GB 148006&lt;01:06]
+# writing s2a-dim64-ttsr-valfix/train-000038.tar.gz 400 0.0 GB 152006&lt;01:06]
+# writing s2a-dim64-ttsr-valfix/train-000039.tar.gz 400 0.0 GB 156007&lt;01:06]
+# writing s2a-dim64-ttsr-valfix/train-000040.tar.gz 400 0.0 GB 160007&lt;01:05]
+# writing s2a-dim64-ttsr-valfix/train-000041.tar.gz 400 0.0 GB 1640007&lt;01:05]
+# writing s2a-dim64-ttsr-valfix/train-000042.tar.gz 400 0.0 GB 1680007&lt;01:05]
+# writing s2a-dim64-ttsr-valfix/train-000043.tar.gz 400 0.0 GB 1720007&lt;01:04]
+# writing s2a-dim64-ttsr-valfix/train-000044.tar.gz 400 0.0 GB 17600
+# writing s2a-dim64-ttsr-valfix/train-000045.tar.gz 400 0.0 GB 1800008&lt;01:04]
+# writing s2a-dim64-ttsr-valfix/train-000046.tar.gz 400 0.0 GB 1840008&lt;01:04]
+# writing s2a-dim64-ttsr-valfix/train-000047.tar.gz 400 0.0 GB 1880008&lt;01:03]
+# writing s2a-dim64-ttsr-valfix/train-000048.tar.gz 400 0.0 GB 1920008&lt;01:03]
+# writing s2a-dim64-ttsr-valfix/train-000049.tar.gz 400 0.0 GB 1960008&lt;01:03]
+# writing s2a-dim64-ttsr-valfix/train-000050.tar.gz 400 0.0 GB 2000009&lt;01:03]
+# writing s2a-dim64-ttsr-valfix/train-000051.tar.gz 400 0.0 GB 2040009&lt;01:02]
+# writing s2a-dim64-ttsr-valfix/train-000052.tar.gz 400 0.0 GB 2080009&lt;01:02]
+# writing s2a-dim64-ttsr-valfix/train-000053.tar.gz 400 0.0 GB 2120009&lt;01:02]
+# writing s2a-dim64-ttsr-valfix/train-000054.tar.gz 400 0.0 GB 21600
+# writing s2a-dim64-ttsr-valfix/train-000055.tar.gz 400 0.0 GB 2200009&lt;01:02]
+# writing s2a-dim64-ttsr-valfix/train-000056.tar.gz 400 0.0 GB 2240009&lt;01:01]
+# writing s2a-dim64-ttsr-valfix/train-000057.tar.gz 400 0.0 GB 2280010&lt;01:01]
+# writing s2a-dim64-ttsr-valfix/train-000058.tar.gz 400 0.0 GB 2320010&lt;01:01]
+# writing s2a-dim64-ttsr-valfix/train-000059.tar.gz 400 0.0 GB 2360010&lt;01:01]
+# writing s2a-dim64-ttsr-valfix/train-000060.tar.gz 400 0.0 GB 2400010&lt;01:00]
+# writing s2a-dim64-ttsr-valfix/train-000061.tar.gz 400 0.0 GB 2440010&lt;01:00]
+# writing s2a-dim64-ttsr-valfix/train-000062.tar.gz 400 0.0 GB 2480011&lt;01:00]
+# writing s2a-dim64-ttsr-valfix/train-000063.tar.gz 400 0.0 GB 2520011&lt;01:00]
+# writing s2a-dim64-ttsr-valfix/train-000064.tar.gz 400 0.0 GB 25600
+# writing s2a-dim64-ttsr-valfix/train-000065.tar.gz 400 0.0 GB 2600011&lt;00:59]
+# writing s2a-dim64-ttsr-valfix/train-000066.tar.gz 400 0.0 GB 2640011&lt;00:59]
+# writing s2a-dim64-ttsr-valfix/train-000067.tar.gz 400 0.0 GB 2680011&lt;00:59]
+# writing s2a-dim64-ttsr-valfix/train-000068.tar.gz 400 0.0 GB 2720012&lt;00:59]
+# writing s2a-dim64-ttsr-valfix/train-000069.tar.gz 400 0.0 GB 2760012&lt;00:59]
+# writing s2a-dim64-ttsr-valfix/train-000070.tar.gz 400 0.0 GB 2800012&lt;00:58]
+# writing s2a-dim64-ttsr-valfix/train-000071.tar.gz 400 0.0 GB 2840012&lt;00:58]
+# writing s2a-dim64-ttsr-valfix/train-000072.tar.gz 400 0.0 GB 2880012&lt;00:58]
+# writing s2a-dim64-ttsr-valfix/train-000073.tar.gz 400 0.0 GB 2920013&lt;00:58]
+# writing s2a-dim64-ttsr-valfix/train-000074.tar.gz 400 0.0 GB 29600
+# writing s2a-dim64-ttsr-valfix/train-000075.tar.gz 400 0.0 GB 3000013&lt;00:57]
+# writing s2a-dim64-ttsr-valfix/train-000076.tar.gz 400 0.0 GB 3040013&lt;00:57]
+# writing s2a-dim64-ttsr-valfix/train-000077.tar.gz 400 0.0 GB 3080013&lt;00:57]
+# writing s2a-dim64-ttsr-valfix/train-000078.tar.gz 400 0.0 GB 3120013&lt;00:57]
+# writing s2a-dim64-ttsr-valfix/train-000079.tar.gz 400 0.0 GB 3160014&lt;00:56]
+# writing s2a-dim64-ttsr-valfix/train-000080.tar.gz 400 0.0 GB 3200014&lt;00:56]
+# writing s2a-dim64-ttsr-valfix/train-000081.tar.gz 400 0.0 GB 3240014&lt;00:56]
+# writing s2a-dim64-ttsr-valfix/train-000082.tar.gz 400 0.0 GB 3280014&lt;00:56]
+# writing s2a-dim64-ttsr-valfix/train-000083.tar.gz 400 0.0 GB 33200
+# writing s2a-dim64-ttsr-valfix/train-000084.tar.gz 400 0.0 GB 3360014&lt;00:56]
+# writing s2a-dim64-ttsr-valfix/train-000085.tar.gz 400 0.0 GB 3400014&lt;00:55]
+# writing s2a-dim64-ttsr-valfix/train-000086.tar.gz 400 0.0 GB 3440015&lt;00:55]
+# writing s2a-dim64-ttsr-valfix/train-000087.tar.gz 400 0.0 GB 3480015&lt;00:55]
+# writing s2a-dim64-ttsr-valfix/train-000088.tar.gz 400 0.0 GB 3520015&lt;00:55]
+# writing s2a-dim64-ttsr-valfix/train-000089.tar.gz 400 0.0 GB 3560015&lt;00:54]
+# writing s2a-dim64-ttsr-valfix/train-000090.tar.gz 400 0.0 GB 3600015&lt;00:54]
+# writing s2a-dim64-ttsr-valfix/train-000091.tar.gz 400 0.0 GB 36400
+# writing s2a-dim64-ttsr-valfix/train-000092.tar.gz 400 0.0 GB 3680016&lt;00:54]
+# writing s2a-dim64-ttsr-valfix/train-000093.tar.gz 400 0.0 GB 3720016&lt;00:54]
+# writing s2a-dim64-ttsr-valfix/train-000094.tar.gz 400 0.0 GB 3760016&lt;00:53]
+# writing s2a-dim64-ttsr-valfix/train-000095.tar.gz 400 0.0 GB 3800016&lt;00:53]
+# writing s2a-dim64-ttsr-valfix/train-000096.tar.gz 400 0.0 GB 3840016&lt;00:53]
+# writing s2a-dim64-ttsr-valfix/train-000097.tar.gz 400 0.0 GB 3880017&lt;00:53]
+# writing s2a-dim64-ttsr-valfix/train-000098.tar.gz 400 0.0 GB 3920017&lt;00:52]
+# writing s2a-dim64-ttsr-valfix/train-000099.tar.gz 400 0.0 GB 3960017&lt;00:52]
+# writing s2a-dim64-ttsr-valfix/train-000100.tar.gz 400 0.0 GB 40000
+# writing s2a-dim64-ttsr-valfix/train-000101.tar.gz 400 0.0 GB 4040017&lt;00:52]
+# writing s2a-dim64-ttsr-valfix/train-000102.tar.gz 400 0.0 GB 4080017&lt;00:52]
+# writing s2a-dim64-ttsr-valfix/train-000103.tar.gz 400 0.0 GB 4120018&lt;00:52]
+# writing s2a-dim64-ttsr-valfix/train-000104.tar.gz 400 0.0 GB 4160018&lt;00:51]
+# writing s2a-dim64-ttsr-valfix/train-000105.tar.gz 400 0.0 GB 4200018&lt;00:51]
+# writing s2a-dim64-ttsr-valfix/train-000106.tar.gz 400 0.0 GB 4240018&lt;00:51]
+# writing s2a-dim64-ttsr-valfix/train-000107.tar.gz 400 0.0 GB 4280018&lt;00:51]
+# writing s2a-dim64-ttsr-valfix/train-000108.tar.gz 400 0.0 GB 43200
+# writing s2a-dim64-ttsr-valfix/train-000109.tar.gz 400 0.0 GB 4360019&lt;00:51]
+# writing s2a-dim64-ttsr-valfix/train-000110.tar.gz 400 0.0 GB 4400019&lt;00:50]
+# writing s2a-dim64-ttsr-valfix/train-000111.tar.gz 400 0.0 GB 4440019&lt;00:50]
+# writing s2a-dim64-ttsr-valfix/train-000112.tar.gz 400 0.0 GB 4480019&lt;00:50]
+# writing s2a-dim64-ttsr-valfix/train-000113.tar.gz 400 0.0 GB 4520019&lt;00:50]
+# writing s2a-dim64-ttsr-valfix/train-000114.tar.gz 400 0.0 GB 4560020&lt;00:50]
+# writing s2a-dim64-ttsr-valfix/train-000115.tar.gz 400 0.0 GB 4600020&lt;00:49]
+# writing s2a-dim64-ttsr-valfix/train-000116.tar.gz 400 0.0 GB 4640020&lt;00:49]
+# writing s2a-dim64-ttsr-valfix/train-000117.tar.gz 400 0.0 GB 46800
+# writing s2a-dim64-ttsr-valfix/train-000118.tar.gz 400 0.0 GB 4720020&lt;00:49]
+# writing s2a-dim64-ttsr-valfix/train-000119.tar.gz 400 0.0 GB 4760020&lt;00:49]
+# writing s2a-dim64-ttsr-valfix/train-000120.tar.gz 400 0.0 GB 4800021&lt;00:49]
+# writing s2a-dim64-ttsr-valfix/train-000121.tar.gz 400 0.0 GB 4840021&lt;00:48]
+# writing s2a-dim64-ttsr-valfix/train-000122.tar.gz 400 0.0 GB 4880021&lt;00:48]
+# writing s2a-dim64-ttsr-valfix/train-000123.tar.gz 400 0.0 GB 4920021&lt;00:48]
+# writing s2a-dim64-ttsr-valfix/train-000124.tar.gz 400 0.0 GB 4960021&lt;00:48]
+# writing s2a-dim64-ttsr-valfix/train-000125.tar.gz 400 0.0 GB 50000
+# writing s2a-dim64-ttsr-valfix/train-000126.tar.gz 400 0.0 GB 5040022&lt;00:48]
+# writing s2a-dim64-ttsr-valfix/train-000127.tar.gz 400 0.0 GB 5080022&lt;00:47]
+# writing s2a-dim64-ttsr-valfix/train-000128.tar.gz 400 0.0 GB 5120022&lt;00:47]
+# writing s2a-dim64-ttsr-valfix/train-000129.tar.gz 400 0.0 GB 5160022&lt;00:47]
+# writing s2a-dim64-ttsr-valfix/train-000130.tar.gz 400 0.0 GB 5200022&lt;00:47]
+# writing s2a-dim64-ttsr-valfix/train-000131.tar.gz 400 0.0 GB 5240022&lt;00:47]
+# writing s2a-dim64-ttsr-valfix/train-000132.tar.gz 400 0.0 GB 5280023&lt;00:46]
+# writing s2a-dim64-ttsr-valfix/train-000133.tar.gz 400 0.0 GB 53200
+# writing s2a-dim64-ttsr-valfix/train-000134.tar.gz 400 0.0 GB 5360023&lt;00:46]
+# writing s2a-dim64-ttsr-valfix/train-000135.tar.gz 400 0.0 GB 5400023&lt;00:46]
+# writing s2a-dim64-ttsr-valfix/train-000136.tar.gz 400 0.0 GB 5440023&lt;00:46]
+# writing s2a-dim64-ttsr-valfix/train-000137.tar.gz 400 0.0 GB 5480023&lt;00:46]
+# writing s2a-dim64-ttsr-valfix/train-000138.tar.gz 400 0.0 GB 5520024&lt;00:45]
+# writing s2a-dim64-ttsr-valfix/train-000139.tar.gz 400 0.0 GB 5560024&lt;00:45]
+# writing s2a-dim64-ttsr-valfix/train-000140.tar.gz 400 0.0 GB 5600024&lt;00:45]
+# writing s2a-dim64-ttsr-valfix/train-000141.tar.gz 400 0.0 GB 5640024&lt;00:45]
+# writing s2a-dim64-ttsr-valfix/train-000142.tar.gz 400 0.0 GB 56800
+# writing s2a-dim64-ttsr-valfix/train-000143.tar.gz 400 0.0 GB 5720024&lt;00:45]
+# writing s2a-dim64-ttsr-valfix/train-000144.tar.gz 400 0.0 GB 5760025&lt;00:44]
+# writing s2a-dim64-ttsr-valfix/train-000145.tar.gz 400 0.0 GB 5800025&lt;00:44]
+# writing s2a-dim64-ttsr-valfix/train-000146.tar.gz 400 0.0 GB 5840025&lt;00:44]
+# writing s2a-dim64-ttsr-valfix/train-000147.tar.gz 400 0.0 GB 5880025&lt;00:44]
+# writing s2a-dim64-ttsr-valfix/train-000148.tar.gz 400 0.0 GB 5920025&lt;00:44]
+# writing s2a-dim64-ttsr-valfix/train-000149.tar.gz 400 0.0 GB 5960026&lt;00:43]
+# writing s2a-dim64-ttsr-valfix/train-000150.tar.gz 400 0.0 GB 6000026&lt;00:43]
+# writing s2a-dim64-ttsr-valfix/train-000151.tar.gz 400 0.0 GB 60400
+# writing s2a-dim64-ttsr-valfix/train-000152.tar.gz 400 0.0 GB 6080026&lt;00:43]
+# writing s2a-dim64-ttsr-valfix/train-000153.tar.gz 400 0.0 GB 6120026&lt;00:43]
+# writing s2a-dim64-ttsr-valfix/train-000154.tar.gz 400 0.0 GB 6160026&lt;00:43]
+# writing s2a-dim64-ttsr-valfix/train-000155.tar.gz 400 0.0 GB 6200027&lt;00:42]
+# writing s2a-dim64-ttsr-valfix/train-000156.tar.gz 400 0.0 GB 6240027&lt;00:42]
+# writing s2a-dim64-ttsr-valfix/train-000157.tar.gz 400 0.0 GB 6280027&lt;00:42]
+# writing s2a-dim64-ttsr-valfix/train-000158.tar.gz 400 0.0 GB 6320027&lt;00:42]
+# writing s2a-dim64-ttsr-valfix/train-000159.tar.gz 400 0.0 GB 63600
+# writing s2a-dim64-ttsr-valfix/train-000160.tar.gz 400 0.0 GB 6400027&lt;00:42]
+# writing s2a-dim64-ttsr-valfix/train-000161.tar.gz 400 0.0 GB 6440028&lt;00:41]
+# writing s2a-dim64-ttsr-valfix/train-000162.tar.gz 400 0.0 GB 6480028&lt;00:41]
+# writing s2a-dim64-ttsr-valfix/train-000163.tar.gz 400 0.0 GB 6520028&lt;00:41]
+# writing s2a-dim64-ttsr-valfix/train-000164.tar.gz 400 0.0 GB 6560028&lt;00:41]
+# writing s2a-dim64-ttsr-valfix/train-000165.tar.gz 400 0.0 GB 6600028&lt;00:40]
+# writing s2a-dim64-ttsr-valfix/train-000166.tar.gz 400 0.0 GB 6640029&lt;00:40]
+# writing s2a-dim64-ttsr-valfix/train-000167.tar.gz 400 0.0 GB 66800
+# writing s2a-dim64-ttsr-valfix/train-000168.tar.gz 400 0.0 GB 6720029&lt;00:40]
+# writing s2a-dim64-ttsr-valfix/train-000169.tar.gz 400 0.0 GB 6760029&lt;00:40]
+# writing s2a-dim64-ttsr-valfix/train-000170.tar.gz 400 0.0 GB 6800029&lt;00:40]
+# writing s2a-dim64-ttsr-valfix/train-000171.tar.gz 400 0.0 GB 6840029&lt;00:39]
+# writing s2a-dim64-ttsr-valfix/train-000172.tar.gz 400 0.0 GB 6880030&lt;00:39]
+# writing s2a-dim64-ttsr-valfix/train-000173.tar.gz 400 0.0 GB 6920030&lt;00:39]
+# writing s2a-dim64-ttsr-valfix/train-000174.tar.gz 400 0.0 GB 6960030&lt;00:39]
+# writing s2a-dim64-ttsr-valfix/train-000175.tar.gz 400 0.0 GB 7000030&lt;00:39]
+# writing s2a-dim64-ttsr-valfix/train-000176.tar.gz 400 0.0 GB 70400
+# writing s2a-dim64-ttsr-valfix/train-000177.tar.gz 400 0.0 GB 7080030&lt;00:38]
+# writing s2a-dim64-ttsr-valfix/train-000178.tar.gz 400 0.0 GB 7120031&lt;00:38]
+# writing s2a-dim64-ttsr-valfix/train-000179.tar.gz 400 0.0 GB 7160031&lt;00:38]
+# writing s2a-dim64-ttsr-valfix/train-000180.tar.gz 400 0.0 GB 7200031&lt;00:38]
+# writing s2a-dim64-ttsr-valfix/train-000181.tar.gz 400 0.0 GB 7240031&lt;00:38]
+# writing s2a-dim64-ttsr-valfix/train-000182.tar.gz 400 0.0 GB 7280031&lt;00:37]
+# writing s2a-dim64-ttsr-valfix/train-000183.tar.gz 400 0.0 GB 7320032&lt;00:37]
+# writing s2a-dim64-ttsr-valfix/train-000184.tar.gz 400 0.0 GB 73600
+# writing s2a-dim64-ttsr-valfix/train-000185.tar.gz 400 0.0 GB 7400032&lt;00:37]
+# writing s2a-dim64-ttsr-valfix/train-000186.tar.gz 400 0.0 GB 7440032&lt;00:37]
+# writing s2a-dim64-ttsr-valfix/train-000187.tar.gz 400 0.0 GB 7480032&lt;00:37]
+# writing s2a-dim64-ttsr-valfix/train-000188.tar.gz 400 0.0 GB 7520032&lt;00:36]
+# writing███████████----------------------| 47.37% [75960/160350 00:33&lt;00:36] s2a-dim64-ttsr-valfix/train-000189.tar.gz 400 0.0 GB 75600
+# writing s2a-dim64-ttsr-valfix/train-000190.tar.gz 400 0.0 GB 7600033&lt;00:36]
+# writing s2a-dim64-ttsr-valfix/train-000191.tar.gz 400 0.0 GB 7640033&lt;00:36]
+# writing s2a-dim64-ttsr-valfix/train-000192.tar.gz 400 0.0 GB 76800
+# writing s2a-dim64-ttsr-valfix/train-000193.tar.gz 400 0.0 GB 7720033&lt;00:36]
+# writing s2a-dim64-ttsr-valfix/train-000194.tar.gz 400 0.0 GB 7760033&lt;00:35]
+# writing s2a-dim64-ttsr-valfix/train-000195.tar.gz 400 0.0 GB 7800034&lt;00:35]
+# writing s2a-dim64-ttsr-valfix/train-000196.tar.gz 400 0.0 GB 7840034&lt;00:35]
+# writing s2a-dim64-ttsr-valfix/train-000197.tar.gz 400 0.0 GB 7880034&lt;00:35]
+# writing s2a-dim64-ttsr-valfix/train-000198.tar.gz 400 0.0 GB 7920034&lt;00:35]
+# writing s2a-dim64-ttsr-valfix/train-000199.tar.gz 400 0.0 GB 7960034&lt;00:34]
+# writing s2a-dim64-ttsr-valfix/train-000200.tar.gz 400 0.0 GB 80000
+# writing s2a-dim64-ttsr-valfix/train-000201.tar.gz 400 0.0 GB 8040035&lt;00:34]
+# writing s2a-dim64-ttsr-valfix/train-000202.tar.gz 400 0.0 GB 8080035&lt;00:34]
+# writing s2a-dim64-ttsr-valfix/train-000203.tar.gz 400 0.0 GB 8120035&lt;00:34]
+# writing s2a-dim64-ttsr-valfix/train-000204.tar.gz 400 0.0 GB 8160035&lt;00:33]
+# writing s2a-dim64-ttsr-valfix/train-000205.tar.gz 400 0.0 GB 8200035&lt;00:33]
+# writing s2a-dim64-ttsr-valfix/train-000206.tar.gz 400 0.0 GB 8240035&lt;00:33]
+# writing s2a-dim64-ttsr-valfix/train-000207.tar.gz 400 0.0 GB 82800
+# writing s2a-dim64-ttsr-valfix/train-000208.tar.gz 400 0.0 GB 8320035&lt;00:33]
+# writing s2a-dim64-ttsr-valfix/train-000209.tar.gz 400 0.0 GB 8360036&lt;00:32]
+# writing s2a-dim64-ttsr-valfix/train-000210.tar.gz 400 0.0 GB 8400036&lt;00:32]
+# writing s2a-dim64-ttsr-valfix/train-000211.tar.gz 400 0.0 GB 8440036&lt;00:32]
+# writing s2a-dim64-ttsr-valfix/train-000212.tar.gz 400 0.0 GB 8480036&lt;00:32]
+# writing s2a-dim64-ttsr-valfix/train-000213.tar.gz 400 0.0 GB 8520036&lt;00:31]
+# writing s2a-dim64-ttsr-valfix/train-000214.tar.gz 400 0.0 GB 8560036&lt;00:31]
+# writing s2a-dim64-ttsr-valfix/train-000215.tar.gz 400 0.0 GB 86000
+# writing s2a-dim64-ttsr-valfix/train-000216.tar.gz 400 0.0 GB 8640036&lt;00:31]
+# writing s2a-dim64-ttsr-valfix/train-000217.tar.gz 400 0.0 GB 8680036&lt;00:31]
+# writing s2a-dim64-ttsr-valfix/train-000218.tar.gz 400 0.0 GB 8720037&lt;00:30]
+# writing s2a-dim64-ttsr-valfix/train-000219.tar.gz 400 0.0 GB 8760037&lt;00:30]
+# writing s2a-dim64-ttsr-valfix/train-000220.tar.gz 400 0.0 GB 8800037&lt;00:30]
+# writing s2a-dim64-ttsr-valfix/train-000221.tar.gz 400 0.0 GB 88400
+# writing s2a-dim64-ttsr-valfix/train-000222.tar.gz 400 0.0 GB 8880037&lt;00:30]
+# writing s2a-dim64-ttsr-valfix/train-000223.tar.gz 400 0.0 GB 8920037&lt;00:29]
+# writing s2a-dim64-ttsr-valfix/train-000224.tar.gz 400 0.0 GB 8960037&lt;00:29]
+# writing s2a-dim64-ttsr-valfix/train-000225.tar.gz 400 0.0 GB 9000037&lt;00:29]
+# writing s2a-dim64-ttsr-valfix/train-000226.tar.gz 400 0.0 GB 9040038&lt;00:29]
+# writing s2a-dim64-ttsr-valfix/train-000227.tar.gz 400 0.0 GB 9080038&lt;00:28]
+# writing s2a-dim64-ttsr-valfix/train-000228.tar.gz 400 0.0 GB 91200
+# writing s2a-dim64-ttsr-valfix/train-000229.tar.gz 400 0.0 GB 9160038&lt;00:28]
+# writing s2a-dim64-ttsr-valfix/train-000230.tar.gz 400 0.0 GB 9200038&lt;00:28]
+# writing s2a-dim64-ttsr-valfix/train-000231.tar.gz 400 0.0 GB 9240038&lt;00:28]
+# writing s2a-dim64-ttsr-valfix/train-000232.tar.gz 400 0.0 GB 9280038&lt;00:27]
+# writing s2a-dim64-ttsr-valfix/train-000233.tar.gz 400 0.0 GB 9320038&lt;00:27]
+# writing s2a-dim64-ttsr-valfix/train-000234.tar.gz 400 0.0 GB 93600
+# writing s2a-dim64-ttsr-valfix/train-000235.tar.gz 400 0.0 GB 9400039&lt;00:27]
+# writing s2a-dim64-ttsr-valfix/train-000236.tar.gz 400 0.0 GB 9440039&lt;00:27]
+# writing s2a-dim64-ttsr-valfix/train-000237.tar.gz 400 0.0 GB 9480039&lt;00:27]
+# writing s2a-dim64-ttsr-valfix/train-000238.tar.gz 400 0.0 GB 9520039&lt;00:26]
+# writing s2a-dim64-ttsr-valfix/train-000239.tar.gz 400 0.0 GB 9560039&lt;00:26]
+# writing s2a-dim64-ttsr-valfix/train-000240.tar.gz 400 0.0 GB 96000
+# writing s2a-dim64-ttsr-valfix/train-000241.tar.gz 400 0.0 GB 9640039&lt;00:26]
+# writing s2a-dim64-ttsr-valfix/train-000242.tar.gz 400 0.0 GB 9680039&lt;00:26]
+# writing s2a-dim64-ttsr-valfix/train-000243.tar.gz 400 0.0 GB 9720040&lt;00:25]
+# writing s2a-dim64-ttsr-valfix/train-000244.tar.gz 400 0.0 GB 9760040&lt;00:25]
+# writing s2a-dim64-ttsr-valfix/train-000245.tar.gz 400 0.0 GB 98000
+# writing s2a-dim64-ttsr-valfix/train-000246.tar.gz 400 0.0 GB 9840040&lt;00:25]
+# writing s2a-dim64-ttsr-valfix/train-000247.tar.gz 400 0.0 GB 9880040&lt;00:25]
+# writing s2a-dim64-ttsr-valfix/train-000248.tar.gz 400 0.0 GB 9920040&lt;00:24]
+# writing s2a-dim64-ttsr-valfix/train-000249.tar.gz 400 0.0 GB 9960040&lt;00:24]
+# writing s2a-dim64-ttsr-valfix/train-000250.tar.gz 400 0.0 GB 10000041&lt;00:24]
+# writing s2a-dim64-ttsr-valfix/train-000251.tar.gz 400 0.0 GB 100400
+# writing s2a-dim64-ttsr-valfix/train-000252.tar.gz 400 0.0 GB 10080041&lt;00:24]
+# writing s2a-dim64-ttsr-valfix/train-000253.tar.gz 400 0.0 GB 10120041&lt;00:23]
+# writing s2a-dim64-ttsr-valfix/train-000254.tar.gz 400 0.0 GB 10160041&lt;00:23]
+# writing s2a-dim64-ttsr-valfix/train-000255.tar.gz 400 0.0 GB 10200041&lt;00:23]
+# writing s2a-dim64-ttsr-valfix/train-000256.tar.gz 400 0.0 GB 102400
+# writing s2a-dim64-ttsr-valfix/train-000257.tar.gz 400 0.0 GB 10280041&lt;00:23]
+# writing s2a-dim64-ttsr-valfix/train-000258.tar.gz 400 0.0 GB 10320041&lt;00:23]
+# writing s2a-dim64-ttsr-valfix/train-000259.tar.gz 400 0.0 GB 10360042&lt;00:22]
+# writing s2a-dim64-ttsr-valfix/train-000260.tar.gz 400 0.0 GB 10400042&lt;00:22]
+# writing s2a-dim64-ttsr-valfix/train-000261.tar.gz 400 0.0 GB 10440042&lt;00:22]
+# writing s2a-dim64-ttsr-valfix/train-000262.tar.gz 400 0.0 GB 104800
+# writing s2a-dim64-ttsr-valfix/train-000263.tar.gz 400 0.0 GB 10520042&lt;00:22]
+# writing s2a-dim64-ttsr-valfix/train-000264.tar.gz 400 0.0 GB 10560042&lt;00:21]
+# writing s2a-dim64-ttsr-valfix/train-000265.tar.gz 400 0.0 GB 10600042&lt;00:21]
+# writing s2a-dim64-ttsr-valfix/train-000266.tar.gz 400 0.0 GB 10640042&lt;00:21]
+# writing s2a-dim64-ttsr-valfix/train-000267.tar.gz 400 0.0 GB 106800
+# writing s2a-dim64-ttsr-valfix/train-000268.tar.gz 400 0.0 GB 10720043&lt;00:21]
+# writing s2a-dim64-ttsr-valfix/train-000269.tar.gz 400 0.0 GB 10760043&lt;00:21]
+# writing s2a-dim64-ttsr-valfix/train-000270.tar.gz 400 0.0 GB 10800043&lt;00:20]
+# writing s2a-dim64-ttsr-valfix/train-000271.tar.gz 400 0.0 GB 10840043&lt;00:20]
+# writing s2a-dim64-ttsr-valfix/train-000272.tar.gz 400 0.0 GB 108800
+# writing s2a-dim64-ttsr-valfix/train-000273.tar.gz 400 0.0 GB 10920043&lt;00:20]
+# writing s2a-dim64-ttsr-valfix/train-000274.tar.gz 400 0.0 GB 10960043&lt;00:20]
+# writing s2a-dim64-ttsr-valfix/train-000275.tar.gz 400 0.0 GB 11000043&lt;00:19]
+# writing s2a-dim64-ttsr-valfix/train-000276.tar.gz 400 0.0 GB 11040044&lt;00:19]
+# writing s2a-dim64-ttsr-valfix/train-000277.tar.gz 400 0.0 GB 110800
+# writing s2a-dim64-ttsr-valfix/train-000278.tar.gz 400 0.0 GB 11120044&lt;00:19]
+# writing s2a-dim64-ttsr-valfix/train-000279.tar.gz 400 0.0 GB 11160044&lt;00:19]
+# writing s2a-dim64-ttsr-valfix/train-000280.tar.gz 400 0.0 GB 11200044&lt;00:19]
+# writing s2a-dim64-ttsr-valfix/train-000281.tar.gz 400 0.0 GB 11240044&lt;00:18]
+# writing s2a-dim64-ttsr-valfix/train-000282.tar.gz 400 0.0 GB 112800
+# writing s2a-dim64-ttsr-valfix/train-000283.tar.gz 400 0.0 GB 11320044&lt;00:18]
+# writing s2a-dim64-ttsr-valfix/train-000284.tar.gz 400 0.0 GB 11360045&lt;00:18]
+# writing s2a-dim64-ttsr-valfix/train-000285.tar.gz 400 0.0 GB 11400045&lt;00:18]
+# writing s2a-dim64-ttsr-valfix/train-000286.tar.gz 400 0.0 GB 114400
+# writing s2a-dim64-ttsr-valfix/train-000287.tar.gz 400 0.0 GB 11480045&lt;00:17]
+# writing s2a-dim64-ttsr-valfix/train-000288.tar.gz 400 0.0 GB 11520045&lt;00:17]
+# writing s2a-dim64-ttsr-valfix/train-000289.tar.gz 400 0.0 GB 11560045&lt;00:17]
+# writing s2a-dim64-ttsr-valfix/train-000290.tar.gz 400 0.0 GB 11600045&lt;00:17]
+# writing s2a-dim64-ttsr-valfix/train-000291.tar.gz 400 0.0 GB 116400
+# writing s2a-dim64-ttsr-valfix/train-000292.tar.gz 400 0.0 GB 11680045&lt;00:17]
+# writing s2a-dim64-ttsr-valfix/train-000293.tar.gz 400 0.0 GB 11720046&lt;00:16]
+# writing s2a-dim64-ttsr-valfix/train-000294.tar.gz 400 0.0 GB 11760046&lt;00:16]
+# writing s2a-dim64-ttsr-valfix/train-000295.tar.gz 400 0.0 GB 11800046&lt;00:16]
+# writing s2a-dim64-ttsr-valfix/train-000296.tar.gz 400 0.0 GB 118400
+# writing s2a-dim64-ttsr-valfix/train-000297.tar.gz 400 0.0 GB 11880046&lt;00:16]
+# writing s2a-dim64-ttsr-valfix/train-000298.tar.gz 400 0.0 GB 11920046&lt;00:15]
+# writing s2a-dim64-ttsr-valfix/train-000299.tar.gz 400 0.0 GB 11960046&lt;00:15]
+# writing s2a-dim64-ttsr-valfix/train-000300.tar.gz 400 0.0 GB 120000
+# writing s2a-dim64-ttsr-valfix/train-000301.tar.gz 400 0.0 GB 12040047&lt;00:15]
+# writing s2a-dim64-ttsr-valfix/train-000302.tar.gz 400 0.0 GB 12080047&lt;00:15]
+# writing s2a-dim64-ttsr-valfix/train-000303.tar.gz 400 0.0 GB 12120047&lt;00:15]
+# writing s2a-dim64-ttsr-valfix/train-000304.tar.gz 400 0.0 GB 12160047&lt;00:14]
+# writing s2a-dim64-ttsr-valfix/train-000305.tar.gz 400 0.0 GB 122000
+# writing s2a-dim64-ttsr-valfix/train-000306.tar.gz 400 0.0 GB 12240047&lt;00:14]
+# writing s2a-dim64-ttsr-valfix/train-000307.tar.gz 400 0.0 GB 12280047&lt;00:14]
+# writing s2a-dim64-ttsr-valfix/train-000308.tar.gz 400 0.0 GB 12320047&lt;00:14]
+# writing s2a-dim64-ttsr-valfix/train-000309.tar.gz 400 0.0 GB 12360048&lt;00:14]
+# writing s2a-dim64-ttsr-valfix/train-000310.tar.gz 400 0.0 GB 124000
+# writing s2a-dim64-ttsr-valfix/train-000311.tar.gz 400 0.0 GB 12440048&lt;00:13]
+# writing s2a-dim64-ttsr-valfix/train-000312.tar.gz 400 0.0 GB 12480048&lt;00:13]
+# writing s2a-dim64-ttsr-valfix/train-000313.tar.gz 400 0.0 GB 12520048&lt;00:13]
+# writing s2a-dim64-ttsr-valfix/train-000314.tar.gz 400 0.0 GB 125600
+# writing s2a-dim64-ttsr-valfix/train-000315.tar.gz 400 0.0 GB 12600048&lt;00:13]
+# writing s2a-dim64-ttsr-valfix/train-000316.tar.gz 400 0.0 GB 12640048&lt;00:13]
+# writing s2a-dim64-ttsr-valfix/train-000317.tar.gz 400 0.0 GB 12680049&lt;00:12]
+# writing s2a-dim64-ttsr-valfix/train-000318.tar.gz 400 0.0 GB 127200
+# writing s2a-dim64-ttsr-valfix/train-000319.tar.gz 400 0.0 GB 12760049&lt;00:12]
+# writing s2a-dim64-ttsr-valfix/train-000320.tar.gz 400 0.0 GB 12800049&lt;00:12]
+# writing s2a-dim64-ttsr-valfix/train-000321.tar.gz 400 0.0 GB 12840049&lt;00:12]
+# writing s2a-dim64-ttsr-valfix/train-000322.tar.gz 400 0.0 GB 12880049&lt;00:11]
+# writing s2a-dim64-ttsr-valfix/train-000323.tar.gz 400 0.0 GB 129200
+# writing s2a-dim64-ttsr-valfix/train-000324.tar.gz 400 0.0 GB 12960049&lt;00:11]
+# writing s2a-dim64-ttsr-valfix/train-000325.tar.gz 400 0.0 GB 13000050&lt;00:11]
+# writing s2a-dim64-ttsr-valfix/train-000326.tar.gz 400 0.0 GB 13040050&lt;00:11]
+# writing s2a-dim64-ttsr-valfix/train-000327.tar.gz 400 0.0 GB 130800
+# writing s2a-dim64-ttsr-valfix/train-000328.tar.gz 400 0.0 GB 13120050&lt;00:11]
+# writing s2a-dim64-ttsr-valfix/train-000329.tar.gz 400 0.0 GB 13160050&lt;00:10]
+# writing s2a-dim64-ttsr-valfix/train-000330.tar.gz 400 0.0 GB 13200050&lt;00:10]
+# writing s2a-dim64-ttsr-valfix/train-000331.tar.gz 400 0.0 GB 132400
+# writing s2a-dim64-ttsr-valfix/train-000332.tar.gz 400 0.0 GB 13280050&lt;00:10]
+# writing s2a-dim64-ttsr-valfix/train-000333.tar.gz 400 0.0 GB 13320050&lt;00:10]
+# writing s2a-dim64-ttsr-valfix/train-000334.tar.gz 400 0.0 GB 13360051&lt;00:10]
+# writing s2a-dim64-ttsr-valfix/train-000335.tar.gz 400 0.0 GB 13400051&lt;00:09]
+# writing s2a-dim64-ttsr-valfix/train-000336.tar.gz 400 0.0 GB 134400
+# writing s2a-dim64-ttsr-valfix/train-000337.tar.gz 400 0.0 GB 13480051&lt;00:09]
+# writing s2a-dim64-ttsr-valfix/train-000338.tar.gz 400 0.0 GB 13520051&lt;00:09]
+# writing s2a-dim64-ttsr-valfix/train-000339.tar.gz 400 0.0 GB 13560051&lt;00:09]
+# writing s2a-dim64-ttsr-valfix/train-000340.tar.gz 400 0.0 GB 136000
+# writing s2a-dim64-ttsr-valfix/train-000341.tar.gz 400 0.0 GB 13640051&lt;00:09]
+# writing s2a-dim64-ttsr-valfix/train-000342.tar.gz 400 0.0 GB 13680052&lt;00:08]
+# writing s2a-dim64-ttsr-valfix/train-000343.tar.gz 400 0.0 GB 13720052&lt;00:08]
+# writing s2a-dim64-ttsr-valfix/train-000344.tar.gz 400 0.0 GB 137600
+# writing s2a-dim64-ttsr-valfix/train-000345.tar.gz 400 0.0 GB 13800052&lt;00:08]
+# writing s2a-dim64-ttsr-valfix/train-000346.tar.gz 400 0.0 GB 13840052&lt;00:08]
+# writing s2a-dim64-ttsr-valfix/train-000347.tar.gz 400 0.0 GB 13880052&lt;00:08]
+# writing s2a-dim64-ttsr-valfix/train-000348.tar.gz 400 0.0 GB 139200
+# writing s2a-dim64-ttsr-valfix/train-000349.tar.gz 400 0.0 GB 13960052&lt;00:07]
+# writing s2a-dim64-ttsr-valfix/train-000350.tar.gz 400 0.0 GB 14000053&lt;00:07]
+# writing s2a-dim64-ttsr-valfix/train-000351.tar.gz 400 0.0 GB 14040053&lt;00:07]
+# writing s2a-dim64-ttsr-valfix/train-000352.tar.gz 400 0.0 GB 140800
+# writing s2a-dim64-ttsr-valfix/train-000353.tar.gz 400 0.0 GB 14120053&lt;00:07]
+# writing s2a-dim64-ttsr-valfix/train-000354.tar.gz 400 0.0 GB 14160053&lt;00:06]
+# writing s2a-dim64-ttsr-valfix/train-000355.tar.gz 400 0.0 GB 14200053&lt;00:06]
+# writing s2a-dim64-ttsr-valfix/train-000356.tar.gz 400 0.0 GB 142400
+# writing s2a-dim64-ttsr-valfix/train-000357.tar.gz 400 0.0 GB 14280053&lt;00:06]
+# writing s2a-dim64-ttsr-valfix/train-000358.tar.gz 400 0.0 GB 14320054&lt;00:06]
+# writing s2a-dim64-ttsr-valfix/train-000359.tar.gz 400 0.0 GB 14360054&lt;00:06]
+# writing s2a-dim64-ttsr-valfix/train-000360.tar.gz 400 0.0 GB 14400054&lt;00:05]
+# writing s2a-dim64-ttsr-valfix/train-000361.tar.gz 400 0.0 GB 144400
+# writing s2a-dim64-ttsr-valfix/train-000362.tar.gz 400 0.0 GB 14480054&lt;00:05]
+# writing s2a-dim64-ttsr-valfix/train-000363.tar.gz 400 0.0 GB 14520054&lt;00:05]
+# writing s2a-dim64-ttsr-valfix/train-000364.tar.gz 400 0.0 GB 14560054&lt;00:05]
+# writing s2a-dim64-ttsr-valfix/train-000365.tar.gz 400 0.0 GB 146000
+# writing s2a-dim64-ttsr-valfix/train-000366.tar.gz 400 0.0 GB 14640055&lt;00:05]
+# writing s2a-dim64-ttsr-valfix/train-000367.tar.gz 400 0.0 GB 14680055&lt;00:04]
+# writing s2a-dim64-ttsr-valfix/train-000368.tar.gz 400 0.0 GB 14720055&lt;00:04]
+# writing s2a-dim64-ttsr-valfix/train-000369.tar.gz 400 0.0 GB 147600
+# writing s2a-dim64-ttsr-valfix/train-000370.tar.gz 400 0.0 GB 14800055&lt;00:04]
+# writing s2a-dim64-ttsr-valfix/train-000371.tar.gz 400 0.0 GB 14840055&lt;00:04]
+# writing s2a-dim64-ttsr-valfix/train-000372.tar.gz 400 0.0 GB 14880055&lt;00:04]
+# writing s2a-dim64-ttsr-valfix/train-000373.tar.gz 400 0.0 GB 149200
+# writing s2a-dim64-ttsr-valfix/train-000374.tar.gz 400 0.0 GB 14960056&lt;00:03]
+# writing s2a-dim64-ttsr-valfix/train-000375.tar.gz 400 0.0 GB 15000056&lt;00:03]
+# writing s2a-dim64-ttsr-valfix/train-000376.tar.gz 400 0.0 GB 15040056&lt;00:03]
+# writing s2a-dim64-ttsr-valfix/train-000377.tar.gz 400 0.0 GB 150800
+# writing s2a-dim64-ttsr-valfix/train-000378.tar.gz 400 0.0 GB 15120056&lt;00:03]
+# writing s2a-dim64-ttsr-valfix/train-000379.tar.gz 400 0.0 GB 15160056&lt;00:03]
+# writing s2a-dim64-ttsr-valfix/train-000380.tar.gz 400 0.0 GB 15200056&lt;00:02]
+# writing s2a-dim64-ttsr-valfix/train-000381.tar.gz 400 0.0 GB 152400
+# writing s2a-dim64-ttsr-valfix/train-000382.tar.gz 400 0.0 GB 15280057&lt;00:02]
+# writing s2a-dim64-ttsr-valfix/train-000383.tar.gz 400 0.0 GB 15320057&lt;00:02]
+# writing s2a-dim64-ttsr-valfix/train-000384.tar.gz 400 0.0 GB 15360057&lt;00:02]
+# writing s2a-dim64-ttsr-valfix/train-000385.tar.gz 400 0.0 GB 154000
+# writing s2a-dim64-ttsr-valfix/train-000386.tar.gz 400 0.0 GB 15440057&lt;00:02]
+# writing s2a-dim64-ttsr-valfix/train-000387.tar.gz 400 0.0 GB 15480057&lt;00:01]
+# writing s2a-dim64-ttsr-valfix/train-000388.tar.gz 400 0.0 GB 155200
+# writing s2a-dim64-ttsr-valfix/train-000389.tar.gz 400 0.0 GB 15560057&lt;00:01]
+# writing s2a-dim64-ttsr-valfix/train-000390.tar.gz 400 0.0 GB 15600058&lt;00:01]
+# writing s2a-dim64-ttsr-valfix/train-000391.tar.gz 400 0.0 GB 15640058&lt;00:01]
+# writing s2a-dim64-ttsr-valfix/train-000392.tar.gz 400 0.0 GB 156800
+# writing s2a-dim64-ttsr-valfix/train-000393.tar.gz 400 0.0 GB 15720058&lt;00:01]
+# writing s2a-dim64-ttsr-valfix/train-000394.tar.gz 400 0.0 GB 15760058&lt;00:00]
+# writing s2a-dim64-ttsr-valfix/train-000395.tar.gz 400 0.0 GB 15800058&lt;00:00]
+# writing s2a-dim64-ttsr-valfix/train-000396.tar.gz 400 0.0 GB 158400
+# writing s2a-dim64-ttsr-valfix/train-000397.tar.gz 400 0.0 GB 15880058&lt;00:00]
+# writing s2a-dim64-ttsr-valfix/train-000398.tar.gz 400 0.0 GB 15920059&lt;00:00]
+# writing s2a-dim64-ttsr-valfix/train-000399.tar.gz 400 0.0 GB 15960059&lt;00:00]
+ |████████████████████████████████████████| 100.00% [160350/160350 00:59&lt;00:00]</code></pre>
+</div>
+</div>
+
+
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/collabora\.github\.io\/WhisperSpeech");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/collabora/WhisperSpeech/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

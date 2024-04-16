@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.553">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>WhisperSpeech - I can has speech? What data WhisperSpeech needs?</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="WhisperSpeech - I can has speech? What data WhisperSpeech needs?">
+<meta property="og:description" content="An Open Source text-to-speech system built by inverting Whisper">
+<meta property="og:site_name" content="WhisperSpeech">
+<meta name="twitter:title" content="WhisperSpeech - I can has speech? What data WhisperSpeech needs?">
+<meta name="twitter:description" content="An Open Source text-to-speech system built by inverting Whisper">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="./index.html" class="navbar-brand navbar-brand-logo">
+    <img src="./logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">WhisperSpeech</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/collabora/WhisperSpeech"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./dataset preparation.html">I can has speech? What data WhisperSpeech needs?</a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">WhisperSpeech</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dataset preparation.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">I can has speech? What data WhisperSpeech needs?</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#who-is-who-a-high-level-overview" id="toc-who-is-who-a-high-level-overview" class="nav-link active" data-scroll-target="#who-is-who-a-high-level-overview">Who is who? A high-level overview</a></li>
+  <li><a href="#tldr-example-give-me-the-codes" id="toc-tldr-example-give-me-the-codes" class="nav-link" data-scroll-target="#tldr-example-give-me-the-codes">TL;DR example – give me the codes!</a>
+  <ul>
+  <li><a href="#prepare-the-webdataset-shards" id="toc-prepare-the-webdataset-shards" class="nav-link" data-scroll-target="#prepare-the-webdataset-shards">Prepare the webdataset shards</a></li>
+  <li><a href="#process-the-shards-on-a-single-gpu-machine" id="toc-process-the-shards-on-a-single-gpu-machine" class="nav-link" data-scroll-target="#process-the-shards-on-a-single-gpu-machine">Process the shards on a single GPU machine</a></li>
+  <li><a href="#splitting-out-the-validation-sets" id="toc-splitting-out-the-validation-sets" class="nav-link" data-scroll-target="#splitting-out-the-validation-sets">Splitting out the validation set(s)</a></li>
+  <li><a href="#creating-the-dataset-configuration-files-for-training" id="toc-creating-the-dataset-configuration-files-for-training" class="nav-link" data-scroll-target="#creating-the-dataset-configuration-files-for-training">Creating the dataset configuration files for training</a></li>
+  </ul></li>
+  <li><a href="#why-webdataset" id="toc-why-webdataset" class="nav-link" data-scroll-target="#why-webdataset">Why WebDataset?</a></li>
+  <li><a href="#joins-on-webdatasets" id="toc-joins-on-webdatasets" class="nav-link" data-scroll-target="#joins-on-webdatasets">Joins on WebDatasets</a></li>
+  <li><a href="#examples-of-preprocessing-runs" id="toc-examples-of-preprocessing-runs" class="nav-link" data-scroll-target="#examples-of-preprocessing-runs">Examples of preprocessing runs</a></li>
+  <li><a href="#voice-activity-detection" id="toc-voice-activity-detection" class="nav-link" data-scroll-target="#voice-activity-detection">Voice activity detection</a></li>
+  <li><a href="#transcription" id="toc-transcription" class="nav-link" data-scroll-target="#transcription">Transcription</a></li>
+  <li><a href="#acoustic-token-extraction" id="toc-acoustic-token-extraction" class="nav-link" data-scroll-target="#acoustic-token-extraction">Acoustic token extraction</a></li>
+  <li><a href="#trainvalidation-split" id="toc-trainvalidation-split" class="nav-link" data-scroll-target="#trainvalidation-split">Train/validation split</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/collabora/WhisperSpeech/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">I can has speech? What data WhisperSpeech needs?</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<p><strong>WhisperSpeech</strong> is trained on heavily preprocessed speech data generated from several models:</p>
+<ul>
+<li>voice activity detection by <a href="https://huggingface.co/pyannote/voice-activity-detection">pyannote</a></li>
+<li>speaker embeddings by <a href="https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb">speechbrain</a></li>
+<li>acoustic tokens generated by <a href="https://github.com/facebookresearch/encodec">Encodec</a></li>
+<li>semantic tokens generated by <a href="https://github.com/collabora/WhisperSpeech/blob/main/nbs/2B.%20Whisper%20quantization%20(semantic%20token)%20model.ipynb">the quantized Whisper model</a></li>
+<li>automatic transcriptions made with <a href="https://github.com/openai/whisper">Whisper</a></li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://github.com/collabora/WhisperSpeech/blob/main/whisperspeech-diagram.png?raw=true" class="img-fluid figure-img"></p>
+<figcaption>WhisperSpeech TTS overview diagram</figcaption>
+</figure>
+</div>
+<section id="who-is-who-a-high-level-overview" class="level2">
+<h2 class="anchored" data-anchor-id="who-is-who-a-high-level-overview">Who is who? A high-level overview</h2>
+<p>To get these 3 data representations we have to run the audio data through several models. The first two steps are always the same, the rest depend on the model we want to run.</p>
+<ol type="1">
+<li><p>We start by downloading the speech audio files into a sharded webdataset (e.g.&nbsp;<a href="">A3. Download Project Guttenberg audiobooks</a>).<br>
+We released webdatasetified versions of two important public domain speech datasets – <a href="https://huggingface.co/datasets/collabora/librilight-webdataset/tree/main">LibriLight</a> and <a href="https://huggingface.co/datasets/collabora/the-project-gutenberg-open-audiobook-collection-wds/tree/main">Project Gutenberg Audiobooks</a>.</p></li>
+<li><p>All subsequent steps rely on voice activity detection (VAD) and diarization so we always generate segment lists and extract speaker embeddings for all audio files (see <a href="https://github.com/collabora/WhisperSpeech/blob/main/nbs/1B.%20Voice%20activity%20detection.ipynb">1B. Voice activity detection</a> and <a href="https://github.com/collabora/WhisperSpeech/blob/main/nbs/2A.%20Speaker%20Embeddings.ipynb">2A. Speaker Embeddings</a> for source code).<br>
+The results of this step were also released on Hugging Face – <a href="https://huggingface.co/datasets/collabora/librilight-processed-webdataset/tree/main">LibriLight</a> and <a href="https://huggingface.co/datasets/collabora/project-gutenberg-wds-preprocessed/tree/main">Project Gutenberg Audiobooks</a>.</p></li>
+</ol>
+<p>The next steps depend on which model we want to train or fine-tune.</p>
+<ol start="3" type="1">
+<li>To re-train the <em>quantized Whisper model</em> we need to transcribe the audio with <code>base.en</code> (<a href="https://github.com/collabora/WhisperSpeech/blob/main/nbs/2A.%20Whisper%20quantization%20dataset%20preparation.ipynb">2A. Whisper quantization dataset preparation</a>). A model pretrained on 60k hours of LibriLight is available from Hugging Face <a href="https://huggingface.co/collabora/whisperspeech/blob/main/whisper-vq-stoks-v2.model">whisper-vq-stoks-v2.model</a>.</li>
+<li>To train the text to semantic token model we need to transcribe the audio with Whisper <code>small.en</code> and extract the semantic tokens (<a href="https://github.com/collabora/WhisperSpeech/blob/main/nbs/5A.%20T2S%20dataset%20preparation.ipynb">5A. T2S dataset preparation</a>).</li>
+<li>To train the semantic to acoustic model we need to extract the semantic tokens and compress the audio with Encodec for the semantic to acoustic model (<a href="https://github.com/collabora/WhisperSpeech/blob/main/nbs/4A.%20S2A%20dataset%20preparation.ipynb">4A. S2A dataset preparation</a>).</li>
+</ol>
+<p>These three steps are all independent since they require different chunking of speech data. For quantizing Whisper and S2A training we greedily merge the VAD segments from the same speaker into (at most) 30 second chunks to improve training performance (more uniform chunks mean less computation time is spent on padding). For T2S we randomly truncate when merging the VAD segments so the model also learns how to work with shorter texts. The code to perform this is in <a href="https://github.com/collabora/WhisperSpeech/blob/main/nbs/1C.%20VAD%20merging.ipynb">1C. VAD merging</a>.</p>
+</section>
+<section id="tldr-example-give-me-the-codes" class="level2">
+<h2 class="anchored" data-anchor-id="tldr-example-give-me-the-codes">TL;DR example – give me the codes!</h2>
+<p>In this example we will convert a single split from the Multilingual Libri Speech dataset.</p>
+<section id="prepare-the-webdataset-shards" class="level4">
+<h4 class="anchored" data-anchor-id="prepare-the-webdataset-shards">Prepare the webdataset shards</h4>
+<p>The first, most time-consuming, step is to convert the data from it’s original form into the webdataset format. If you want to skip this section and still follow along, the results can be downloaded from Hugging Face at <a href="https://huggingface.co/datasets/collabora/multilingual-librispeech-webdataset/tree/main">datasets/collabora/multilingual-librispeech-webdataset</a>.</p>
+<p>First we need <code>tarp</code> which is a tool that helps create and manipulate the webdataset <code>tar</code> files more effectively. You can check out more about it in the <a href="https://github.com/webdataset/tarp#examples">official tarp README</a></p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> install <span class="at">-v</span> github.com/collabora/tarp/tarp@latest</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Afterwards, we download and unpack the original dataset files:</p>
+<pre><code>aria2c -x10 https://dl.fbaipublicfiles.com/mls/mls_french_opus.tar.gz
+tar -xf mls_french_opus.tar.gz</code></pre>
+<p>Next, we’ll need to convert each line in the <code>transcripts.txt</code> file:</p>
+<pre><code>10065_10039_000000      ses vêtements devinrent tout brillants de lumière et blancs comme la neige en sorte qu'il n'y a point de foulon sur la terre qui puisse en faire d'aussi blancs</code></pre>
+<p>into a <code>tarp</code> script:</p>
+<pre><code>train/10065_10039_000000.opus file:mls_french_opus/train/audio/10065/10039/10065_10039_000000.opus
+train/10065_10039_000000.txt text:ses vêtements devinrent tout brillants de lumière et blancs comme la neige en sorte qu'il n'y a point de foulon sur la terre qui puisse en faire d'aussi blancs</code></pre>
+<p>We can achieve this using a short Python script (saved as <code>make-script.py</code>):</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>fname <span class="op">=</span> sys.argv[<span class="dv">1</span>]</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="bu">dir</span>, split, _ <span class="op">=</span> fname.rsplit(<span class="st">"/"</span>, <span class="dv">2</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ln <span class="kw">in</span> <span class="bu">open</span>(fname):</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">id</span>, txt <span class="op">=</span> ln.split(<span class="st">"</span><span class="ch">\t</span><span class="st">"</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    a,b,c <span class="op">=</span> <span class="bu">id</span>.split(<span class="st">"_"</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    txt <span class="op">=</span> txt.replace(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span>, <span class="st">""</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"""</span><span class="sc">{</span>split<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span><span class="bu">id</span><span class="sc">}</span><span class="ss">.opus file:</span><span class="sc">{</span><span class="bu">dir</span><span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>split<span class="sc">}</span><span class="ss">/audio/</span><span class="sc">{</span>a<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>b<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span><span class="bu">id</span><span class="sc">}</span><span class="ss">.opus</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="sc">{</span>split<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span><span class="bu">id</span><span class="sc">}</span><span class="ss">.txt text:</span><span class="sc">{</span>txt<span class="sc">}</span><span class="ss">"""</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Once we have this, we can run the conversion process. The python script outputs data sample descriptions which are fed to <code>tarp create</code> that archives them into a tar stream (a bit similar to <code>tar -T -</code>). The <code>tarp split</code> will then cut the incoming stream into 2GB shards and save them to separate files, making sure to split on sample boundaries.</p>
+<p>The 2GB size was chosen as a good compromise between the shard count and shard transcription time for <code>mp3</code>/<code>opus</code> files with mutlilingual speech. For LibriLight (English compressed with <code>FLAC</code>) the magic number was <code>5GB</code> because we FLAC compresses less and we can also use a smaller model for transcribing English speech.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> make-script.py  mls_french_opus/train/transcripts.txt <span class="dt">\</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span> <span class="ex">/root/go/bin/tarp</span> create <span class="at">-o</span> <span class="at">-</span> <span class="at">-</span> <span class="dt">\</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span> <span class="ex">/root/go/bin/tarp</span> split <span class="at">-s</span> 2e9 <span class="at">-o</span> <span class="st">'mls_french_train-audio-%06d.tar'</span> <span class="at">-</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We’ll have to repeat the same command two times replacing <a href="https://collabora.github.io/WhisperSpeech/b1.%20training.html#train"><code>train</code></a> with <code>test</code> and <code>dev</code> and afterwards we can upload everything to Hugging Face:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">huggingface-cli</span> login</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">huggingface-cli</span> upload <span class="at">--repo-type</span> dataset collabora/multilingual-librispeech-webdataset .</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="process-the-shards-on-a-single-gpu-machine" class="level4">
+<h4 class="anchored" data-anchor-id="process-the-shards-on-a-single-gpu-machine">Process the shards on a single GPU machine</h4>
+<p>We do the sharding mainly to be able to effectively process data on many GPUs but for the sake of simplicity we will use a single GPU here. The process stays the same, but different tools would be used to schedule the jobs. For reference, below the commands, we have specified their approximate runtimes on a RTX 4090 for the French subset of MLS.</p>
+<p>Perform voice activity detection:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--eta</span> <span class="at">-j3</span> python <span class="at">-m</span> whisperspeech.vad {} ::: ./<span class="pp">*</span>.tar</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 50min</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Extract speaker embeddings for each fragment:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--eta</span> <span class="at">-j2</span> python <span class="at">-m</span> whisperspeech.extract_spk_emb <span class="at">--batch_size</span> 16 {} ::: ./<span class="pp">*</span>.tar</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 1h 10min</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We perform VAD segment merging (we do it as a separate step here to remove all randomness and get reproducibility for later steps):</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--eta</span> <span class="at">-j16</span> python <span class="at">-m</span> whisperspeech.vad_merge <span class="at">--eqvad</span> {} ::: <span class="pp">*</span>.tar</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--eta</span> <span class="at">-j16</span> python <span class="at">-m</span> whisperspeech.vad_merge {} ::: <span class="pp">*</span>.tar</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>With that covered we can start the heavy lifting with the transcripts:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--eta</span> <span class="at">-j1</span> python <span class="at">-m</span> whisperspeech.prepare_t2s_txts <span class="at">--transcription_model</span> medium <span class="at">--language</span> fr <span class="at">--batch_size</span> 32 {} ::: <span class="pp">*</span>.tar</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 6h 48min</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Afterwards comes Encodec compression:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--eta</span> <span class="at">-j2</span> python <span class="at">-m</span> whisperspeech.prepare_s2a_atoks <span class="at">--batch_size</span> 4 {} ::: <span class="pp">*</span>.tar</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 2h</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now we can extract the semantic tokens for both the T2S (<code>eqvad</code>) and S2A (<code>maxvad</code>) training:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--eta</span> <span class="at">-j1</span> python <span class="at">-m</span> whisperspeech.extract_stoks <span class="at">--batch_size</span> 16 <span class="at">--vq_model</span> ../nbs/vqmodel-medium-en+pl-512c-dim64.model {} ::: <span class="pp">*</span>.tar</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--eta</span> <span class="at">-j1</span> python <span class="at">-m</span> whisperspeech.extract_stoks <span class="at">--kind</span> eqvad <span class="at">--batch_size</span> 16 <span class="at">--vq_model</span> ../nbs/vqmodel-medium-en+pl-512c-dim64.model {} ::: <span class="pp">*</span>.tar</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 3h 45min</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="splitting-out-the-validation-sets" class="level4">
+<h4 class="anchored" data-anchor-id="splitting-out-the-validation-sets">Splitting out the validation set(s)</h4>
+<p>After we have all the samples we may want to extract some validation sets. There are many ways to do it but here we’ll manually choose some speakers we’ll later skip completely during training.</p>
+<p>We start by dumping all the sample ids:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">parallel</span> tar tf {} ::: stoks/<span class="pp">*</span>-atoks-3kbps-<span class="pp">*</span>.tar.gz <span class="kw">|</span> <span class="fu">sed</span> <span class="at">-e</span> <span class="st">'s/\.atoks\.npy//'</span> <span class="op">&gt;</span> all-samples-maxvad</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">parallel</span> tar tf {} ::: stoks/<span class="pp">*</span>-small.en-txt-<span class="pp">*</span>.tar.gz <span class="kw">|</span> <span class="fu">sed</span> <span class="at">-e</span> <span class="st">'s/\.txt//'</span> <span class="op">&gt;</span> all-samples-eqvad</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">wc</span> <span class="at">-l</span> all-samples-maxvad</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Because the sample ids (which are the original file paths) have speaker ids in them we can make a quick histogram:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span> all-samples-maxvad <span class="fu">awk</span> <span class="at">-F_</span> <span class="st">'{ print $1; }'</span><span class="kw">|</span><span class="fu">sort</span><span class="kw">|</span><span class="fu">uniq</span> <span class="at">-c</span><span class="kw">|</span><span class="fu">sort</span> <span class="at">-n</span><span class="kw">|</span><span class="fu">less</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>From the result we can copy and paste 10 speaker ids of around 50 samples each to get 512 validation samples. We’ll exclude them from the training set because we want to validate on unseen speakers. We have to repeat this process for both splits (<code>maxvad</code> and <code>eqvad</code> since they have’ll different sample counts and ids):</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span> all-samples-maxvad <span class="fu">grep</span> <span class="st">'train/1579\|train/2033\|train/3182\|train/12981\|train/2284\|train/2297\|train/6348\|train/7200\|train/7679\|train/1989'</span> <span class="op">&gt;</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">unseen-speakers-maxvad</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span> all-samples-eq <span class="fu">grep</span> <span class="st">'train/1579\|train/2033\|train/3182\|train/12981\|train/2284\|train/2297\|train/6348\|train/7200\|train/7679\|train/1989'</span> <span class="op">&gt;</span> unseen-speakers-eqvad</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Once we have all the ids we can rescan the whole dataset once and split out the validation samples to separate webdataset shards to make validation fast:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> whisperspeech.split_out_val_datasets <span class="pp">*</span>-atoks-<span class="pp">*</span> unseen-speakers-maxvad</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> whisperspeech.split_out_val_datasets <span class="st">'*-txt-*'</span> unseen-speakers-eqvad</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> stoks <span class="kw">&amp;&amp;</span> <span class="ex">python</span> <span class="at">-m</span> whisperspeech.split_out_val_datasets <span class="st">'*-maxvad-stoks-*'</span> ../unseen-speakers-maxvad</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> stoks <span class="kw">&amp;&amp;</span> <span class="ex">python</span> <span class="at">-m</span> whisperspeech.split_out_val_datasets <span class="st">'*-eqvad-stoks-*'</span> ../unseen-speakers-eqvad</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We can use <code>wc -l all-samples-maxvad</code> to find out how many samples we have.</p>
+</section>
+<section id="creating-the-dataset-configuration-files-for-training" class="level4">
+<h4 class="anchored" data-anchor-id="creating-the-dataset-configuration-files-for-training">Creating the dataset configuration files for training</h4>
+<p>Finally we create the configuration files for the training script:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> mls-fr-t2s-train.dataset <span class="op">&lt;&lt;EOF</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="st">multilingual-librispeech-webdataset/*-medium-txt-*.tar.gz multilingual-librispeech-webdataset/vq-en+pl/ 390203 --txt_kind='medium-txt' --language=fr --exclude_files multilingual-librispeech-webdataset/unseen-speakers-eqvad</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> mls-fr-s2a-train.dataset <span class="op">&lt;&lt;EOF</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="st">multilingual-librispeech-webdataset/*-atoks-*.tar.gz multilingual-librispeech-webdataset/vq-en+pl/ 338362  --language=fr --exclude_files multilingual-librispeech-webdataset/unseen-speakers-maxvad</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> mls-fr-s2a-val-unseen-speakers.dataset <span class="op">&lt;&lt;EOF</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="st">multilingual-librispeech-webdataset/unseen-speakers-maxvad.tar.gz multilingual-librispeech-webdataset/vq-en+pl/ 512 --language fr</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> mls-fr-t2s-val-unseen-speakers.dataset <span class="op">&lt;&lt;EOF</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="st">multilingual-librispeech-webdataset/unseen-speakers-eqvad.tar.gz multilingual-librispeech-webdataset/vq-en+pl/ 512 --txt_kind 'medium-txt' --language fr</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="why-webdataset" class="level2">
+<h2 class="anchored" data-anchor-id="why-webdataset">Why WebDataset?</h2>
+<p>All WhisperSpeech training and preproc code got reorganized around webdatasets. <a href="https://github.com/webdataset/webdataset">Webdatasets</a> are just simple tar files that store all our data samples (files) but they are great for working with very large datasets. Inside these tar files we can store multiple files per sample in any format we want (e.g.&nbsp;the speech mp3/flac/wav files, the text transcripts, tokens in numpy arrays). For example from the data used to train the <code>S2A</code> model we have:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> tar tf whisperspeech-s2a-512c-dim64/librilight-small-000.tar.gz <span class="kw">|</span><span class="fu">head</span> <span class="at">-6</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="ex">small/1874/shortlifelincoln_0809_librivox_64kb_mp3/shortlifeoflincoln_10_nicolay_64kb_021.atoks.npy</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="ex">small/1874/shortlifelincoln_0809_librivox_64kb_mp3/shortlifeoflincoln_10_nicolay_64kb_021.stoks.npy</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="ex">small/28/amateur_cracksman_librivox_64kb_mp3/amateur_cracksman_04_hornung_64kb_004.atoks.npy</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="ex">small/28/amateur_cracksman_librivox_64kb_mp3/amateur_cracksman_04_hornung_64kb_004.stoks.npy</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="ex">small/1874/shortlifelincoln_0809_librivox_64kb_mp3/shortlifeoflincoln_10_nicolay_64kb_052.atoks.npy</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="ex">small/1874/shortlifelincoln_0809_librivox_64kb_mp3/shortlifeoflincoln_10_nicolay_64kb_052.stoks.npy</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The name of the file is the same as the file name of the original dataset sample and the extensions tell us what kind of value they hold and in which format.</p>
+<p>Furthermore we can split the whole dataset into fixed-size tar files called shards and load them on demand without unpacking. It turns out that this is exactly what we need for both AI training and data preprocessing:</p>
+<ul>
+<li>for <strong>training</strong> we start a multiple CPU workers in parallel, open different shards in each, stream the data sequentially from disk (fast), decode it independently and them shuffle the samples we receive from each worker to create varied training batches</li>
+<li>for <strong>preprocessing</strong> we independently send each shard to a worker and save all the results in a new webdataset shard</li>
+</ul>
+<p>Reading samples sequentialy allows us to simply compress the whole file with <code>gzip</code> and offers best performance even on spinning or network disks.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For the Juwels cluster there is another crucial benefit. There is a pretty low limit on the total number of files on network disks (<code>inodes</code> to be precise) so there is a strong preference to keep data in a few large files. The network file system performance is also better if we don’t have to open too many files.</p>
+</div>
+</div>
+<p>Keeping each shard around 5GB seems to work great (the processed shards will likely be a lot smaller but it’s a lot easier to keep a 1-to-1 shard mapping). For the almost 4TB LibriLight dataset this translates to 625 files.</p>
+<p>We found it quite useful to also keep all the data in some splits. This is data dependent but for LibriLight we followed the original split (<code>small</code>, <code>medium</code>, <code>large</code>) but also extracted the <code>6454</code> speaker from the <code>large</code> split because it is was the largest single speaker dataset and it allowed us to use it during development without downloading the full 4TB.</p>
+<div class="callout callout-style-default callout-caution callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Caution
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The sample file names should not have dots in them, otherwise the WebDataset code gets confused which files go together into one sample. This can be worked around later but it’s easiest if we just do <code>.replace('.', '_')</code> when storing the initial raw dataset.</p>
+</div>
+</div>
+</section>
+<section id="joins-on-webdatasets" class="level2">
+<h2 class="anchored" data-anchor-id="joins-on-webdatasets">Joins on WebDatasets</h2>
+<p>One novel functionality we developed for this project is the capability to join multiple preprocessed webdatasets. This mechanism relies on keeping a constant ordering of samples in a shard and ensuring 1-to-1 correspondence between the input and output shards during preprocessing.</p>
+<p>Example usage:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>ds <span class="op">=</span> wds.WebDataset([<span class="bu">str</span>(x) <span class="cf">for</span> x <span class="kw">in</span> Path(<span class="st">'librilight/'</span>).glob(<span class="st">'*.tar'</span>)]).compose( <span class="co"># load all audio shards</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    wds.decode(wds.torch_audio), <span class="co"># decode the audio data</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    vq_stoks.merge_in( <span class="co"># merge another WebDataset</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>        <span class="co"># for each audio (`raw`) shard, find the path and name of a corresponding `vad` shard</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>        vq_stoks.derived_dataset(<span class="st">'librilight-processed/'</span>, <span class="st">'vad'</span>)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><a href="https://collabora.github.io/WhisperSpeech/2b.%20whisper%20quantization%20(semantic%20token)%20model.html#derived_dataset"><code>derived_dataset</code></a> creates for us a helper function that returns an opened derived dataset given the original shard file name:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> derived_dataset(path, kind):</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> deriver(url):</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>        url <span class="op">=</span> <span class="bu">str</span>(Path(path)<span class="op">/</span>(Path(url).name.replace(<span class="st">"raw"</span>, kind) <span class="op">+</span> <span class="st">".gz"</span>))</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> wds.WebDataset(wds.SimpleShardList([url])).decode()</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> deriver</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This feature is experimental and the API may change as we develop more experience with this merging style.</p>
+</section>
+<section id="examples-of-preprocessing-runs" class="level2">
+<h2 class="anchored" data-anchor-id="examples-of-preprocessing-runs">Examples of preprocessing runs</h2>
+<p>An example of running a preprocessing step locally on a single file:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> guttenberg-preproc <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> guttenberg-preproc</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> whisperspeech.vad ../guttenberg-audiobooks/guttenberg-audiobooks-raw-000010.tar</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This will generate a file named <code>guttenberg-audiobooks-vad-000000.tar.gz</code> in the <code>guttenberg-preproc</code> directory.</p>
+<p>On the cluster we can run multiple jobs in parallel (<code>24</code> in this case), each processing one input shard. Since each job is pretty short (around 30 minutes) it’s easier for the scheduler to squeeze these between longer and higher-priority jobs.</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> whisperspeech-s2a-512c-dim64 <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> whisperspeech-s2a-512c-dim64</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">find</span> ../librilight/ <span class="at">-name</span> <span class="st">'librilight-small-*.tar'</span><span class="kw">|</span> <span class="ex">~/clapa1/run-batch</span> 24 <span class="dt">\</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'python -m whisperspeech.prepare_s2a_dataset $FILE ../librilight-preproc</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="st">            --vq_model ~/clapa1/scratch/vqmodel-512c-dim64-4e-hyptuned-32gpu.model</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="st">            --batch_size 8'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The <code>prepare_s2a_dataset</code> script is taking raw audio data from the input file, automatically finding corresponding shards with VAD results in <code>../librilight-preproc</code> and writing the results to the <code>whisperspeech-s2a-512c-dim64</code> directory.</p>
+</section>
+<section id="voice-activity-detection" class="level2">
+<h2 class="anchored" data-anchor-id="voice-activity-detection">Voice activity detection</h2>
+<p>Code: <a href="https://github.com/collabora/WhisperSpeech/blob/main/nbs/1B.%20Voice%20activity%20detection.ipynb">1B. Voice activity detection</a></p>
+<p>Right now we are using the VAD model from WhisperX that is enough to avoid cutting audio in the middle of a word which would hurt automated transcriptions quite a lot. For more fancy datasets with multiple speakers we could use pyannote for it’s detection of multiple people speaking at once and diarization capability.</p>
+<p>We later merge the VAD segments into longer chunks for more efficient training (less padding == higher efficiency). The code and histogram plots can be found in <a href="https://github.com/collabora/WhisperSpeech/blob/main/nbs/2A.%20Whisper%20quantization%20dataset%20preparation.ipynb">2A. Whisper quantization dataset preparation</a></p>
+</section>
+<section id="transcription" class="level2">
+<h2 class="anchored" data-anchor-id="transcription">Transcription</h2>
+<p>Code: <a href="https://github.com/collabora/WhisperSpeech/blob/main/nbs/5A.%20T2S%20dataset%20preparation.ipynb">5A. T2S dataset preparation</a></p>
+<p>For training the TTS model (T2S) we are using running batches of chunked speech segments though FasterWhisper. We use the <code>small.en</code> model since there seems to be little benefit from using the larger models on English speech. For multilingual TTS we would probably want to switch to <code>large-v2</code>.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Right now we extract both semantic tokens and transcriptions in one go. Doing the transcriptions is very time consuming are the result is unlikely to change. OTOH we may want to regenerate the semantic tokens if we train different quantized Whisper models. Because of that we may want to split this into two separate steps and only merge the results just before we generate the training dataset.</p>
+</div>
+</div>
+</section>
+<section id="acoustic-token-extraction" class="level2">
+<h2 class="anchored" data-anchor-id="acoustic-token-extraction">Acoustic token extraction</h2>
+<p>Code: <a href="https://github.com/collabora/WhisperSpeech/blob/main/nbs/4A.%20S2A%20dataset%20preparation.ipynb">4A. S2A dataset preparation</a></p>
+<p>This is basically the same as T2S above but with Encodec instead of Whisper.</p>
+</section>
+<section id="trainvalidation-split" class="level2">
+<h2 class="anchored" data-anchor-id="trainvalidation-split">Train/validation split</h2>
+<p>We create validation splits differently for each dataset. For example for LibriLight we use the speaker labels to create a common and unseen speakers splits. Once we have a list of samples we want to use we extract them from the full dataset into a new shard while keeping a list of IDs to skip during training. This way we avoid copying the training samples.</p>
+<p>This has the downside of delaying all shuffling until training. This is especially problematic for smaller datasets with not enough shards since multiple workers may read the same shard and initially (before the shuffling buffer is filled) deliver the same samples multiple times. This causes overfitting. This is not a problem early in training (the model is too random to overfit) and we make sure we don’t reset the dataloaders between epochs but it is causing issues when resuming training from a checkpoint. The workaround is to preload the shuffling bufferwith a lot of samples (<code>.shuffle(initial=20000)</code>). Unfortunately it has the downside of putting a lot of load on the filesystem and adding a significant delay before training can start.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/collabora\.github\.io\/WhisperSpeech");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/collabora/WhisperSpeech/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

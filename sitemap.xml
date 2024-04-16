@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/6. Quality-boosting vocoder.html</loc>
+    <lastmod>2024-04-16T14:07:56.974Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/1c. vad merging.html</loc>
+    <lastmod>2024-04-16T14:07:56.922Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/2A. Whisper quantization dataset preparation.html</loc>
+    <lastmod>2024-04-16T14:07:56.902Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/3c. s2a acoustic tokens preparation.html</loc>
+    <lastmod>2024-04-16T14:07:53.494Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/C2. Testing.html</loc>
+    <lastmod>2024-04-16T14:07:53.222Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/index.html</loc>
+    <lastmod>2024-04-16T14:07:53.050Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/B1. Training.html</loc>
+    <lastmod>2024-04-16T14:07:52.942Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/3a. t2s transcripts preparation.html</loc>
+    <lastmod>2024-04-16T14:07:56.610Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/D. Common inference utilities.html</loc>
+    <lastmod>2024-04-16T14:07:51.074Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/b. languages.html</loc>
+    <lastmod>2024-04-16T14:07:49.470Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/1b. voice activity detection.html</loc>
+    <lastmod>2024-04-16T14:07:49.422Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/5b. multi-lang text to semantic token modeling.html</loc>
+    <lastmod>2024-04-16T14:07:53.178Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/dataset preparation.html</loc>
+    <lastmod>2024-04-16T14:07:49.378Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/c. benchmark.html</loc>
+    <lastmod>2024-04-16T14:07:49.374Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/0. download models.html</loc>
+    <lastmod>2024-04-16T14:07:49.358Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/1. acoustic token extraction.html</loc>
+    <lastmod>2024-04-16T14:07:51.482Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/3D. Split out validation.html</loc>
+    <lastmod>2024-04-16T14:07:49.410Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/B2. Training (Lightning).html</loc>
+    <lastmod>2024-04-16T14:07:49.450Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/3b. semantic token extraction.html</loc>
+    <lastmod>2024-04-16T14:07:53.946Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/D. Common dataset utilities.html</loc>
+    <lastmod>2024-04-16T14:07:51.322Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/7. Pipeline.html</loc>
+    <lastmod>2024-04-16T14:07:51.678Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/2c. whisper quantization (semantic token) evaluation.html</loc>
+    <lastmod>2024-04-16T14:07:53.018Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/4b. multi-language semantic to acoustic token modeling.html</loc>
+    <lastmod>2024-04-16T14:07:53.386Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/2A. Speaker Embeddings.html</loc>
+    <lastmod>2024-04-16T14:07:56.842Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/2b. whisper quantization (semantic token) model.html</loc>
+    <lastmod>2024-04-16T14:07:57.626Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/C. Word error rate metrics.html</loc>
+    <lastmod>2024-04-16T14:07:57.118Z</lastmod>
+  </url>
+  <url>
+    <loc>https://collabora.github.io/WhisperSpeech/A. Neural modules.html</loc>
+    <lastmod>2024-04-16T14:07:57.082Z</lastmod>
+  </url>
+</urlset>
