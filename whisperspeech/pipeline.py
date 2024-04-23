@@ -75,7 +75,7 @@ class Pipeline:
             if device == 'mps': device = 'cpu' # operator 'aten::_fft_r2c' is not currently implemented for the MPS device
             from speechbrain.pretrained import EncoderClassifier
             self.encoder = EncoderClassifier.from_hparams("speechbrain/spkrec-ecapa-voxceleb",
-                                                          savedir = expanduser("~/.cache/speechbrain/"),
+                                                          savedir=expanduser("~/.cache/speechbrain/"),
                                                           run_opts={"device": device})
         audio_info = torchaudio.info(fname)
         actual_sample_rate = audio_info.sample_rate
@@ -105,12 +105,3 @@ class Pipeline:
         
     def generate_to_notebook(self, text, speaker=None, lang='en', cps=15, step_callback=None):
         self.vocoder.decode_to_notebook(self.generate_atoks(text, speaker, lang=lang, cps=cps, step_callback=None))
-
-    def generate_to_playback(self, text, speaker=None, lang='en', cps=15, step_callback=None):
-        try:
-            import sounddevice as sd
-        except ImportError:
-            print("\033[93mThe 'sounddevice' library is required for direct text to playback functionality. Please install it using 'pip install sounddevice'.\033[0m")
-            return
-
-        self.vocoder.decode_to_playback(self.generate_atoks(text, speaker, lang=lang, cps=cps, step_callback=step_callback))

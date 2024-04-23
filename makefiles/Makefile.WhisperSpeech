@@ -1,0 +1,80 @@
+LANGUAGE ?= en
+TRANSCRIPTION_MODEL ?= medium
+STOKS_MODEL ?= vq-sarah_teal.model
+STOKS_MODEL_SHORT = $(patsubst %.model,%,$(notdir $(STOKS_MODEL)))
+.SUFFIXES:
+.PRECIOUS: %.tar.gz
+
+# main goal
+dataset:
+
+# a list of all the derived datasets we can generate
+DATASETS := snr-c50 stoks-max-$(STOKS_MODEL_SHORT) encodec-3kbps $(TRANSCRIPTION_MODEL)-txt mvad spk_emb vad
+
+# all source shards
+SRC_FILES := $(notdir $(wildcard $D/audio/*.tar))
+
+# function to generate a list of derived shards
+derived = $(SRC_FILES:%=$D/$1/%.gz)
+
+# create common targets for all the datasets
+define dataset_template
+all_$(1): $(call derived,$(1))
+.PHONY: all_$(1)
+
+$D/$(1):
+	mkdir -p $D/$(1)
+
+dataset: all_$(1)
+dirs: $D/$(1)
+endef
+$(foreach ds,$(DATASETS),$(eval $(call dataset_template,$(ds))))
+
+$D/vad/%.tar.gz: $D/audio/%.tar | $D/vad
+	python -m whisperspeech.vad '$<' '$@'
+
+$D/all-files: $(call derived,vad)
+	parallel -j16 "tar tf {} | grep '.vad.npy$$' | sed -e s/.vad.npy//" ::: $^ > "$@"
+dataset: $D/all-files
+all_all-files: $D/all-files
+
+$D/spk_emb/%.tar.gz: $D/audio/%.tar $D/vad/%.tar.gz | $D/spk_emb
+	python -m whisperspeech.extract_spk_emb --batch_size 16 '$<' '$@'
+
+$D/mvad/%: $D/vad/% $D/spk_emb/% | $D/mvad
+	python -m whisperspeech.vad_merge '$<' '$@'
+
+# These value of target-specific variables will be saved for each dataset.
+# This allows us to include multiple datasets (with different $D's) in a single global Makefile
+# and make sure the variables will be properly substituted in the command lists.
+$D/$(TRANSCRIPTION_MODEL)-txt/%.tar.gz: TRANSCRIPTION_MODEL:=$(TRANSCRIPTION_MODEL)
+$D/$(TRANSCRIPTION_MODEL)-txt/%.tar.gz:	LANGUAGE:=$(LANGUAGE)
+$D/$(TRANSCRIPTION_MODEL)-txt/%.tar.gz: $D/audio/%.tar $D/mvad/%.tar.gz | $D/$(TRANSCRIPTION_MODEL)-txt
+	python -m whisperspeech.prepare_t2s_txts --language="$(LANGUAGE)" --transcription_model="$(TRANSCRIPTION_MODEL)" "$<" "$@"
+
+$D/encodec-3kbps/%.tar.gz: $D/audio/%.tar $D/mvad/%.tar.gz | $D/encodec-3kbps
+	JOBS_PER_GPU=3 TIME_LIMIT=30:00 python -m whisperspeech.prepare_s2a_atoks --batch_size=4 "$<" "$@"
+
+$D/stoks-max-$(STOKS_MODEL_SHORT)/%.tar.gz: STOKS_MODEL := $(STOKS_MODEL)
+$D/stoks-max-$(STOKS_MODEL_SHORT)/%.tar.gz: $D/audio/%.tar $D/mvad/%.tar.gz | $D/stoks-max-$(STOKS_MODEL_SHORT)
+	JOBS_PER_GPU=2 TIME_LIMIT=30:00 python -m whisperspeech.extract_stoks --vq_model "$(STOKS_MODEL)" --batch_size=8 "$<" "$@"
+
+$D/snr-c50/%.tar.gz: $D/audio/%.tar $D/mvad/%.tar.gz
+	JOBS_PER_GPU=2 TIME_LIMIT=30:00 python -m whisperspeech.extract_metrics	"$<" "$@"
+
+# We don't need to make $TRANSCRIPTION_MODEL target-specific here since it will be baked into
+# the rule prereqs and later we only use the result via the target-specific $^ variable.
+# Same logic applies to $D (and it's use in $@).
+$D/txt-samples.list: $(call derived,$(TRANSCRIPTION_MODEL)-txt)
+	parallel tar tf {} ::: $^ | sed -e 's/\.txt//' > "$@"
+dataset: $D/txt-samples.list
+
+$D/atoks-samples.list: $(call derived,encodec-3kbps) | $D/encodec-3kbps
+	parallel tar tf {} ::: $^ | sed -e 's/\.atoks\.npy//' > "$@"
+dataset: $D/atoks-samples.list
+
+$D/language: LANGUAGE:=$(LANGUAGE)
+$D/language:
+	printf "%s" "$(LANGUAGE)" > "$@"
+dataset: $D/language
+all_language: $D/language

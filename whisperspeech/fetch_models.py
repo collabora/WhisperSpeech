@@ -4,11 +4,11 @@
 __all__ = []
 
 # %% ../nbs/0. Download models.ipynb 1
+from os.path import expanduser
 from fastcore.script import call_parse
 import whisperx
 import whisper
 from speechbrain.pretrained import EncoderClassifier
-from os.path import expanduser
 
 # %% ../nbs/0. Download models.ipynb 3
 def load_whisperx(model, lang):

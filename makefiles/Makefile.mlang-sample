@@ -1,0 +1,5 @@
+TRANSCRIPTION_MODEL := medium
+D := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
+LANGUAGE := $(word 2,$(subst -, ,$(notdir $(realpath $D))))
+
+include $D/../Makefile.WhisperSpeech

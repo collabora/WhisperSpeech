@@ -50,10 +50,3 @@ class Vocoder:
 
         audio = self.decode(atoks)
         display(Audio(audio.cpu().numpy(), rate=24000))
-
-    def decode_to_playback(self, atoks):
-        import sounddevice as sd
-        audio = self.decode(atoks)
-        audio_np = audio.cpu().numpy().squeeze()
-        sd.play(audio_np, 24000)
-        sd.wait()

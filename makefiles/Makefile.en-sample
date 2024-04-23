@@ -1,0 +1,4 @@
+TRANSCRIPTION_MODEL=small.en
+D := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
+
+include $D/../Makefile.WhisperSpeech
