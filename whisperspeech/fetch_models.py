@@ -4,11 +4,14 @@
 __all__ = []
 
 # %% ../nbs/0. Download models.ipynb 1
-from os.path import expanduser
+from encodec.model import EncodecModel
+from whisperspeech import utils
 from fastcore.script import call_parse
 import whisperx
 import whisper
 from speechbrain.pretrained import EncoderClassifier
+from os.path import expanduser
+import urllib.request
 
 # %% ../nbs/0. Download models.ipynb 3
 def load_whisperx(model, lang):
@@ -21,9 +24,15 @@ def load_whisperx(model, lang):
 
 @call_parse
 def main():
+    EncodecModel.encodec_model_24khz()
     whisper.load_model('base.en')
     whisper.load_model('small.en')
+    whisper.load_model('medium')
     whisperx.vad.load_vad_model('cpu')
+    load_whisperx('small.en', 'en')
     load_whisperx('medium.en', 'en')
     load_whisperx('medium', 'en')
-    EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", savedir=expanduser("~/.cache/speechbrain/"))
+    load_whisperx('large-v3', 'en')
+    EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                   savedir=expanduser("~/.cache/speechbrain/"))
+
