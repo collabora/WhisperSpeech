@@ -126,23 +126,25 @@ class TrainingTask(pl.LightningModule):
         return [optimizer], [{'scheduler': lr_scheduler, 'interval': 'step'}]
     
     def training_step(self, train_batch, batch_idx):
-        train_logits, train_loss = self.model.forward(*train_batch)
+        train_out = self.model.forward(*train_batch)
+        train_loss = train_out[-1]
 
         self.log("train_loss", train_loss, sync_dist=True)
         return train_loss
     
     def validation_step(self, val_batch, batch_idx, dataloader_idx=0):
-        val_logits, val_loss = self.model.forward(*val_batch)
+        val_out = self.model.forward(*val_batch)
+        val_loss = val_out[-1]
 
-        self.log(f"val_loss", val_loss, sync_dist=True)
-        return val_loss
-
-    def on_validation_epoch_end(self):
+        name = val_dss_names[dataloader_idx]
+        self.log(f"val_loss/{name}", val_loss.detach(), sync_dist=True, add_dataloader_idx=False)
         if hasattr(self.model, 'get_metrics'):
-            self.log_dict({'metrics/'+k:v for k,v in self.model.get_metrics().items()}, sync_dist=True)
+            self.log_dict({f'metrics/{k}_{name}':v for k,v in self.model.get_metrics().items()}, sync_dist=True, add_dataloader_idx=False)
+        return val_loss.detach()
     
     def test_step(self, val_batch, batch_idx):
-        test_logits, test_loss = self.model.forward(*val_batch)
+        test_out = self.model.forward(*val_batch)
+        test_loss = test_out[-1]
 
         self.log("test_loss", test_loss, sync_dist=True)
         return test_loss
@@ -164,6 +166,16 @@ def parse_and_call(name, fun, args, kwargs={}, log_to_wandb=True):
     return fun(**args)
 
 # %% ../nbs/B2. Training (Lightning).ipynb 8
+# split only full path components to stabilize the names
+def simplify_folder_names(lst):
+    lst = [x.strip('/') for x in lst] # normalize pathnames, removing trailing and leading slashes
+    parts = [x.split('/') for x in lst]
+    prefix = os.path.commonprefix(parts)
+    suffix = os.path.commonprefix([x[::-1] for x in parts])
+    print(prefix, suffix)
+    return ['_'.join(x[len(prefix):len(x)-len(suffix)]) for x in parts]
+
+# %% ../nbs/B2. Training (Lightning).ipynb 11
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -225,7 +237,7 @@ if 'SLURM_NTASKS' in os.environ:
 else:
     hyp_params['world_size'] = 1
 
-# %% ../nbs/B2. Training (Lightning).ipynb 9
+# %% ../nbs/B2. Training (Lightning).ipynb 12
 def parse_dataset_string(s):
     cwd = [None]
     def load_file_reference(matchobj):
@@ -242,7 +254,7 @@ def parse_dataset_string(s):
     if cwd[0]: arg_list += ['--cwd', str(cwd[0])]
     return arg_list
 
-# %% ../nbs/B2. Training (Lightning).ipynb 10
+# %% ../nbs/B2. Training (Lightning).ipynb 13
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import LearningRateMonitor
 from lightning.fabric.utilities.rank_zero import rank_zero_only
@@ -282,7 +294,7 @@ task = importlib.import_module("whisperspeech."+task_name)
 train_dss = [parse_and_call(f'train_ds_{i}', task.load_dataset,
                             parse_dataset_string(train_ds_config) + dataset_config)
              for i,train_ds_config in enumerate(args['training_data'])]
-train_total_samples = sum(ds.total_samples for ds in train_dss)
+train_total_samples = int(min(ds.total_samples for ds in train_dss) * len(train_dss) * 7)
 train_total_batches = int(train_total_samples / batch_size / int(hyp_params['world_size']))
 if train_total_batches < hyp_params['validate_every_n_steps']:
     # validate once at the end of every epoch for very short experiments
@@ -292,10 +304,14 @@ if train_total_batches < hyp_params['validate_every_n_steps']:
 # with webdatasets sample shuffling is very bad initially, unless num_workers << num_shards
 train_loader = wds.WebLoader(
     utils.join_datasets(train_dss),
-    num_workers=num_workers, drop_last=False, batch_size=None, shuffle=False, persistent_workers=True,
-).unbatched().shuffle(64*1024).batched(batch_size).with_length(train_total_batches)
+    num_workers=num_workers, drop_last=False, batch_size=None, shuffle=False, persistent_workers=num_workers > 0,
+).unbatched().shuffle(1024).batched(batch_size).with_length(train_total_batches)
 
 # load all validation sets
+val_dss_names = [parse_dataset_string(val_ds_config)[0] for val_ds_config in args['validation_data']]
+val_dss_names = simplify_folder_names(val_dss_names)
+print('validation names:', val_dss_names)
+
 val_dss = [parse_and_call(f'val_ds_{i}', task.load_dataset,
                           parse_dataset_string(val_ds_config) + dataset_config, {'validation': True})
            for i,val_ds_config in enumerate(args['validation_data'])]
