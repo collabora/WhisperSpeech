@@ -35,4 +35,5 @@ def main():
     load_whisperx('large-v3', 'en')
     EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                    savedir=expanduser("~/.cache/speechbrain/"))
-
+    urllib.request.urlretrieve('https://github.com/marianne-m/brouhaha-vad/raw/main/models/best/checkpoints/best.ckpt',
+                               expanduser('~/.cache/brouhaha.ckpt'))

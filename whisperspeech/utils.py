@@ -163,6 +163,53 @@ import re
 import tempfile
 
 # %% ../nbs/D. Common dataset utilities.ipynb 16
+# a patch to ignore invalid utf-8 metadata
+import torio.io._streaming_media_decoder
+def new_parse_si(i):
+    media_type = i.media_type
+    try:
+        metadata = i.metadata
+    except UnicodeDecodeError:
+        metadata = {}
+    if media_type == "audio":
+        return torio.io._streaming_media_decoder.SourceAudioStream(
+            media_type=i.media_type,
+            codec=i.codec_name,
+            codec_long_name=i.codec_long_name,
+            format=i.format,
+            bit_rate=i.bit_rate,
+            num_frames=i.num_frames,
+            bits_per_sample=i.bits_per_sample,
+            metadata=metadata,
+            sample_rate=i.sample_rate,
+            num_channels=i.num_channels,
+        )
+    if media_type == "video":
+        return torio.io._streaming_media_decoder.SourceVideoStream(
+            media_type=i.media_type,
+            codec=i.codec_name,
+            codec_long_name=i.codec_long_name,
+            format=i.format,
+            bit_rate=i.bit_rate,
+            num_frames=i.num_frames,
+            bits_per_sample=i.bits_per_sample,
+            metadata=metadata,
+            width=i.width,
+            height=i.height,
+            frame_rate=i.frame_rate,
+        )
+    return torio.io._streaming_media_decoder.SourceStream(
+        media_type=i.media_type,
+        codec=i.codec_name,
+        codec_long_name=i.codec_long_name,
+        format=None,
+        bit_rate=None,
+        num_frames=None,
+        bits_per_sample=None,
+        metadata=metadata,
+    )
+torio.io._streaming_media_decoder._parse_si = new_parse_si
+
 def torch_audio_opus(key, data):
     """Decode audio using the torchaudio library.
 
@@ -179,7 +226,7 @@ def torch_audio_opus(key, data):
         fname = os.path.join(dirname, f"file.{extension}")
         with open(fname, "wb") as stream:
             stream.write(data)
-        return torchaudio.load(fname)
+        return torchaudio.load(fname, backend='soundfile' if extension == "mp3" else None)
 
 # %% ../nbs/D. Common dataset utilities.ipynb 17
 def find_audio(stream, okey='audio', ikeys='flac;mp3;sox;wav;m4a;ogg;wma;opus'):
