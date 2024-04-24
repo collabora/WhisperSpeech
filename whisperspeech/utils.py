@@ -14,6 +14,22 @@ from contextlib import contextmanager
 import webdataset as wds
 
 # %% ../nbs/D. Common dataset utilities.ipynb 2
+import huggingface_hub
+
+# adds a environment variable that disables downloads thought the Huggingface Hub API:
+
+def wrap_downloader(old):
+    def new(*args, **kwargs):
+        if os.environ.get('HUGGINGFACE_LOCAL_ONLY', False):
+            print(f"Enforcing local_files_only for {old.__qualname__}")
+            kwargs['local_files_only'] = True
+        return old(*args, **kwargs)
+    return new
+
+huggingface_hub.snapshot_download = wrap_downloader(huggingface_hub.snapshot_download)
+huggingface_hub.hf_hub_download = wrap_downloader(huggingface_hub.hf_hub_download)
+
+# %% ../nbs/D. Common dataset utilities.ipynb 3
 def shard_glob(input):
     if isinstance(input, Path):
         input = str(input)
@@ -31,7 +47,7 @@ def shard_glob(input):
         raise ArgumentError("input should be either a list or a path with an optional glob specifier")
     return [str(x) for x in input]
 
-# %% ../nbs/D. Common dataset utilities.ipynb 6
+# %% ../nbs/D. Common dataset utilities.ipynb 7
 class join_datasets(torch.utils.data.IterableDataset):
     def __init__(self, datasets):
         self.datasets = datasets
@@ -48,7 +64,7 @@ class join_datasets(torch.utils.data.IterableDataset):
     def __len__(self):
         return sum([ds.total_samples for ds in self.datasets])
 
-# %% ../nbs/D. Common dataset utilities.ipynb 9
+# %% ../nbs/D. Common dataset utilities.ipynb 10
 def resampler(newsr = 24000, key = 'samples_24k'):
     _last_sr = None
     tform = None
@@ -65,13 +81,13 @@ def resampler(newsr = 24000, key = 'samples_24k'):
     
     return _resample
 
-# %% ../nbs/D. Common dataset utilities.ipynb 10
+# %% ../nbs/D. Common dataset utilities.ipynb 11
 def derived_name(url, kind, suffix=None):
     if suffix is None: suffix = '' if url.endswith('.gz') else ".gz"
     url = Path(url)
     return str(url.parent.parent/kind/url.name) + suffix
 
-# %% ../nbs/D. Common dataset utilities.ipynb 11
+# %% ../nbs/D. Common dataset utilities.ipynb 12
 def derived_dataset(kind, suffix=None, decoders=[]):
     def deriver(url):
         return wds.WebDataset(
@@ -79,7 +95,7 @@ def derived_dataset(kind, suffix=None, decoders=[]):
         ).decode(*decoders)
     return deriver
 
-# %% ../nbs/D. Common dataset utilities.ipynb 12
+# %% ../nbs/D. Common dataset utilities.ipynb 13
 def merge_in(dataset_fun):
     """Merge a dataset into the current one returning samples with the union of keys. Pass in a function
     that takes a URL of a sample and returns a dataset for it (called everytime the URL changes).
@@ -112,7 +128,7 @@ def merge_in(dataset_fun):
             yield news
     return merge_loop
 
-# %% ../nbs/D. Common dataset utilities.ipynb 13
+# %% ../nbs/D. Common dataset utilities.ipynb 14
 def split_to_chunks(stream, ikey='vad.npy', copy_keys=[], split_keys=[], pad_to_seconds=30, random_shift=False):
     for s in stream:
         audio, sr = s['audio']
@@ -142,11 +158,11 @@ def split_to_chunks(stream, ikey='vad.npy', copy_keys=[], split_keys=[], pad_to_
                 subs[k] = s[k][i]
             yield subs
 
-# %% ../nbs/D. Common dataset utilities.ipynb 14
+# %% ../nbs/D. Common dataset utilities.ipynb 15
 import re
 import tempfile
 
-# %% ../nbs/D. Common dataset utilities.ipynb 15
+# %% ../nbs/D. Common dataset utilities.ipynb 16
 def torch_audio_opus(key, data):
     """Decode audio using the torchaudio library.
 
@@ -165,7 +181,7 @@ def torch_audio_opus(key, data):
             stream.write(data)
         return torchaudio.load(fname)
 
-# %% ../nbs/D. Common dataset utilities.ipynb 16
+# %% ../nbs/D. Common dataset utilities.ipynb 17
 def find_audio(stream, okey='audio', ikeys='flac;mp3;sox;wav;m4a;ogg;wma;opus'):
     ikeys = ikeys.split(';')
     for s in stream:
@@ -176,7 +192,7 @@ def find_audio(stream, okey='audio', ikeys='flac;mp3;sox;wav;m4a;ogg;wma;opus'):
                 break
             # implicitly skips elements without any audio
 
-# %% ../nbs/D. Common dataset utilities.ipynb 17
+# %% ../nbs/D. Common dataset utilities.ipynb 18
 def vad_dataset(shards, ikey='vad.npy', kind='vad'):
     return wds.WebDataset(shards).compose(
         wds.decode(torch_audio_opus),
@@ -185,7 +201,7 @@ def vad_dataset(shards, ikey='vad.npy', kind='vad'):
         lambda x: split_to_chunks(x, ikey=ikey),
     )
 
-# %% ../nbs/D. Common dataset utilities.ipynb 18
+# %% ../nbs/D. Common dataset utilities.ipynb 19
 @contextmanager
 def AtomicTarWriter(name, throwaway=False):
     Path(name).parent.mkdir(exist_ok=True, parents=True)
@@ -195,7 +211,7 @@ def AtomicTarWriter(name, throwaway=False):
     if not throwaway:
         os.rename(tmp, name)
 
-# %% ../nbs/D. Common dataset utilities.ipynb 19
+# %% ../nbs/D. Common dataset utilities.ipynb 20
 def readlines(fname):
     with open(fname) as file:
         return [line.rstrip() for line in file]
