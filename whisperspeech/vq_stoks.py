@@ -21,6 +21,7 @@ import pandas as pd
 import random
 
 import whisper
+import whisper.tokenizer
 from huggingface_hub import hf_hub_download
 from fastcore.basics import store_attr
 
@@ -29,125 +30,95 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data.dataloader import DataLoader
 import webdataset as wds
-from . import utils
+from . import utils, vad_merge
 
 from vector_quantize_pytorch import ResidualVQ
 
 from fastcore.script import *
 
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 9
-def merge_in(dataset_fun):
-    """Merge a dataset into the current one returning samples with the union of keys. Pass in a function
-    that takes a URL of a sample and returns a dataset for it (called everytime the URL changes).
-    
-    It requires (and validates) that both datasets have the same ordering of keys so you have
-    to use it before any sample shuffling. Shard shuffling is ok.
-    """
-    def merge_loop(main_samples):
-        #print("new merge loop:", dataset_fun)
-        merged_samples = None
-        cur_url = None
-        i = None
-        for s in main_samples:
-            url = s['__url__']
-            if url != cur_url:
-                # this will open a new file when we get the first sample with a new __url__
-                merged_samples = iter(dataset_fun(url))
-                cur_url = url
-            try:
-                merge_s = next(merged_samples)
-            except StopIteration:
-                # if the original shard got repeated we won't observe a __url__ change
-                # in this case restart the dataset from the beginning
-                merged_samples = iter(dataset_fun(url))
-                merge_s = next(merged_samples)
-            assert merge_s['__key__'] == s['__key__'], f"sample keys don't match: {merge_s['__key__']}, {s['__key__']} in file {s['__url__']}"
-            news = {}
-            news.update(merge_s)
-            news.update(s)
-            yield news
-    return merge_loop
-
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 10
-def derived_dataset(kind, key='audio'):
-    def deriver(url):
-        url = str(Path(url).parent/(Path(url).name.replace(key, kind) + ".gz"))
-        return wds.WebDataset(
-            wds.SimpleShardList([url])
-        ).decode()
-    return deriver
-
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 17
+# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 13
 def add_masks(samples):
     for s in samples:
         seconds = s['tend'] - s['tstart']
+        sr = 16000 #s['sample_rate']
         # a mask (downsampled to the Whisper encoder token rate of 50/s) is used
         # to teach the model the concept of padding
         # this let's us decode shorter sequences later
-        mask = torch.zeros(30*16000//320, dtype=torch.bool)
-        mask[:int(seconds * 16000) // 320] = 1
+        mask = torch.zeros(30*sr//320, dtype=torch.bool)
+        mask[:int(seconds * sr) // 320] = 1
         s['mask'] = mask
         yield s
+        
+def get_tokenizer(model, language):
+    multilingual = not model.endswith(".en")
+    return whisper.tokenizer.get_tokenizer(multilingual, language=language, task="transcribe",
+                                           num_languages = 100 if model == 'large-v3' else 99)
 
 def tokenize_text(samples, ttoks_size=200, model="base.en", language="en"):
-    multilingual = not model.endswith(".en")
-    tokenizer = whisper.tokenizer.get_tokenizer(multilingual, language=language, task="transcribe")
+    tokenizer = get_tokenizer(model, language)
     for s in samples:
         ttoks = tokenizer.encode(s['txt'])
-        tokens = list(tokenizer.sot_sequence) + ttoks
+        tokens = list(tokenizer.sot_sequence_including_notimestamps) + ttoks
         rpad = ttoks_size - len(tokens)
         s['in_ttoks'] = F.pad(torch.tensor(tokens), (0, rpad), value=tokenizer.eot)
         s['out_ttoks'] = F.pad(torch.tensor(tokens[1:] + [tokenizer.eot]), (0, rpad), value=-100)
         yield s
 
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 22
+# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 14
 def load_dataset(
-        shard_spec:str,
-        proc_dataset_path:Path, # processed VAD and txt files
-        samples:int,            # set the per-GPU sample count
+        dataset_dir:Path,
         txt_label:str="base.en-txt", # the label of the files containing transcriptions
         model:str="base.en",
-        key:str="flac",
         language:str=None,
-        validation:bool=False,    
+        weight:float=1,
+        validation:bool=False,
+        exclude_datasets:str="txt-random-valid", # space separated directory names for validation datasets to exclude
     ):
-    from . import wh_transcribe
-    shards = utils.shard_glob(shard_spec)
+    dataset_dir = Path(dataset_dir)
+    shards = utils.shard_glob(dataset_dir/'audio/*.tar')
+    with open(dataset_dir/'txt-samples.list') as f: samples = len(f.readlines())
+    language = utils.readlines(dataset_dir/'language')[0]
+    
+    txt_dir = None
+    for name in ['small.en-txt', 'medium-txt']:
+        if (dataset_dir/name).exists():
+            txt_dir = name 
+            break
+    if txt_dir is None: raise ArgumentError(f"No transcripts found in {dataset_dir}")
+
+    excludes = {x
+                for dir in exclude_datasets.split()
+                for x in utils.readlines(dataset_dir/Path(dir)/"txt-samples.list")
+               } if not validation and exclude_datasets else set()
     
     if not language and model.endswith('en'): language = 'en'
     assert language, "please provide the dataset language for multilang models"
     
     same_on_all_nodes = lambda urls: urls # will only be used for validation
-    ds = wds.WebDataset(shards, resampled=not validation, nodesplitter=same_on_all_nodes).compose(
-        wds.decode(wds.torch_audio),
-        utils.find_audio,
-        merge_in(derived_dataset(proc_dataset_path, 'vad', key=key)),
-        wds.map_dict(**{"vad.npy":wh_transcribe.chunk_merger}),
-        wh_transcribe.split_to_chunks,
+    ds = vad_merge.chunked_audio_dataset(shards, 'raw',
+                                         resampled=not validation, nodesplitter=same_on_all_nodes).compose(
+        utils.merge_in(utils.derived_dataset(txt_dir)),
+        wds.select(lambda s: s['__key__'] not in excludes),
         utils.resampler(16000, 'samples_16k'),
-        merge_in(derived_dataset(proc_dataset_path, txt_label, key=key)),
-    )
-    if 'librilight' in shards[0]:
-        ds = ds.compose(
-            # drop the first and last segment because they tend to be inaccurate
-            # (the transcriptions don't have the "LibriVox" headers and "end of chapter" suffixes)
-            wds.select(lambda x: x['i'] != 0 and x['i'] != x['imax']),
-        )
-    ds = ds.compose(
         add_masks,
         lambda x: tokenize_text(x, model=model, language=language),
         wds.to_tuple('samples_16k', 'mask', 'in_ttoks', 'out_ttoks'),
-        wds.batched(32),
     )
+    if not validation:
+        ds = ds.compose(wds.shuffle(500, initial=500))
+    ds = ds.batched(64)
+    if validation:
+        ds = ds.slice(samples // 64)
     ds.total_samples = samples
+    ds.weight = weight
     
     return ds
 
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 28
+# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 22
 from whisperspeech.train import *
 from whisperspeech.modules import *
 
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 29
+# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 23
 import dataclasses
 
 def rand(start, end):
@@ -161,14 +132,13 @@ class Tunables:
     init_std :float = 1.5
     embeddings_std :float = 4.5e-2
     embeddings_lr_scale: float = 1
-    output_mult :float = 1
     query_mult :float = 2
     rope :bool = True
     mask_embs :bool = True # force embeddings corresponding to the input audio padding to a constant value
     downsample_conv: bool = False
     downsample_mean: bool = True
         
-    codebook_dim: int = 32
+    codebook_dim: int = 32 # FIXME: unused
     codebook_decay: float = 0.9
     
     lr0 :float = .9e-3
@@ -178,13 +148,15 @@ class Tunables:
 
     random :bool = False
 
+    # unused, for backwards compatibility:
+    output_mult :int = None
+
     def __post_init__(self):
         # randomize the hyperparams if requested
         if self.random:
             self.init_std = logrand(1, 2)
             self.embeddings_std = logrand(3e-2,6e-2)
             self.embeddings_lr_scale = 2**rand(0,3)
-            self.output_mult = 2**rand(-3,3)
             self.query_mult = logrand(1,8)
             self.codebook_dim = int(logrand(30,50))
             self.codebook_decay = logrand(0.86,0.95)
@@ -211,14 +183,14 @@ class Tunables:
         if 'vq_codes' in args: del args['vq_codes']
         return args
 
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 30
+# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 24
 import math
 
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 31
+# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 25
 class RQBottleneckTransformer(nn.Module):
     def __init__(self, vq_codes=512, q_depth=12, depth=1, n_head=2, head_width=64, ffn_mult=4,
                  codebook_dim=2, threshold_ema_dead_code=2, use_cosine_sim = False, kl_loss_mul=1,
-                 downsample=1,
+                 downsample=1, no_quantize=False,
                  whisper_model_name='tiny.en', tunables=Tunables()):
         super().__init__()
         width = n_head * head_width
@@ -229,44 +201,51 @@ class RQBottleneckTransformer(nn.Module):
         self.tunables = tunables
         self.stoks_len = 1500//downsample
         self.stoks_per_sec = self.stoks_len//30
-        
+        self.no_quantize = no_quantize
+                
         qk_scale = self.tunables.query_mult * 8 / math.sqrt(head_width)
         
         self.kl_loss_mul = kl_loss_mul
         
-        n_mlp = width * ffn_mult
-        self.mlp = nn.Sequential(
-            nn.Linear(width, n_mlp), nn.GELU(), nn.Linear(n_mlp, width)
-        )
-        self.mlp_ln = LayerNorm(width)
-
-        if tunables.downsample_conv:
-            self.downsample_conv = nn.Conv1d(width, width, kernel_size=3, stride=downsample, padding=1)
+        if no_quantize:
+            # a mode to get Whisper baselines into W&B easily, skips all training
+            self.fake_parameter = nn.Parameter(torch.tensor(0.001))
         else:
-            self.downsample_conv = None
-        
-        if tunables.mask_embs: vq_codes = vq_codes + 1
-        self.rq = ResidualVQ(
-            dim = width,
-            codebook_size = vq_codes, # codebook size
-            decay = tunables.codebook_decay, # the exponential moving average decay, lower means the dictionary will change faster
-            commitment_weight = 1.,   # the weight on the commitment loss
-            threshold_ema_dead_code = threshold_ema_dead_code,
-            use_cosine_sim = use_cosine_sim,
-            codebook_dim = codebook_dim,
-            num_quantizers= 1,
-        )
+            n_mlp = width * ffn_mult
+            self.mlp = nn.Sequential(
+                nn.Linear(width, n_mlp), nn.GELU(), nn.Linear(n_mlp, width)
+            )
+            self.mlp_ln = LayerNorm(width)
+
+            if tunables.downsample_conv:
+                self.downsample_conv = nn.Conv1d(width, width, kernel_size=3, stride=downsample, padding=1)
+            else:
+                self.downsample_conv = None
+
+            if tunables.mask_embs: vq_codes = vq_codes + 1
+            self.rq = ResidualVQ(
+                dim = width,
+                codebook_size = vq_codes, # codebook size
+                decay = tunables.codebook_decay, # the exponential moving average decay, lower means the dictionary will change faster
+                commitment_weight = 1.,   # the weight on the commitment loss
+                threshold_ema_dead_code = threshold_ema_dead_code,
+                use_cosine_sim = use_cosine_sim,
+                codebook_dim = codebook_dim,
+                num_quantizers= 1,
+            )
+
+            self.positional_embedding = nn.Embedding(1500, width) # FIXME: should be self.stoks_len
+
+            self._out_blocks = nn.Sequential(*[
+                ResidualAttentionBlock(width, n_head, qk_scale=qk_scale, ffn_mult=ffn_mult, rope=tunables.rope) for _ in range(depth)
+            ])
+            self.ln_post = LayerNorm(width)
+
+        self.positions = torch.arange(0, 1500, dtype=torch.long)
         
         self.ce_lossf = nn.CrossEntropyLoss(ignore_index=-100)
         self.kl_lossf = nn.KLDivLoss(reduction='batchmean')
-
-        self.positional_embedding = nn.Embedding(1500, width) # FIXME: should be self.stoks_len
-        
-        self.out_blocks = nn.Sequential(*[
-            ResidualAttentionBlock(width, n_head, qk_scale=qk_scale, ffn_mult=ffn_mult, rope=tunables.rope) for _ in range(depth)
-        ])
-        self.ln_post = LayerNorm(width)
-        
+                
         self.whmodel = None
 
         self.apply(self.init_transformer)
@@ -306,9 +285,12 @@ class RQBottleneckTransformer(nn.Module):
     #
     # training
     #
+    def log_mel_spectrogram(self, samples):
+        return whisper.log_mel_spectrogram(samples, 128 if self.whisper_model_name == 'large-v3' else 80)
+    
     @torch.no_grad()
     def extract_teacher(self, samples, input_toks, output_toks):
-        embs = self.whmodel[0].encoder(whisper.log_mel_spectrogram(samples))
+        embs = self.whmodel[0].encoder(self.log_mel_spectrogram(samples))
         teacher_logits = self.whmodel[0].decoder(input_toks, embs)
         # set teacher logits to 0 for padding positions so KLDivLoss ignores them
         teacher_logits[output_toks == -100] = 0
@@ -322,35 +304,42 @@ class RQBottleneckTransformer(nn.Module):
             return x.reshape(bs,slen//self.downsample,self.downsample,depth).mean(-2)
         else:
             return x[:,::self.downsample]
+        
+    def out_blocks(self, x):
+        for l in self._out_blocks: x = l(x, self.positions)
+        return x
     
     def forward(self, samples, mask, input_toks, output_toks):
         embs, teacher_logits = self.extract_teacher(samples, input_toks, output_toks)
         
-        x = self.downsample_embeddings(embs)
-        x = x + self.mlp(self.mlp_ln(x))
-        # VQ bottleneck
-        quantized, self.indices, self.commit_loss = self.rq(x)
-        self.commit_loss = self.commit_loss.mean()
+        if not self.no_quantize:
+            x = self.downsample_embeddings(embs)
+            x = x + self.mlp(self.mlp_ln(x))
+            # VQ bottleneck
+            quantized, self.indices, self.commit_loss = self.rq(x)
+            self.commit_loss = self.commit_loss.mean()
 
-        x = quantized.repeat_interleave(self.downsample, -2)
-        project_out = getattr(self.rq, 'project_out', None) or self.rq.layers[0].project_out
-        if self.tunables.mask_embs: x[~mask] = project_out(self.rq.layers[0]._codebook.embed[0,self.vq_codes])
-        positions = torch.arange(0, x.shape[-2], dtype=torch.long, device=x.device)
-        x = x + self.positional_embedding(positions)
-        x = self.ln_post(self.out_blocks(x))
+            x = quantized.repeat_interleave(self.downsample, -2)
+            project_out = getattr(self.rq, 'project_out', None) or self.rq.layers[0].project_out
+            if self.tunables.mask_embs: x[~mask] = project_out(self.rq.layers[0]._codebook.embed[0,self.vq_codes])
+            x = x + self.positional_embedding(self.positions.to(x.device))
+            x = self.ln_post(self.out_blocks(x))
         
-        logits = self.whmodel[0].decoder(input_toks, x)
+        logits = self.whmodel[0].decoder(input_toks, embs if self.no_quantize else x)
         self.ce_loss = self.ce_lossf(logits.view(-1,logits.shape[-1]), output_toks.view(-1))
         self.kl_loss = self.kl_lossf(F.log_softmax(logits, dim=-1), F.softmax(teacher_logits, dim=-1))
-        loss = self.ce_loss + self.kl_loss_mul * self.kl_loss + self.commit_loss
+        loss = self.ce_loss + self.kl_loss_mul * self.kl_loss
+        if not self.no_quantize: loss += self.commit_loss
+        x = None
+        if self.no_quantize: loss = loss + self.fake_parameter
         
         if not self.training:
             valid_toks = output_toks != -100
-            self.val_true += (logits.argmax(-1)[valid_toks] == output_toks[valid_toks]).float().sum()
+            self.val_true += (logits.detach().argmax(-1)[valid_toks] == output_toks[valid_toks]).float().sum()
             self.val_total += valid_toks.float().sum()
 
-        return x, loss
-                
+        return x, logits, loss
+
     def get_metrics(self):
         metrics = {
             'acc_0': (self.val_true / self.val_total).item(),
@@ -397,8 +386,7 @@ class RQBottleneckTransformer(nn.Module):
         # the list wrapper is a hack to make sure the whole of Whisper is not sucked into self.parameters()
         if self.whmodel is None: self.whmodel = [whisper.load_model(self.whisper_model_name, device=device)]
         self.decoding_options = whisper.DecodingOptions()
-        multilingual = not self.whisper_model_name.endswith('.en')
-        self.tokenizer = whisper.tokenizer.get_tokenizer(multilingual)
+        self.tokenizer = get_tokenizer(self.whisper_model_name, None)
     
     def quantize(self, embs):
         x = self.downsample_embeddings(embs)
@@ -429,7 +417,7 @@ class RQBottleneckTransformer(nn.Module):
             x, sr = torchaudio.load(audio)
             x = torchaudio.transforms.Resample(sr, 16000)(x)[0]
             audio = x.unsqueeze(0)
-        return self.encode_mel(whisper.log_mel_spectrogram(audio).to(self.device))
+        return self.encode_mel(self.log_mel_spectrogram(audio).to(self.device))
     
     def encode_mel(self, mel):
         assert len(mel.shape) == 3, "invalid mel spectrogram shape, expect (batch,chn,time)"
@@ -454,41 +442,66 @@ class RQBottleneckTransformer(nn.Module):
         embs = self.dequantize(stoks).to(self.whmodel[0].device)
         return self.whmodel[0].decode(embs, decoding_options)
 
-# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 33
-def make_model(size:str, tunables:Tunables=Tunables(), dataset:torch.utils.data.Dataset=None):
+# %% ../nbs/2B. Whisper quantization (semantic token) model.ipynb 27
+def make_model(size:str, no_quantize=False, tunables:Tunables=Tunables(), dataset:torch.utils.data.Dataset=None):
+    common = dict(
+        q_depth=1, depth=1, threshold_ema_dead_code=0, use_cosine_sim=True, tunables=tunables,
+        no_quantize = no_quantize,
+    )
     if size == 'base.en-2d-4096c':
-        model = RQBottleneckTransformer(codebook_dim=32, vq_codes=4096, q_depth=1, n_head=8, depth=1,
-                                        downsample=2, threshold_ema_dead_code=0, use_cosine_sim=True,
-                                        whisper_model_name=size.split("-")[0], tunables=tunables)
+        model = RQBottleneckTransformer(codebook_dim=32, vq_codes=4096, n_head=8, downsample=2, 
+                                        whisper_model_name=size.split("-")[0], **common)
         return model
     if size == 'base.en-2d-512c':
-        model = RQBottleneckTransformer(codebook_dim=32, vq_codes=512, q_depth=1, n_head=8, depth=1,
-                                        downsample=2, threshold_ema_dead_code=0, use_cosine_sim=True,
-                                        whisper_model_name=size.split("-")[0], tunables=tunables)
+        model = RQBottleneckTransformer(codebook_dim=32, vq_codes=512, n_head=8, downsample=2,
+                                        whisper_model_name=size.split("-")[0], **common)
         return model
     if size == 'base.en-2d-512c-dim64':
-        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=512, q_depth=1, n_head=8, depth=1,
-                                        downsample=2, threshold_ema_dead_code=0, use_cosine_sim=True,
-                                        whisper_model_name=size.split("-")[0], tunables=tunables)
+        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=512, n_head=8, downsample=2,
+                                        whisper_model_name=size.split("-")[0], **common)
         return model
     if size == 'base-2d-512c-dim64':
-        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=512, q_depth=1, n_head=8, depth=1,
-                                        downsample=2, threshold_ema_dead_code=0, use_cosine_sim=True,
-                                        whisper_model_name=size.split("-")[0], tunables=tunables)
+        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=512, n_head=8, downsample=2,
+                                        whisper_model_name=size.split("-")[0], **common)
         return model
     if size == 'base-2d-1024c-dim64':
-        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=1024, q_depth=1, n_head=8, depth=1,
-                                        downsample=2, threshold_ema_dead_code=0, use_cosine_sim=True,
-                                        whisper_model_name=size.split("-")[0], tunables=tunables)
+        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=1024, n_head=8, downsample=2,
+                                        whisper_model_name=size.split("-")[0], **common)
+        return model
+    if size == 'medium-2d-256c-dim64':
+        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=256, n_head=16, downsample=2,
+                                        whisper_model_name=size.split("-")[0], **common)
+        return model
+    if size == 'medium-2d-256c-dim128':
+        model = RQBottleneckTransformer(codebook_dim=128, vq_codes=256, n_head=16, downsample=2,
+                                        whisper_model_name=size.split("-")[0], **common)
         return model
     if size == 'medium-2d-512c-dim64':
-        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=512, q_depth=1, n_head=16, depth=1,
-                                        downsample=2, threshold_ema_dead_code=0, use_cosine_sim=True,
-                                        whisper_model_name=size.split("-")[0], tunables=tunables)
+        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=512, n_head=16, downsample=2,
+                                        whisper_model_name=size.split("-")[0], **common)
+        return model
+    if size == 'medium-2d-512c-dim128':
+        model = RQBottleneckTransformer(codebook_dim=128, vq_codes=512, n_head=16, downsample=2,
+                                        whisper_model_name=size.split("-")[0], **common)
+        return model
+    if size == 'medium-2d-512c-dim256':
+        model = RQBottleneckTransformer(codebook_dim=256, vq_codes=512, n_head=16, downsample=2,
+                                        whisper_model_name=size.split("-")[0], **common)
         return model
     if size == 'medium-2d-1024c-dim64':
-        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=1024, q_depth=1, n_head=16, depth=1,
-                                        downsample=2, threshold_ema_dead_code=0, use_cosine_sim=True,
-                                        whisper_model_name=size.split("-")[0], tunables=tunables)
+        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=1024, n_head=16, downsample=2,
+                                        whisper_model_name=size.split("-")[0], **common)
+        return model
+    if size == 'medium-2d-2048c-dim64':
+        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=2048, n_head=16, downsample=2,
+                                        whisper_model_name=size.split("-")[0], **common)
+        return model
+    if size == 'large-v2-2d-512c-dim64':
+        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=512, n_head=20, downsample=2,
+                                        whisper_model_name='large-v2', **common)
+        return model
+    if size == 'large-v3-2d-512c-dim64':
+        model = RQBottleneckTransformer(codebook_dim=64, vq_codes=512, n_head=20, downsample=2,
+                                        whisper_model_name='large-v3', **common)
         return model
     raise ArgumentError(f"invalid model size: {size}")

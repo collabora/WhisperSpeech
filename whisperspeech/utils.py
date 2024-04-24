@@ -66,16 +66,16 @@ def resampler(newsr = 24000, key = 'samples_24k'):
     return _resample
 
 # %% ../nbs/D. Common dataset utilities.ipynb 10
-def derived_name(input, kind, base="audio", suffix=".gz", dir=None):
-    dir = Path(dir) if dir else Path(input).parent
-    return str(dir/(Path(input).name.replace(f"-{base}-", f"-{kind}-") + suffix))
+def derived_name(url, kind, suffix=None):
+    if suffix is None: suffix = '' if url.endswith('.gz') else ".gz"
+    url = Path(url)
+    return str(url.parent.parent/kind/url.name) + suffix
 
 # %% ../nbs/D. Common dataset utilities.ipynb 11
-def derived_dataset(kind, base='audio', suffix=".gz", decoders=[], dir=None):
+def derived_dataset(kind, suffix=None, decoders=[]):
     def deriver(url):
-        url = str(derived_name(url, kind, base=base, suffix=suffix, dir=dir))
         return wds.WebDataset(
-            wds.SimpleShardList([url])
+            wds.SimpleShardList([derived_name(url, kind, suffix)])
         ).decode(*decoders)
     return deriver
 
@@ -113,11 +113,15 @@ def merge_in(dataset_fun):
     return merge_loop
 
 # %% ../nbs/D. Common dataset utilities.ipynb 13
-def split_to_chunks(stream, ikey='vad.npy', metakeys=[], pad_to_seconds=30, random_shift=False):
+def split_to_chunks(stream, ikey='vad.npy', copy_keys=[], split_keys=[], pad_to_seconds=30, random_shift=False):
     for s in stream:
         audio, sr = s['audio']
-        imax = len(s[ikey]) - 1
-        for i,(ts,te) in enumerate(s[ikey]):
+        chunks = s[ikey]
+        imax = len(chunks) - 1
+        for i,(ts,te) in enumerate(chunks):
+            if 'mask.npy' in s and not s['mask.npy'][i]:
+                # used for fishing out samples in validation sets, see also "3D. Split out validation"
+                continue
             samples = audio[0,int(ts*sr):int(te*sr)]
             if pad_to_seconds is not None:
                 padding = pad_to_seconds*sr-samples.shape[-1]
@@ -130,8 +134,11 @@ def split_to_chunks(stream, ikey='vad.npy', metakeys=[], pad_to_seconds=30, rand
                     "tstart": ts, "tend": te, "total_seconds": audio.shape[-1]/sr,
                     "lpad": lpad, "rpad": padding-lpad,
                     "lpad_s": lpad/sr, "rpad_s": (padding-lpad)/sr,
-                    "samples": samples, "sample_rate": sr}
-            for k in metakeys:
+                    "samples": samples, "sample_rate": sr,
+                    "src_sample": s}
+            for k in copy_keys:
+                subs[k] = s[k]
+            for k in split_keys:
                 subs[k] = s[k][i]
             yield subs
 
@@ -159,7 +166,7 @@ def torch_audio_opus(key, data):
         return torchaudio.load(fname)
 
 # %% ../nbs/D. Common dataset utilities.ipynb 16
-def find_audio(stream, okey='audio', ikeys='flac;mp3;wav;ogg;opus'):
+def find_audio(stream, okey='audio', ikeys='flac;mp3;sox;wav;m4a;ogg;wma;opus'):
     ikeys = ikeys.split(';')
     for s in stream:
         for ikey in ikeys:
@@ -181,6 +188,7 @@ def vad_dataset(shards, ikey='vad.npy', kind='vad'):
 # %% ../nbs/D. Common dataset utilities.ipynb 18
 @contextmanager
 def AtomicTarWriter(name, throwaway=False):
+    Path(name).parent.mkdir(exist_ok=True, parents=True)
     tmp = name+".tmp"
     with wds.TarWriter(tmp, compress=name.endswith('gz')) as sink:
         yield sink

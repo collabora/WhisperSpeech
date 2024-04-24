@@ -5,6 +5,7 @@ __all__ = []
 
 # %% ../nbs/2A. Speaker Embeddings.ipynb 3
 import os
+from os.path import expanduser
 import sys
 
 from fastprogress import progress_bar
@@ -38,6 +39,7 @@ def chunked_dataset(input, bs=16):
 @call_parse
 def process_shard(
     input:str,          # input shard URL/path
+    output:str,         # output shard URL/path
     batch_size:int=16,        # batch size
     n_samples:int=None, # limit the number of samples (useful for quick benchmarking)
 ):
@@ -48,10 +50,10 @@ def process_shard(
     dl = chunked_dataset(input, bs=batch_size)
     
     classifier = EncoderClassifier.from_hparams("speechbrain/spkrec-ecapa-voxceleb",
-                                                savedir=f"{os.environ['HOME']}/.cache/speechbrain/",
+                                                savedir=expanduser("~/.cache/speechbrain/"),
                                                 run_opts = {"device": device})
     
-    with utils.AtomicTarWriter(utils.derived_name(input, f'spk_emb')) as sink:
+    with utils.AtomicTarWriter(output) as sink:
         for keys, samples, seconds in progress_bar(dl, total=total):
             with torch.no_grad():
                 embs = classifier.encode_batch(samples, wav_lens=seconds/30).squeeze(1)

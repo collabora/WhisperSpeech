@@ -6,6 +6,7 @@ __all__ = []
 # %% ../nbs/3B. Semantic token extraction.ipynb 2
 import sys
 import os
+from os.path import expanduser
 import itertools
 from pathlib import Path
 
@@ -27,23 +28,30 @@ from .inference import get_compute_device
 # %% ../nbs/3B. Semantic token extraction.ipynb 7
 @call_parse
 def prepare_stoks(
-    input:str,  # FLAC webdataset file path (or - to read the names from stdin)
+    input:str,  # audio file webdataset file path
+    output:str, # output shard path
     vq_model:str="collabora/spear-tts-pytorch:whisper-vq-stoks-v2.model", # the model path (use repo_id:filename to download it from hugginface)
     n_samples:int=None, # process a limited amount of samples
     batch_size:int=64, # process several segments at once
-    kind:str="maxvad", # could be eqvad to get more uniform chunk lengths
+    kind:str="max", # could be eqvad to get more uniform chunk lengths
     
 ):
     device = get_compute_device()
     vq_model = vq_stoks.RQBottleneckTransformer.load_model(vq_model).to(device)
     vq_model.ensure_whisper()
-#     vq_model.encode_mel = torch.compile(vq_model.encode_mel, mode="reduce-overhead", fullgraph=True)
     
     spk_classifier = EncoderClassifier.from_hparams("speechbrain/spkrec-ecapa-voxceleb",
-                                                    savedir=f"{os.environ['HOME']}/.cache/speechbrain/",
+                                                    savedir=expanduser("~/.cache/speechbrain/"),
                                                     run_opts = {"device": device})
     
     total = n_samples//batch_size if n_samples else 'noinfer'
+
+    if total == 'noinfer':
+        import math, time
+        start = time.time()
+        ds = wds.WebDataset([utils.derived_name(input, 'mvad')]).decode()
+        total = math.ceil(sum([len(x[f'{kind}.spk_emb.npy']) for x in ds])/batch_size)
+        print(f"Counting {total} batches: {time.time()-start:.2f}")
 
     ds = vad_merge.chunked_audio_dataset([input], kind).compose(
         utils.resampler(16000, 'samples_16k'),
@@ -52,8 +60,8 @@ def prepare_stoks(
     )
 
     dl = wds.WebLoader(ds, num_workers=1, batch_size=None).unbatched().batched(batch_size)
-
-    with utils.AtomicTarWriter(utils.derived_name(input, f'{kind}-stoks', dir="."), throwaway=n_samples is not None) as sink:
+    
+    with utils.AtomicTarWriter(output, throwaway=n_samples is not None) as sink:
         for keys, rpad_ss, samples16k in progress_bar(dl, total=total):
             with torch.no_grad():
                 samples16k = samples16k.to(device).to(torch.float16)

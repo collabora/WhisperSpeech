@@ -62,23 +62,27 @@ def pad_samples(atoks_len = 2250, stoks_len = 750, stoks_pad_token = 4096):
 
 # %% ../nbs/4B. Multi-language semantic to acoustic token modeling.ipynb 10
 def load_dataset(
-        atoks_shard_spec:str,  # webdataset folder
-        stoks_shard_dir:str,   # stoks webdataset base dir
-        samples:int,           # samples per epoch
+        dataset_dir:Path,
+        stoks_dir:str="stoks",
         random_trunc_p:float=0,# probability of truncating the input to less than 30 seconds
         vq_codes:int=4096,
-        language:str='en',
         weight:float=1,
         validation:bool=False,
-        exclude_files:str=None,
+        exclude_datasets:str="atoks-random-valid",
         randomize_speakers:bool=False,
-        cwd:Path=None,
     ):
     import webdataset as wds
     from whisperspeech import utils, languages
 
-    shards = utils.shard_glob(cwd/atoks_shard_spec)
-    excludes = {x for file in exclude_files.split() for x in utils.readlines(cwd/file)} if exclude_files else set()
+    dataset_dir = Path(dataset_dir)
+    shards = utils.shard_glob(dataset_dir/'encodec-3kbps/*.tar.gz')
+    with open(dataset_dir/'atoks-samples.list') as f: samples = len(f.readlines())
+    language = utils.readlines(dataset_dir/'language')[0]
+
+    excludes = {x
+                for dir in exclude_datasets.split()
+                for x in utils.readlines(dataset_dir/Path(dir)/"atoks-samples.list")
+               } if not validation and exclude_datasets else set()
     
     def check_for_nan(s):
         if torch.tensor(s['spk_emb.npy']).isnan().any(): print("found NaN:", s['__key__'])
@@ -91,7 +95,7 @@ def load_dataset(
     same_on_all_nodes = lambda urls: urls # will only be used for validation
     ds = wds.WebDataset(shards, resampled=not validation, nodesplitter=same_on_all_nodes).compose(
         wds.decode(),
-        utils.merge_in(utils.derived_dataset('maxvad-stoks', base='atoks-3kbps', suffix='', dir=cwd/stoks_shard_dir)),
+        utils.merge_in(utils.derived_dataset(stoks_dir)),
         wds.map(check_for_nan),
         wds.select(lambda s: s['__key__'] not in excludes),
         wds.map_dict(**{'spk_emb.npy':np.nan_to_num}), # remove nans from the speaker embedding model

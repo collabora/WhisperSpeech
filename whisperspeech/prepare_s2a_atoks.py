@@ -17,25 +17,42 @@ from fastprogress import progress_bar
 from fastcore.script import *
 
 import webdataset as wds
-from . import utils, vad_merge, extract_acoustic
+from . import utils, vad_merge
 from .inference import get_compute_device
 
 # %% ../nbs/3C. S2A acoustic tokens preparation.ipynb 4
+def load_model():
+    "Load the pretrained EnCodec model"
+    from encodec.model import EncodecModel
+    model = EncodecModel.encodec_model_24khz()
+    model.set_target_bandwidth(1.5)
+    model.to(get_compute_device()).eval()
+    return model
+
+# %% ../nbs/3C. S2A acoustic tokens preparation.ipynb 5
 @call_parse
 def prepare_atoks(
-    input:str,  # FLAC webdataset file path (or - to read the names from stdin)
+    input:str,  # audio file webdataset file path
+    output:str, # output shard path
     n_samples:int=None, # process a limited amount of samples
-    batch_size:int=1, # process several segments at once
+    batch_size:int=4, # process several segments at once
     bandwidth:float=3,
 ):
     device = get_compute_device()
-    amodel = extract_acoustic.load_model().to(device)  # Move model to computed device
+    amodel = load_model().to(device)  # Move model to computed device
     amodel.set_target_bandwidth(bandwidth)
 
     total = n_samples//batch_size if n_samples else 'noinfer'
     if n_samples: print(f"Benchmarking run of {n_samples} samples ({total} batches)")
 
-    ds = vad_merge.chunked_audio_dataset([input], 'maxvad').compose(
+    if total == 'noinfer':
+        import math, time
+        start = time.time()
+        ds = wds.WebDataset([utils.derived_name(input, 'mvad')]).decode()
+        total = math.ceil(sum([len(x['max.spk_emb.npy']) for x in ds])/batch_size)
+        print(f"Counting {total} batches: {time.time()-start:.2f}")
+
+    ds = vad_merge.chunked_audio_dataset([input], 'max').compose(
         utils.resampler(24000, 'samples_24k'),
         wds.to_tuple('__key__', 'rpad_s', 'samples_24k'),
         wds.batched(64),
@@ -43,7 +60,7 @@ def prepare_atoks(
 
     dl = wds.WebLoader(ds, num_workers=1, batch_size=None).unbatched().batched(batch_size)
 
-    with utils.AtomicTarWriter(utils.derived_name(input, f'atoks-{bandwidth}kbps', dir="."), throwaway=n_samples is not None) as sink:
+    with utils.AtomicTarWriter(output, throwaway=n_samples is not None) as sink:
         for keys, rpad_ss, samples in progress_bar(dl, total=total):
             csamples = samples.to(device).unsqueeze(1)  # Move tensors to computed device
             atokss = amodel.encode(csamples)[0][0]

@@ -7,44 +7,81 @@ __all__ = []
 import os
 import webdataset as wds
 from pathlib import Path
+import torch
 from fastprogress import progress_bar
 from fastcore.script import call_parse
 import numpy as np
 import random
-from collections import Counter
-from whisperspeech import utils
+from collections import Counter, defaultdict
+from whisperspeech import utils, vad_merge
 import sys
+import copy
 
-# %% ../nbs/3D. Split out validation.ipynb 4
+# %% ../nbs/3D. Split out validation.ipynb 2
 @call_parse
 def split_dataset(
-    shard_spec:str,
+    shard_dir:str,
     splits:str,
+    mvad_kind:str=None,
 ):
-    shards = utils.shard_glob(shard_spec)
+    mode = Path(shard_dir).name
+
+    if mode == "audio":
+        shards = utils.shard_glob(shard_dir+'/*.tar')
+    else:
+        shards = utils.shard_glob(shard_dir+'/*.tar.gz')
+
     splits = splits.split()
+
+    # unpacks sample id 'src_key_001' into 'src_key', '001'
+    def unpack_id(x):
+        return x.rsplit('_', 1)
+
+    def make_tar_writer(name):
+        name.parent.mkdir(parents=True, exist_ok=True)
+        return wds.TarWriter(str(name))
+    
+    suffix = ".tar.gz" if mode != 'audio' else ".tar"
     
     bufs = {k:[] for k in splits}
-    outputs = {k:wds.TarWriter(str(Path(shard_spec).parent/(Path(k).name+".tar.gz"))) for k in splits}
-    needles = {k:bufs[split] for split in splits for k in utils.readlines(split)}
-    
-#     with open(Path(shard_spec).parent/"validation-samples", "w") as f:
-#         for k in needles.keys():
-#             f.write(k+'\n')
+    outputs = {k:make_tar_writer(Path(k).parent/mode/(Path(k).name+suffix)) for k in splits}
 
-    print(f"Generating splits: {' '.join(outputs.keys())}")
-    print(f"Looking for {len(needles)} samples...")
+    if mode == "audio" or mode == "mvad":
+        needles = {}
+        chunks = defaultdict(lambda: [])
+        for split in splits:
+            for k in utils.readlines(split):
+                file_id, chunk_id = unpack_id(k)
+                needles[file_id] = bufs[split]
+                chunks[file_id].append(int(chunk_id))
+    else:
+        needles = {k:bufs[split] for split in splits for k in utils.readlines(split)}
+        chunks = None
+
+    print(f"Generating splits: {' '.join(outputs.keys())}, looking for {len(needles)} {mode} samples...")
     
     ds = wds.WebDataset(shards).compose(
         wds.select(lambda x: x['__key__'] in needles),
     )
-        
-    dl = wds.WebLoader(ds, num_workers=32, batch_size=None)
+    if mode == 'mvad': ds = ds.decode()
+    
+    dl = wds.WebLoader(ds, num_workers=0 if len(shards) > 10 else 16, batch_size=None)
 
     for s in progress_bar(dl, total='noinfer'):
-        needles[s['__key__']].append(s)
+        if mode == "mvad":
+            mask = np.zeros(s[mvad_kind+'.vad.npy'].shape[0], dtype=np.bool_)
+            for i in chunks[s['__key__']]: mask[i] = True
+            new = {}
+            for k in ['__key__', mvad_kind+'.vad.npy', mvad_kind+'.spk_emb.npy', mvad_kind+'.subvads.pyd', 'gain_shift.npy']:
+                v = s[k]
+                if isinstance(v, torch.Tensor): v = v.numpy()
+                new[k] = v
+            new['mask.npy'] = mask
+            s = new
+        needles[s['__key__']].append(copy.deepcopy(s))
         del needles[s['__key__']]
         pass
+    print()
 
     for split,buf in bufs.items():
         for s in sorted(buf, key=lambda x: x['__key__']):

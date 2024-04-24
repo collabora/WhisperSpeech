@@ -221,7 +221,7 @@ def train(checkpoint_path, model, train, val, half=True, bs=16, lr=1e-4, drop_la
                 
         visual.show()
 
-        running_loss = [0]
+        running_loss = []
         
         for epoch in mb:
             bar = progress_bar(train_loader, total=train.total_samples//bs, parent=mb)
