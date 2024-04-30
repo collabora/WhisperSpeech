@@ -27,6 +27,16 @@ def get_compute_device():
     return preferred_device
 
 # %% ../nbs/D. Common inference utilities.ipynb 4
+def load_model(ref=None, spec=None, device='cpu'):
+    if spec is not None: return spec
+    if ":" in ref:
+        repo_id, filename = ref.split(":", 1)
+        local_filename = hf_hub_download(repo_id=repo_id, filename=filename)
+    else:
+        local_filename = ref
+    return torch.load(local_filename, map_location=device)
+
+# %% ../nbs/D. Common inference utilities.ipynb 5
 def inference_context():
     if torch.cuda.is_available():
         return torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True)

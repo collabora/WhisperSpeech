@@ -9,7 +9,7 @@ import torch
 from whisperspeech.t2s_up_wds_mlang_enclm import TSARTransformer
 from whisperspeech.s2a_delar_mup_wds_mlang import SADelARTransformer
 from whisperspeech.a2wav import Vocoder
-from whisperspeech import inference
+from whisperspeech import inference, s2a_delar_mup_wds_mlang_cond
 import traceback
 from pathlib import Path
 
@@ -45,19 +45,26 @@ class Pipeline:
     def __init__(self, t2s_ref=None, s2a_ref=None, optimize=True, torch_compile=False, device=None):
         if device is None: device = inference.get_compute_device()
         self.device = device
-        args = dict()
+        args = dict(device = device)
         try:
             if t2s_ref:
                 args["ref"] = t2s_ref
-            self.t2s = TSARTransformer.load_model(**args, device=device)  # use obtained compute device
+            self.t2s = TSARTransformer.load_model(**args)  # use obtained compute device
             if optimize: self.t2s.optimize(torch_compile=torch_compile)
         except:
             print("Failed to load the T2S model:")
             print(traceback.format_exc())
+        args = dict(device = device)
         try:
             if s2a_ref:
-                args["ref"] = s2a_ref
-            self.s2a = SADelARTransformer.load_model(**args, device=device)  # use obtained compute device
+                spec = inference.load_model(ref=s2a_ref, device=device)
+                if [x for x in spec['state_dict'].keys() if x.startswith('cond_embeddings.')]:
+                    cls = s2a_delar_mup_wds_mlang_cond.SADelARTransformer
+                    args['spec'] = spec
+                else:
+                    cls = SADelARTransformer
+                    args['spec'] = spec
+            self.s2a = cls.load_model(**args)  # use obtained compute device
             if optimize: self.s2a.optimize(torch_compile=torch_compile)
         except:
             print("Failed to load the S2A model:")
