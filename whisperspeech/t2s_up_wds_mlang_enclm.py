@@ -311,7 +311,7 @@ class TSARTransformer(nn.Module):
 
         cps_bin = (cpss / 20 * self.tunables.cps_bins).to(torch.long)
         cps_bin[cps_bin >= self.tunables.cps_bins] = self.tunables.cps_bins-1
-        return self.cps_embeddings(cps_bin)
+        return self.cps_embeddings(cps_bin).unsqueeze(1)
 
     def run_encoder(self, in_ttoks, languages, cpss):
         if len(languages.shape) != 3: lang_embs = self.lang_embeddings(languages)
@@ -459,14 +459,14 @@ class TSARTransformer(nn.Module):
         else:
             lang0 = lang
             ttoks = self.tokenizer.encode(txt)
-            langs = torch.tensor([languages.to_id(lang)], device=dev).unsqueeze(0)
+            langs = torch.tensor([languages.to_id(lang)], device=dev)
         ttoks = torch.tensor(ttoks, device=dev)
-        ttoks = F.pad(ttoks, (1, self.ttoks_len - len(ttoks) - 1), value=self.tokenizer.eot).unsqueeze(0)
+        ttoks = F.pad(ttoks, (1, self.ttoks_len - len(ttoks) - 1), value=self.tokenizer.eot)
         cpss = torch.tensor([cps], device=dev)
         T = torch.tensor(T, device=dev)
         if not isinstance(langs, torch.Tensor):
             langs = torch.tensor(langs, device=dev)
-            langs = F.pad(langs, (1, self.ttoks_len - len(langs) - 1), value=languages.to_id(lang0)).unsqueeze(0)
+            langs = F.pad(langs, (1, self.ttoks_len - len(langs) - 1), value=languages.to_id(lang0))
 
         toks = torch.zeros((bs,N), dtype=torch.long, device=dev)
         toks[:,0] = self.stoks_codes + self.tunables.padding_token_offset
@@ -479,7 +479,8 @@ class TSARTransformer(nn.Module):
 
         toks_positions = torch.arange(N, device=dev)
         with record_function("encode"):
-            ttoks, langs, cpss = [x.repeat(bs, 1) for x in (ttoks, langs, cpss)]
+            ttoks = ttoks.repeat(bs, 1)
+            langs, cpss = [x.repeat(bs) for x in (langs, cpss)]
             xenc, xenc_positions, cps_emb = self.run_encoder(ttoks, langs, cpss)
             toks_positions = torch.arange(N+1, device=dev)
         
