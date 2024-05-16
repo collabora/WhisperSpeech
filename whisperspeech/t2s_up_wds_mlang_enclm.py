@@ -71,25 +71,39 @@ def char_per_seconder(txt_key, stoks_key, cps_key, stoks_per_second=25):
 
 # %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 7
 def load_dataset(
-    txt_shard_spec:str,    # transcription webdataset shards
-    stoks_shard_dir:str,   # stoks webdataset base dir
-    samples:int,           # samples per epoch
-    txt_kind:str='small.en-txt',
+    dataset_dir:Path,
+    stoks_dir:str=None,
+    txt_dir:str=None,
     vq_codes:int=4096,
-    language:str='en',
     weight:float=1,
     validation:bool=False,
-    exclude_files:str=None,
-    cwd:Path=None,
+    exclude_datasets:str="txt-random-valid",
 ):
     import webdataset as wds
-    from . import utils
+    from whisperspeech import utils, languages
 
-    shards = utils.shard_glob(cwd/txt_shard_spec)
-    excludes = {x for file in exclude_files.split() for x in utils.readlines(cwd/file)} if exclude_files else set()
+    dataset_dir = Path(dataset_dir)
     
+    if txt_dir is None:
+        for name in ['small.en-txt', 'medium-txt']:
+            if (dataset_dir/name).exists():
+                txt_dir = name
+                break
+    assert txt_dir is not None, f"No transcripts found in {dataset_dir}"
+
+    txt_path = dataset_dir/f'{txt_dir}/*.tar.gz'
+    shards = utils.shard_glob(txt_path)
+    assert len(shards), f"No data shards found in {txt_path}."
+
+    with open(dataset_dir/'txt-samples.list') as f: samples = len(f.readlines())
+    language = utils.readlines(dataset_dir/'language')[0]
     language = languages.to_id(language)
     
+    excludes = {x
+                for dir in exclude_datasets.split()
+                for x in utils.readlines(dataset_dir/Path(dir)/"txt-samples.list")
+               } if not validation and exclude_datasets else set()
+
     def set_language(x):
         x['language'] = language
         return x
@@ -97,7 +111,7 @@ def load_dataset(
     same_on_all_nodes = lambda urls: urls # will only be used for validation
     ds = wds.WebDataset(shards, resampled=not validation, nodesplitter=same_on_all_nodes).compose(
         wds.decode(),
-        utils.merge_in(utils.derived_dataset('eqvad-stoks', base=txt_kind, suffix='', dir=cwd/stoks_shard_dir)),
+        utils.merge_in(utils.derived_dataset(stoks_dir)),
         # discard validation samples, select samples > .5s
         wds.select(lambda s: s['__key__'] not in excludes and s['stoks.npy'].shape[-1] > 12),
         tokenizer('txt', 'ttoks', length=550),
