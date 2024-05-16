@@ -343,15 +343,6 @@ if hasattr(task, "Tunables"):
     if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
         wandb_logger.experiment.config['tunables'] = dataclasses.asdict(tunables)
 
-if args['load_from']:
-    model = task.load_model(str(args['load_from']))
-else:
-    model_kwargs = dict(dataset=train_dss[0])
-    if tunables is not None: model_kwargs['tunables'] = tunables
-    model = parse_and_call('model', task.make_model, task_args, model_kwargs)
-    
-task = TrainingTask(model, model_hparams=hyp_params)
-
 trainer = pl.Trainer(strategy=hyp_params['strategy'],
                   max_steps=hyp_params['iterations'],
                   accelerator="gpu",
@@ -366,6 +357,15 @@ trainer = pl.Trainer(strategy=hyp_params['strategy'],
                   num_nodes=int(os.environ.get('SLURM_NNODES', 1)),
                   devices=int(os.environ.get('SLURM_NTASKS_PER_NODE', 1)),
                   callbacks=[ckpt_callback, lr_monitor_callback])
+        
+# we initialize everything manually anyways
+with trainer.init_module(empty_init=True):
+    if args['load_from']:
+        model = task.load_model(str(args['load_from']))
+    else:
+        model_kwargs = dict(dataset=train_dss[0])
+        if tunables is not None: model_kwargs['tunables'] = tunables
+        model = parse_and_call('model', task.make_model, task_args, model_kwargs)
 
 if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
     wandb_logger.experiment.config.update(hyp_params)
@@ -373,7 +373,10 @@ if type(wandb_logger.experiment.config) == wandb.sdk.wandb_config.Config:
 kwargs = {}
 if 'resume_from' in args:
     kwargs['ckpt_path'] = args['resume_from']
-trainer.fit(model=task, train_dataloaders=train_loader, val_dataloaders=val_loaders, **kwargs)
+trainer.fit(model=TrainingTask(model, model_hparams=hyp_params),
+            train_dataloaders=train_loader,
+            val_dataloaders=val_loaders,
+            **kwargs)
 
 if rank_zero_only.rank == 0:
     Path(task_name).mkdir(exist_ok=True, parents=True)
