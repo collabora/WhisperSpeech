@@ -112,8 +112,7 @@ def load_dataset(
     ds = wds.WebDataset(shards, resampled=not validation, nodesplitter=same_on_all_nodes).compose(
         wds.decode(),
         utils.merge_in(utils.derived_dataset(stoks_dir)),
-        # discard validation samples, select samples > .5s
-        wds.select(lambda s: s['__key__'] not in excludes and s['stoks.npy'].shape[-1] > 12),
+        wds.select(lambda s: s['__key__'] not in excludes and len(s['stoks.npy']) > 0), # discard validation samples
         tokenizer('txt', 'ttoks', length=550),
         ar_padder('stoks.npy', 'stoks', length=750, pad_token=vq_codes-1),
         ar_padder('ttoks', 'ttoks', length=550, pad_token=CharTokenizer.eot),
