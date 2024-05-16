@@ -64,6 +64,8 @@ class Pipeline:
                 else:
                     cls = SADelARTransformer
                     args['spec'] = spec
+            else:
+                cls = SADelARTransformer
             self.s2a = cls.load_model(**args)  # use obtained compute device
             if optimize: self.s2a.optimize(torch_compile=torch_compile)
         except:
