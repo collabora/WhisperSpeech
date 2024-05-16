@@ -142,6 +142,10 @@ class TrainingTask(pl.LightningModule):
             self.log_dict({f'metrics/{k}_{name}':v for k,v in self.model.get_metrics().items()}, sync_dist=True, add_dataloader_idx=False)
         return val_loss.detach()
     
+    def on_validation_epoch_end(self):
+        for name, weight in zip(train_dss_names, train_weights):
+            self.log(f"trainer/{name}-batches", weight.to(self.device) * self.global_step, sync_dist=True)
+    
     def test_step(self, val_batch, batch_idx):
         test_out = self.model.forward(*val_batch)
         test_loss = test_out[-1]
@@ -294,11 +298,19 @@ task = importlib.import_module("whisperspeech."+task_name)
 train_dss = [parse_and_call(f'train_ds_{i}', task.load_dataset,
                             parse_dataset_string(train_ds_config) + dataset_config)
              for i,train_ds_config in enumerate(args['training_data'])]
-train_total_samples = int(min(ds.total_samples for ds in train_dss) * len(train_dss) * 7)
-train_total_batches = int(train_total_samples / batch_size / int(hyp_params['world_size']))
+train_dss_names = simplify_folder_names([parse_dataset_string(train_ds_config)[0] for train_ds_config in args['training_data']])
+print('train names:', train_dss_names)
+counts = [x.total_samples for x in train_dss]
+print(counts)
+print(torch.tensor(counts).log2())
+train_weights = torch.tensor(counts).log2() - torch.tensor(counts).log2().min() + 1
+for tds, w in zip(train_dss, train_weights):
+    tds.weight = w
+
+train_total_batches = hyp_params['iterations']
 if train_total_batches < hyp_params['validate_every_n_steps']:
     # validate once at the end of every epoch for very short experiments
-    hyp_params['validate_every_n_steps'] = train_total_batches * 2
+    hyp_params['validate_every_n_steps'] = train_total_batches
 
 # persistent_workers=True is critical here so we don't reset the sample shuffling buffers
 # with webdatasets sample shuffling is very bad initially, unless num_workers << num_shards
