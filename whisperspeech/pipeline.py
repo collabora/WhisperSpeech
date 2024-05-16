@@ -101,8 +101,6 @@ class Pipeline:
         elif isinstance(speaker, (str, Path)): speaker = self.extract_spk_emb(speaker)
         text = text.replace("\n", " ")
         stoks = self.t2s.generate(text, cps=cps, lang=lang, step=step_callback)[0]
-        # drop all padding tokens (they should only appear at the end)
-        stoks = stoks[stoks != 512]
         atoks = self.s2a.generate(stoks, speaker.unsqueeze(0), step=step_callback)
         return atoks
         
