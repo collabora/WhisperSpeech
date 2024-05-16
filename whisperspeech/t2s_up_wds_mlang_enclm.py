@@ -119,11 +119,16 @@ def load_dataset(
         char_per_seconder('txt', 'stoks.npy', 'cps', stoks_per_second=25),
         wds.map(set_language),
         wds.to_tuple('in_ttoks', 'out_ttoks', 'language', 'cps', 'in_stoks', 'out_stoks'),
-        wds.shuffle(20000, initial=20000),
-        wds.batched(64)
     )
     if validation:
-        ds = ds.slice(samples // 64)
+        ds = ds.compose(
+            wds.batched(samples)
+        ).slice(1)
+    else:
+        ds = ds.compose(
+            wds.shuffle(20000, initial=20000),
+            wds.batched(2048)
+        )
     ds.total_samples = samples
     ds.stoks_len = 750
     ds.stoks_codes = vq_codes
