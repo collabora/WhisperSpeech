@@ -114,17 +114,18 @@ def merge_in(dataset_fun):
                 # this will open a new file when we get the first sample with a new __url__
                 merged_samples = iter(dataset_fun(url))
                 cur_url = url
-            try:
-                merge_s = next(merged_samples)
-            except StopIteration:
-                # if the original shard got repeated we won't observe a __url__ change
-                # in this case restart the dataset from the beginning
-                merged_samples = iter(dataset_fun(url))
-                merge_s = next(merged_samples)
-            assert merge_s['__key__'] == s['__key__'], f"sample keys don't match: {merge_s['__key__']}, {s['__key__']} in file {s['__url__']}"
             news = {}
-            news.update(merge_s)
             news.update(s)
+            if '__skip_merge__' not in s:
+                try:
+                    merge_s = next(merged_samples)
+                except StopIteration:
+                    # if the original shard got repeated we won't observe a __url__ change
+                    # in this case restart the dataset from the beginning
+                    merged_samples = iter(dataset_fun(url))
+                    merge_s = next(merged_samples)
+                assert merge_s['__key__'] == s['__key__'], f"sample keys don't match: {merge_s['__key__']}, {s['__key__']} in file {s['__url__']}"
+                news.update(merge_s)
             yield news
     return merge_loop
 
@@ -243,8 +244,8 @@ def find_audio(stream, okey='audio', ikeys='flac;mp3;sox;wav;m4a;ogg;wma;opus'):
 def vad_dataset(shards, ikey='vad.npy', kind='vad'):
     return wds.WebDataset(shards).compose(
         wds.decode(torch_audio_opus),
-        merge_in(derived_dataset(kind)),
         find_audio,
+        merge_in(derived_dataset(kind)),
         lambda x: split_to_chunks(x, ikey=ikey),
     )
 

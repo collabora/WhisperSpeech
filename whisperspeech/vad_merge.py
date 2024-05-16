@@ -20,7 +20,6 @@ import webdataset as wds
 # we need to split first to merge in the spk_emb.npy data
 # this is similar to utils.split_to_chunks but works without the audio data
 def split(stream, ikey='vad.npy', copy_keys=[], split_keys=[]):
-    empty = []
     for s in stream:
         imax = len(s[ikey]) - 1
         if len(s[ikey]) == 0:
@@ -30,22 +29,21 @@ def split(stream, ikey='vad.npy', copy_keys=[], split_keys=[]):
             # splitted data.
             new = {"__key__": s['__key__'] + "_none",
                    "src_key": s['__key__'],
-                   "__url__": s['__url__']}
+                   "__url__": s['__url__'],
+                   "__skip_merge__": True}
             for k in copy_keys:  new[k] = np.array([])
             for k in split_keys: new[k] = np.array([])
             new[ikey] = s[ikey]
-            empty.append(new)
+            yield new
         for i,(ts,te) in enumerate(s[ikey]):
             new = {"__key__": s['__key__'] + f"_{i:03d}",
                    "src_key": s['__key__'],
                    "__url__": s['__url__'],
-                   "i": i, "imax": imax,
-                   "empty": empty}
+                   "i": i, "imax": imax}
             for k in copy_keys:  new[k] = s[k]
             for k in split_keys: new[k] = s[k][i]
             new[ikey] = s[ikey][i]
             yield new
-            empty = []
 
 def merge_by_src_key(stream, copy_keys=[], merge_keys=['vad.npy']):
     def make_record(src):
@@ -66,13 +64,11 @@ def merge_by_src_key(stream, copy_keys=[], merge_keys=['vad.npy']):
             if ms and s['src_key'] != ms['__key__']:
                 yield finish_record(ms)
                 ms = None
-            # push all empty files we might have lost
-            for vs in s.get("empty", []):
-                yield finish_record(make_record(vs))
             # prepare a merged record for the new data
             if ms is None:
                 ms = make_record(s)
-            for k in merge_keys: ms[k].append(s[k])
+            for k in merge_keys:
+                if k in s: ms[k].append(s[k])
         except:
             print(f"Error processing {s['__key__']}:")
             print(s)
@@ -96,7 +92,7 @@ def chunk_merger(prefix, should_cut=lambda x: x > 30):
     def _merger(stream):
         for s in stream:
             segments, speakers = s['vad.npy'], s['spk_emb.npy']
-            if len(segments) == 0:
+            if segments.size == 0:
                 s[prefix+'.vad.npy'], s[prefix+'.spk_emb.npy'] = np.array([]), np.array([])
                 s[prefix+'.subvads.pyd'] = []
                 yield s
@@ -147,7 +143,7 @@ def filter_bad_samples(stream):
             for k in ['vad.npy', 'spk_emb.npy', 'powers.npy']:
                 s[k] = s[k][1:-1]
 
-        if len(s['vad.npy']) > 0:
+        if s['vad.npy'].size > 0:
             lengths = s['vad.npy'][:,1] - s['vad.npy'][:,0]
             mask = (lengths < 1) & (s['powers.npy'] < -6)
             for k in ['vad.npy', 'spk_emb.npy', 'powers.npy']:
@@ -204,8 +200,8 @@ def chunked_audio_dataset(shards, kind='max', copy_keys=['gain_shift.npy'], spli
                           resampled=False, nodesplitter=wds.shardlists.single_node_only):
     return wds.WebDataset(shards, resampled=resampled, nodesplitter=nodesplitter).compose(
         wds.decode(utils.torch_audio_opus),
-        utils.merge_in(utils.derived_dataset('mvad')),
         utils.find_audio,
+        utils.merge_in(utils.derived_dataset('mvad')),
         find_vad_kind(kind),
         lambda x: utils.split_to_chunks(x, copy_keys=copy_keys, split_keys=split_keys),
     )
