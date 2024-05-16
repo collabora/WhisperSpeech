@@ -86,10 +86,10 @@ class TrainingTask(pl.LightningModule):
             return num_steps
         
         warmup_steps = self.model_hparams['warmup_steps']
-        total_steps = self.model_hparams['epochs'] * num_steps_per_epoch()
+        total_steps = self.model_hparams['iterations']
         self.model_hparams['pct_start'] = min(0.3, warmup_steps / total_steps)
 
-        print(f"{self.model_hparams['epochs']=} epochs x {num_steps_per_epoch()=} steps")
+        print(f"{self.model_hparams['iterations']=} steps")
 
         if self.model_hparams['lr_schedule'] == 'cosine':
             lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
@@ -97,7 +97,7 @@ class TrainingTask(pl.LightningModule):
                 pct_start=self.model_hparams['pct_start'],
                 max_lr=[pg.get('lr', lr) for pg in param_groups],
                 steps_per_epoch=num_steps_per_epoch(),
-                epochs=int(self.model_hparams['epochs']),
+                epochs=1,
                 final_div_factor=25
             )
         elif self.model_hparams['lr_schedule'] == 'linear':
@@ -189,7 +189,7 @@ parser.add_argument('--training-data', action='append', type=str, default=[], he
 parser.add_argument('--validation-data', action='append', type=str, default=[], help='validation dataset (can be passed multiple times)')
 parser.add_argument('--monitored-metric', type=str, default="val_loss", help='metric to monitor for checkpointing')
 parser.add_argument("--checkpoint-dir", type=str, default="./checkpoints/", help="directory to save the checkpoints")
-parser.add_argument('--epochs', type=int, default=10, help='total training epochs')
+parser.add_argument('--iterations', type=int, default=8000, help='total training iterations')
 parser.add_argument('--validate-every-n-steps', type=int, default=500, help='how training steps to run between validations')
 parser.add_argument('--weight-decay', type=float, default=1e-2, help='optimizer weight decay')
 parser.add_argument('--lr0', type=float, default=1e-4, help='optimizer initial learning rate')
@@ -216,7 +216,7 @@ monitored_metric: str = args.pop("monitored_metric")
 checkpoint_dir: str = args.pop("checkpoint_dir")
 num_workers: int = args.pop("workers")
 batch_size: int = args.pop("batch_size")
-epochs: int = args.pop("epochs")
+iterations: int = args.pop("iterations")
 tunables_args: list = shlex.split(args.pop("tunables"))
 
 hyp_params = {}
@@ -230,7 +230,7 @@ hyp_params['precision'] = args['precision']
 hyp_params['torch_compile'] = args['torch_compile']
 hyp_params['lr0'] = args['lr0']
 hyp_params['lr_schedule'] = args['lr_schedule']
-hyp_params['epochs'] = epochs
+hyp_params['iterations'] = iterations
 hyp_params['strategy'] = args['strategy']
 if 'SLURM_NTASKS' in os.environ:
     hyp_params['world_size'] = os.environ['SLURM_NTASKS']
@@ -279,7 +279,7 @@ wandb_logger = WandbLogger(project=project, name=name)
 
 ckpt_callback = pl.callbacks.ModelCheckpoint(
      dirpath=f'{task_name}',
-     filename=f'{task_name}-{name}'+"-{epoch}-{step}-acc={"+monitored_metric+":.2f}",
+     filename=f'{task_name}-{name}'+"-{step}-acc={"+monitored_metric+":.2f}",
      monitor=monitored_metric,
      save_top_k=16,
      train_time_interval=datetime.timedelta(minutes=14),
@@ -341,7 +341,7 @@ else:
 task = TrainingTask(model, model_hparams=hyp_params)
 
 trainer = pl.Trainer(strategy=hyp_params['strategy'],
-                  max_epochs=hyp_params['epochs'],
+                  max_steps=hyp_params['iterations'],
                   accelerator="gpu",
                   profiler="simple",
                   precision=hyp_params['precision'],

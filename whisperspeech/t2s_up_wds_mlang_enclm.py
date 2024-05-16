@@ -536,7 +536,7 @@ def _make_model(size:str, tunables:Tunables=Tunables(), dataset=None, **kwargs):
         return TSARTransformer(depth=24, n_head=16, **kwargs)
 
 def make_model(size:str, frozen_embeddings_model:str=None, tunables:Tunables=Tunables(), dataset:torch.utils.data.Dataset=None):
-    from . import vq_stoks
+    from whisperspeech import vq_stoks
 
     if frozen_embeddings_model:
         vqmodel = vq_stoks.RQBottleneckTransformer.load_model(frozen_embeddings_model)
