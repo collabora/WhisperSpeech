@@ -154,6 +154,7 @@ class Tunables:
     eot_dropout_p :float = .5
     cps_input: bool = True
     cps_bins: int = 32
+    padding_token_offset: int = 0
         
     lr0 :float = 1.5e-3
     clip_gradient_norm :float = .2
@@ -175,6 +176,14 @@ class Tunables:
             self.lr0 = rand(1,5)*1e-3
             self.clip_gradient_norm = 10**rand(-3,0)
             self.warmup_steps = 100*(10**rand(1,1.85))
+
+    @staticmethod
+    def upgrade(args):
+        args = {k:v for k,v in args.items()}
+        def old_default(name, value):
+            if name not in args: args[name] = value
+        old_default('padding_token_offset', -1)
+        return args
 
 # %% ../nbs/5B. Multi-lang text to semantic token modeling.ipynb 13
 class T2SEmbedding(nn.Module):
@@ -354,7 +363,7 @@ class TSARTransformer(nn.Module):
             local_filename = hf_hub_download(repo_id=repo_id, filename=filename)
         if spec is None:
             spec = torch.load(local_filename, map_location=device)
-        model = cls(**spec['config'], tunables=Tunables(**spec['tunables']))
+        model = cls(**spec['config'], tunables=Tunables(**Tunables.upgrade(spec['tunables'])))
         model.load_state_dict(spec['state_dict'])
         model.eval().to(device)
         return model
@@ -460,7 +469,7 @@ class TSARTransformer(nn.Module):
             langs = F.pad(langs, (1, self.ttoks_len - len(langs) - 1), value=languages.to_id(lang0)).unsqueeze(0)
 
         toks = torch.zeros((bs,N), dtype=torch.long, device=dev)
-        toks[:,0] = self.stoks_codes-1
+        toks[:,0] = self.stoks_codes + self.tunables.padding_token_offset
         start = 0
         if stoks_prompt is not None:
             toks[:,1:len(stoks_prompt)+1] = stoks_prompt
@@ -479,7 +488,7 @@ class TSARTransformer(nn.Module):
         with inference.inference_context():
             for i in it:
                 toks[:,i+1] = self.generate_next(toks[:,i:i+1], toks_positions[i:i+1], cps_emb, xenc, xenc_positions, T, top_k)[:,0]
-                if i % 25 == 0 and (toks[:,i+1] == self.stoks_codes-1).all(): return toks[:,1:i+1]
+                if i % 25 == 0 and (toks[:,i+1] == self.stoks_codes+self.tunables.padding_token_offset).all(): return toks[:,1:i+1]
 
                 # for profiling, debugging or early exit
                 if step is not None: step()
