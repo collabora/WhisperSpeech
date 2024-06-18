@@ -15,7 +15,7 @@ class Vocoder:
         if device is None: device = inference.get_compute_device()
         if device == 'mps': device = 'cpu' # mps does not currently work with vocos, thus only cuda or cpu
         self.device = device
-        self.vocos = Vocos.from_pretrained(repo_id, cache_dir=cache_dir).to(device)
+        self.vocos = Vocos.from_pretrained(repo_id).to(device)
 
     def is_notebook(self):
         try:
